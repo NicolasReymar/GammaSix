@@ -1,0 +1,343 @@
+GammaSixProyect
+
+
+
+
+
+
+
+
+--**Todo**--
+
+
+
+
+@bugs
+
+ox no se ve el circulo verde bajo las unidades 
+	-se ve pero falta agregarle visibilidad.
+- alt mas alguna tecla, se escucha sonido de windows
+
+- al cargar el escenario o campana y esta trae configuraciones con overrides, se deben mantener los botones utilizables en la pantalla de configuracion de escaramuza para el host. el host debe poder clickear los botones de configuracion que el mapa trae como override.
+	- en base a esto corregir equipos fijos que aparece en el ui del lobby y dejarlo desbloqueado aunque se traiga con override en true.
+- las unidades de otro equipo se deben poder seleccionar, pero estas solo deben responder al jugador propietario.
+	- al clickear a una unidad de otro equipo, se debe poder marcar pero en vez de un halo verde, saldra un halo amarillo.
+	- esto se hara para poder visualizar las estadisticas de esas unidades en una vision que se hara de ui mas tarde (wip aun no se hace el tema de la ui de partida.)
+
+- unidades diferentes al equipo propio no se deben poder seleccionar todas con un doble click.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+- eliminar oro inicial de team setup.
+	- el oro de un equipo debe estar seteado en el mapa y si no, en su defecto sera 0.
+
+- crear el ui para cuando se este ene l juego.
+	- por el momento se necesita que en la parte inferior este un cuadro con los atributos de la unidad seleccionada
+	- en la parte superior que aparezca el oro inicial
+		- que en el mapa de la partida se haga oro inicial 500 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@qa
+
+- el sistema de bloqueo de camara solo debe ser para personajes con atributo Heroico o atributo 3rd per camera.
+
+
+
+
+
+
+
+
+
+
+
+
+
+qa 
+- utilizar un tipo de id para soldado, el id sera soldier_unit y se debe seguir esa regla para todas las unidades. para los edificios tendra el tag _structure.
+	- con esto no se deberian usar los if con ids raros como (string.Equals(typeId, "soldado", StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(typeId, "soldier", StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(typeId, "prototype_unit", StringComparison.OrdinalIgnoreCase)
+				 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@todo
+
+
+Sistema de items y de contenedores
+-hacer medidas de supresion pra cuando se pierde la sesion co el host
+
+
+-UI en juego
+
+- texto y consola en juego
+
+- vida y daño en las unidades.
+	- las unidades deben poseer 
+
+-estado de unidades
+	- las unidades pueden atacar como puede que no puedan atacar.
+		- una unidad puede atacar si el dano que pueden hacer es mayor a 0
+		- una unidad no atacara si tiene el atributo "pasivo" true. este atributo hara que la unidad no tenga dano.
+		- si la unidad tiene el atributo "piedra en la mano" entonces la unidad 
+	- las unidades pueden tener diferentes posturas, postura agresiva, postura pasiva, postura defensiva, entre otras.
+		- debe haber un atributo de estado "status" que se debe asignar en la clase de la unidad, que sera el mood que lleva la unidad en el momento. 
+			- por ejemplo si la unidad esta idle, entonces esta pasiva y no encuentra una 
+		- postura agresiva hara que la unidad cambie el 
+
+- unidades neutrales
+	- unidades neutrales deben poder poseer agresividad o 
+		- agregar el estado agresivo a unidades neutrales 
+
+- plan de spawn.
+	-el spawn en el juego se hara en base a las cosas que el creador del escenario haya seleccionado.
+	- 
+
+
+- Sistema de logs y registros para eventos del juego y de la red.
+- Sistema de eventod del juego.
+	- el sistema de eventos cargara los eventos guardados de un mapa
+- se debe hacer un sistema que haga que cuando se selecciona una campaña o una escaramuza, estas se contengan en un listado de Hitos, estos hitos seran las diferentes situaciones que ocurren a traves del juego (si es una campaña se puede componer en un video, una 
+	- cuando se inicia el juego , se tiene que hacer que el sistema de guardado 
+
+
+				
+
+	
+	
+	
+	
+	
+	
+
+
+
+
+
+
+
+
+
+
+
+@QA 
+
+
+xo el juego debe soportar 2 sistemas de control de personaje, el control de posicion con wasd y el control de posicion por click y click drag.
+	
+	- movimiento de la camara
+		- la camara podra moverse por situaciones controladas por el sistema (movimientos al presionar ciertas funciones y por pelicula de los escenarios) y por el control del jugador.
+			- cuando el jugador mueve la pantalla, puede moverla de 2 formas:
+				o camara desbloqueada en el mapa, se mueve con las flechas del teclado arrastrandose por el mapa 
+				- camara bloqueada en unidad designada por jugador, la camara se lockea en un personaje, el jugador puede presionar alt para mover la direccion de la camara, si el jugador presiona 2 veces alt, el movimiento de la camara queda libre con el mouse. esto se hace hasta que se vuelta a presionar alt 2 veces o que se desactive el modo camara en el personaje.
+				- movimiento de la camara cuando un jugador bloquea la camara en una unidad.
+					ox el jugador puede bloquear la camara cuando tiene a un heroe seleccionado (o la unidad tiene el atributo de camera_driver on, los heroes tienen este atributo activo por default )y mantiene presionado alt + R
+					x el zoom que hace hacia afuera al hacer alt +r para salir de la perspectiva 3ra persona no es el correcto, definir zoom inicial para volver a obtenerlo.
+					o- modif agregar zoom con la rueda del mouse, que sea un zoom fijo desde la perspectiva inicial hasta un 20% pero que el zoom tenga un porcentage de curvatura hacia el horizonte del mapa y abajo, asi no se perdera tanta perspectiva.
+				- cuando el jugador bloquea la camara en una unidad, la camara se debe posicionar arrastrandose smooth encima del personaje en un angulo que se vea en tercera persona.
+- el control de posicion con wasd tambien hara que se pueda mover la camara arrastrando el cursor
+- las unidades de otros jugadores o equipos no deben poder ser seleccionadas cuando el jugador arrastra el mouse y selecciona.
+- se debe hacer un sistema para clickear las entidades del mapa.
+	- si se clickea una unidad, debe aparecer un circulo verde abajo (debe ser un halo en forma de 'o' debe escalar en base al tamaño de la unidad.
+	- al apretar click izquierdo y arrastrar, se deben poder seleccionar las unidades que el cursor arrastro.
+		- el maximo de unidades seleccionadas por el momento sera de 50.
+		- crear un rectangulo cuadrado de borde fino para mostrar el arrastre de la zona donde se seleccionaran las unidades
+	- agregar funcionalidades de poder mantener shift y click izquierdo para descartar unidades seleccionadas y clickear arrastrando + mantener shift tambien debe descartar o seleccionar (el shift click debe hacer lo inverso a si esta la unidad deseleccionada o lo inverso a si esta seleccionada)
+		- shift click izqr deselecciona o selecciona segun inverso de la unidad seleccionada
+		- shift arrastre selecciona o deselecciona el grupo de unidades
+	- al presionar doble click sobre una unidad, se deben seleccionar las unidades del mismo tipo 
+	- agregar funcionalidad para mantener unidades seleccionadas utilizando ctrl + 1,  ctrl + 2 y ctrl + 3
+- si se esta con la camara desbloqueada, entonces al presionar el boton del medio del mouse (normalmente click en la rueda de mouse) se "pegara" el mouse en la posicion y se movera la camara arrastrandose por el mapa, debe tener arrastre smooth y que siga moviendose un poco si el jugador la suelta rapido.
+	
+
+
+
+
+
+
+-se debe modificar el comportamiento del menu de host de multijugador para que pueda comportarse correctamente.
+	- al presionar ser anfitrion, se desplegara un menu de crear sesion local (cambiar a sesion multijugador.)
+		- en el menu estara el nombre de host, puerto y la carga del mapa. la carga de mapa se cambiara para esta pestana porque asi las configuraciones de la partida se pre ven ahi y no en la lobby.
+		- en el lobby multijugador se seguiran mostrando las configuraciones de partida para el host como sigue siendo.
+	- en el lobby multijugador escaramuza, eliminar el cuadro reglas del escenario ya que las reglas que se deben mostrar son las de configuracion. si el escenario las modifica entonces que el sistema cargue la configuracion en el siguiente menu de lobby de espera.
+	- en el lobby multijugador se mostraran las casillas maximas que deja la configuracion de la partida cargada para ser hosteada. por ejemplo si el maximo de jugadores es de 2 entonces se desplegaran 2 casillas. si faltan jugadores entonces que salga 'casilla vacia' 
+	- al cargar una partida con colores de equipo fijos, la regla de colores fijos quedara marcada y los colores de los equipos quedaran seteados en los equipos respectivos.
+- se debe poder cambiar el equipo del jugador como se puede cambiar de color.
+- cuando un jugador esta en listo, se debe bloquear el cambio de color de este. solo puede cambiar el color en ese caso el host pero eso deja al jugador al cual se le cambio el color como no listo nuevamente (incluido host).
+- en menu unirse a partida, no se debe poder cambiar nombre de jugador, casilla debe estar fix bloqueada
+
+
+
+
+
+@qa ok
+
+
+o no se revisa que los todos los jugadores esten listos.
+	o agregar un boton rojo con texto al lado "todos listos". el boton se pondra verde cuando todos esten listos y ahi se podra iniciar la partida. si no, no se podra iniciar la partida.
+
+o modificar pantalla de crear sesion para que en el lado izquiero salga la informacion de crear la sesin multijugador y en la derecha que salga el contenido de la partida.
+o agregar nueva configuracion de equipos fijos para que se bloqueen los equipos cuando el mapa tiene el atributo nuevo de equipos fijos true.
+o- el codigo que se haga a continuacion de las entidades debe estar en su propia carpeta si corresponde.
+Sistema de atributos de las entidades.
+		
+		o- las unidades que se muestran a continuacion son ejemplos, no se usaran para programar sino que es para entender el objetivo de los atributos.
+		- por ejemplo, un mercenario (un esbirro comun) tendra entre los atributos el lanzamiento de lanza, lo cual le dejara utilizar el lanza que lleva desde rango.
+		- un heroe tiene atributos que lo dejan usar sus habilidades (por cada habilidad habra un atributo), tendra tambien un atributo que le dejara ver la mochila en la UI cuando se le hace click, entre otros atributos (pasivas u	otros).
+		- un mercado tendra el atributo de tienda que le dejara poder tener objetos comerciables, como tambien el atributo de tipo de tienda el cual restringira a quien esta dirigida la tienda 
+
+o Los equipos deben seleccionarse cuando se entra a la sesion.
+	o cuando el host crea la sesion, se le asignara el equipo 1 
+	o cuando otro jugador se una, se unira y se le asignara el equipo desde el 2 hasta el 4
+	o se puede cambiar el color de los jugadores
+		o para cambiar el color, se podra clickear en el boton del color que se posee, ahi se desplegara un UI pequeño con los colores contenidos que pueden utilizarse.
+			o el boton de color estara situado al lado de 
+		o el host podra modificar el color de los jugadores, pudiendo asignarle el color que quiera siempre y cuando no este ocupado.
+		o si el color asignado por el host esta ocupado, entonces se hara swap del color entre el color que tiene asignado el jugador con el color que se esta seleccionando.
+		o el color de los jugadores puede estar bloqueado por la configuracion "colores fijos"
+			o si la configuracion de "colores fijos"" esta activa, entonces los jugadores no podran cambiar su color (boton del color bloqueado) y solo el host lo podra hacer.
+			o cuando se selecciona la partida, en las configuraciones del host debe salir opcion de fijar equipos.
+			o los colores que hay disponibles para los jugadores son rojo, azul, amarillo, verde, morado, naranja, cafe, celeste y rosa.
+	o cuando se inicia la partida, el color seleccionado sera desplegado en el color de las unidades del jugador.
+o cuando se esta en el lobby de multijugador, se debe poder seleccionar el equipo al que pertenece el jugador y un color para las unidades del jugador (que se vea una paleta de los colores disponibles en el UI)
+
+-hacer un sistema de carga. el sistema debe poder leer campañas o escenarios, segun sea.
+	o una campaña se puede componer de multiples escenarios, de videos entre escenarios u otra cosa que se implemente despues y que se pueda dejar en la seguidilla de procesos de una partida.
+	o un escenario se puede componerse de la partida guardada y de los eventos y triggers, tambien como misiones y demases
+
+o los escenarios tendran su configuracion predefinida. Por ejemplo si tenemos una configuracion predefinida de equipos fijos:si pero no tenemos la configuracion niebla de guerra (funcionalidad de ejemplo, no aplicar) descubierta cuando el escenario se carga, entonces en el UI solo saldra 
+	o el sistema debe ver los archivos de partidas (mapas o campañas)
+	o si se selecciona una partida que tiene configuraciones que hacen override a las configuraciones normales, entonces se priorizaran esas configuraciones para la partida.
+	o cuando se hace override a una configuracion, esta configuracion aparecera con un indicativo de que esta siendo modificada por la configuracion prioritaria de la partida cargada.
+	o el host puede cancelar estos overrides deseleccionandolos
+	
+o cuando se bloquea la camara se debe fijar el mouse en un extremo de la pantalla y se debe ocultar para que no se vea.
+o Eliminar alternacion por tab ya que no esta solicitada. la alternacion que se hace con alt+r es la que sirve solamente.
+
+o cuando cliente sale de una partida creada por otro host, y el host principal salio, el cliente no se kickea.
+o solamente esta dejando crear una sesion, cuando se sale no se puede volver a crear una sesion, puede ser porque los estados de los jugadores( de conexion o estados de como estan en la sesion) no estan coordinados correctamente o no hay un filtro de cambio de estados
+O solo el host tiene permisos para seleccionar el mapa a jugar, los clientes pueden ver el mapa cuando el host ya lo selecciono, pero no seleccionarlo, o sea el host solo tiene puede ver esas configuraciones o solo el lo puede modificar.
+	o funciona pero el cliente ya tiene un mapa preseleccionado que el host tiene, no debe ser asi sino que el host cuando seleccione, el cliente debe saber que mapa es (tenerlo en el sistema o importarlo)
+		o se deberian hacer los sistemas de cargar mapas de otros usuarios
+
+o eliminar compatibilidad con escenarios anteriores y eliminar uso de camera.driver.
+
+o generar el nuevo atributo Heroe, simplemente para poder diferenciar entre 2 tipos diferentes de unidades. 
+	o generar el atributo 3rd camera que sera el atributo que gestiona el movimiento de camara en 3ra persona, para lo que servira es para poder cambiar entre 3ra persona o vista rts que tenemos.
+		o se debe modificar la funcionalidad de cambio de vista con alt+r para que trabaje en este atributo solamente, para que asi los personajes heroicos (al tener heroe heredan el 3rd camera) pueden verse en tercera persona.
+o configuracion superior de colores fijos y equipos fijos debe mandar sobre la tabla d configuraciones de abajo, la cual se debe eliminar(se adjunta imagen para poder mostrar el cambio a ejecutar).
+o al cliente le aparecen las casillas precargadas de los jugadores hasta 8, deberian aparecerle el maximo que el mapa cargado por el host deja.
+
+o las unidades de otro equipo se deben poder seleccionar, pero estas solo deben responder al jugador propietario.
+	o al clickear a una unidad de otro equipo, se debe poder marcar pero en vez de un halo verde, saldra un halo amarillo.
+	o esto se hara para poder visualizar las estadisticas de esas unidades en una vision que se hara de ui mas tarde (wip aun no se hace el tema de la ui de partida.)
+
+o equipo neutral 
+	o se debe crear un equipo que sea neutral, sera el team 0 y el color sera gris claro.
+	o este equipo servira para poder crear edificios y unidades del ambiente. campamentos o cosas asi (wip eso de los campamentos, despues lo veremos no ahora.)
+	o no agregar este equipo como un equipo que pueda seleccionarse, es un equipo que estara simplemente para que hayan entidades de ambiente.
+
+o se debe generar una forma mas practica de tener almacenadas las entidades ya que se requiere que se puedan cargar con un id.
+	o por ejemplo, asi se podran cargar 3 unidades desde el escenario o campana con solo poner el id de unidad 3 veces.
+		o para que funcione correctamente haz que la unidad que tenemos ahora, la default este cargada con este codigo.
+	o las entidades deben estar en su propio archivo, separado de los atributos (si no que se busque un mejor nombre para el archivo que el que se tiene).
+		o las entidades deben estar en su propio archivo porque por ejemplo, si tenemos un listado grande de entidades entonces habra problemas de carga.
+		o ademas esto sirve para que el sistema de carga de las unidades solo necesite el identificador de la unidad que se quiere colocar en el mapa.
+
+o generacion de codigo de los edificios.
+	o los edificios son entidades. 
+	o los edificios pueden tener los mismos atributos que las unidades ya que los edificios tambien son entidades.
+		o el codigo de los edificios debe estar situado en su archivo.
+	o los edificios se deben registrar con un id, nombre, hitpoints, hitpoints maximos, entre otras cosas.
+	o los edificios se deben poder cargar desde la campaña o mision como las unidades.
+	o los edificios tienen equipo.
+		o los edificios podran ser interactuados por jugadores y entidades del equipo segun el tipo de edificio que sea.
+		o tambien se tendra un atributo "propio" "own" que servira para configurar el edificio y hacer que solamente el propietario del edificio (el player) sea el que puede interactuar con el.
+
+ocrear edificios.
+	o generar 2 edificios de prueba, uno sera para comenzar a configurar su visualizacion en el mapa y configuracion de la mesh y otro para probar primeras interacciones.
+	o los edificios se deben poder cargar de un escenario o campana como las unidades.
+		o generar un cuadrado grande (2 soldados de altura y de cuadrado en gral), asignarle solidez y que su id sea de un edificio de mercenarios building.mercenary por decirlo.
+			o asignarle solidez al humanoide tambien, para que haya colision entre el edifico y la unidad.
+		o generar un circulo verde, (de 2 soldados de diametro), este edificio sera llamado circulo de aura building.aura.
+			o el circulo de aura lo que hara es que cuando una unidad se posiciona sobre este, si se cumplen los requisitos, entonces se desencadenara un trigger de un evento.
+			o no debe ser solido ya que las unidades deben poder pasar sobre este.
+			o para este caso se podria cambiar de color de verde a amarillo si hay una entidad que sea humanoide sobre el circulo.
+		
+o generar un mapa como el de 3v3 pero que tenga un edificio de mercenarios y un circulo de aura, que el edificio de mercenarios sea del equipo 1 y el aura sea neutral.
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

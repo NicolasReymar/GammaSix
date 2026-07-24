@@ -1,0 +1,12 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="SelectedEntityHud.uss" />
+    <ui:VisualElement name="selected-entity-hud-root" class="selected-entity-hud-root" picking-mode="Ignore">
+        <ui:VisualElement name="selected-entity-panel" class="selected-entity-panel" picking-mode="Position">
+            <ui:Label text="Sin entidad seleccionada" name="selected-entity-name" class="selected-entity-title" />
+            <ui:Label text="Selecciona una unidad o edificio para ver sus atributos." name="selected-entity-summary" class="selected-entity-summary" />
+            <ui:ScrollView name="selected-entity-attributes-scroll" class="selected-entity-attributes-scroll">
+                <ui:VisualElement name="selected-entity-attributes" class="selected-entity-attributes-list" />
+            </ui:ScrollView>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

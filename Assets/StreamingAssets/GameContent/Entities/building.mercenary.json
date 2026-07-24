@@ -1,0 +1,17 @@
+{
+  "id": "building.mercenary",
+  "name": "Edificio de Mercenarios",
+  "kind": "building",
+  "maxHealth": 500,
+  "moveSpeed": 0.0,
+  "solid": true,
+  "visual": "cube",
+  "scale": { "x": 4.0, "y": 4.0, "z": 4.0 },
+  "attributes": [
+    "entity",
+    "entity.building",
+    "interaction.selectable",
+    "interaction.own",
+    "physics.solid"
+  ]
+}

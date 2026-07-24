@@ -1,0 +1,9 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="GoldHud.uss" />
+    <ui:VisualElement name="gold-hud-root" class="gold-hud-root" picking-mode="Ignore">
+        <ui:VisualElement name="game-gold-panel" class="gold-hud-panel" picking-mode="Position">
+            <ui:Label text="Oro" class="gold-hud-label" />
+            <ui:Label text="0" name="game-gold-value" class="gold-hud-value" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

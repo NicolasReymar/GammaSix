@@ -1,0 +1,21 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="GameHud.uss" />
+    <ui:VisualElement name="game-hud-root" class="game-hud-root" picking-mode="Ignore">
+        <ui:VisualElement class="game-hud-top-row" picking-mode="Ignore">
+            <ui:VisualElement class="game-hud-resource-card" picking-mode="Ignore">
+                <ui:Label text="Oro" class="game-hud-resource-label" />
+                <ui:Label text="0" name="game-gold-value" class="game-hud-resource-value" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <ui:VisualElement class="game-hud-bottom-row" picking-mode="Ignore">
+            <ui:VisualElement class="game-hud-selection-card" picking-mode="Ignore">
+                <ui:Label text="Sin entidad seleccionada" name="selected-entity-name" class="game-hud-title" />
+                <ui:Label text="Selecciona una unidad o edificio para ver sus atributos." name="selected-entity-summary" class="game-hud-summary" />
+                <ui:ScrollView name="selected-entity-attributes-scroll" class="game-hud-attributes-scroll" picking-mode="Ignore">
+                    <ui:VisualElement name="selected-entity-attributes" class="game-hud-attributes-list" picking-mode="Ignore" />
+                </ui:ScrollView>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

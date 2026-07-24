@@ -1,0 +1,16 @@
+{
+  "id": "building.aura",
+  "name": "Círculo de Aura",
+  "kind": "building",
+  "maxHealth": 1,
+  "moveSpeed": 0.0,
+  "solid": false,
+  "visual": "aura",
+  "scale": { "x": 2.0, "y": 0.04, "z": 2.0 },
+  "attributes": [
+    "entity",
+    "entity.building",
+    "interaction.selectable",
+    "trigger.aura"
+  ]
+}

@@ -1,0 +1,65 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:VisualElement name="main-menu-panel" style="flex-grow: 1; justify-content: flex-start; align-items: flex-start; flex-direction: column; flex-wrap: nowrap; background-color: rgb(51, 114, 94);">
+        <ui:VisualElement name="HeadElement" style="flex-grow: 1; width: 100%; flex-direction: row; height: 30%;">
+            <ui:VisualElement style="height: auto; width: 50%; align-items: flex-start; justify-content: flex-end; flex-direction: column-reverse;">
+                <ui:VisualElement style="height: 100%; width: 100%; align-items: stretch; justify-content: space-around; flex-direction: column-reverse;">
+                    <ui:Label text="Un jugador - Campaña" style="font-size: 60px; -unity-text-align: upper-left; height: auto; width: auto; -unity-font-style: normal;"/>
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement style="height: auto; width: 50%; align-items: center; justify-content: space-around; flex-direction: row;">
+                <ui:VisualElement style="width: 50%; height: 100%;"/>
+                <ui:VisualElement style="flex-grow: 1; width: 50%; height: 100%; align-items: center; justify-content: center;">
+                    <ui:Button text="Retroceder" name="sp-campaign-back-button" style="height: 33%; width: 50%; -unity-font-style: normal;"/>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="Body" style="align-self: stretch; flex-direction: row; height: 80%;">
+            <ui:VisualElement name="LeftBody" style="width: 50%; height: auto; align-items: center; justify-content: center; border-top-width: 0; border-right-width: 0; border-bottom-width: 0; border-left-width: 0;">
+                <ui:VisualElement style="width: 90%; height: 90%; align-items: center; justify-content: center; border-top-width: 2px; border-right-width: 2px; border-bottom-width: 2px; border-left-width: 2px; border-left-color: rgb(0, 0, 0); border-right-color: rgb(0, 0, 0); border-top-color: rgb(0, 0, 0); border-bottom-color: rgb(0, 0, 0);">
+                    <ui:VisualElement style="border-top-width: 2px; border-right-width: 2px; border-bottom-width: 2px; border-left-width: 2px; border-left-color: rgb(0, 0, 0); border-right-color: rgb(0, 0, 0); border-top-color: rgb(0, 0, 0); border-bottom-color: rgb(0, 0, 0); width: 95%; height: 90%;">
+                        <ui:VisualElement name="VisualElement" style="flex-grow: 1; width: 100%; height: 10%; justify-content: flex-end; align-items: stretch; align-self: auto; border-bottom-width: 1px; border-left-color: rgb(0, 0, 0); border-right-color: rgb(0, 0, 0); border-top-color: rgb(0, 0, 0); border-bottom-color: rgb(0, 0, 0);">
+                            <ui:Label text="Lista de Jugadores" style="font-size: 20px;"/>
+                        </ui:VisualElement>
+                        <ui:VisualElement name="VisualElement" style="flex-grow: 1; height: 70%; border-top-width: 1px; border-left-color: rgb(0, 0, 0); border-right-color: rgb(0, 0, 0); border-top-color: rgb(0, 0, 0); border-bottom-color: rgb(0, 0, 0);">
+                            <ui:VisualElement style="flex-grow: 1; width: 100%; height: 10%; justify-content: flex-start; align-items: stretch; align-self: auto;">
+                                <ui:Label text="Lista de Jugadores" style="font-size: 15px;"/>
+                            </ui:VisualElement>
+                            <ui:VisualElement style="flex-grow: 1; height: 90%; align-items: stretch; justify-content: flex-start; flex-direction: column; width: 100%; align-self: auto; border-top-width: 2px; border-bottom-width: 2px; border-left-color: rgb(0, 0, 0); border-right-color: rgb(0, 0, 0); border-top-color: rgb(0, 0, 0); border-bottom-color: rgb(0, 0, 0);">
+                                <ui:Foldout text="Foldout" name="sp-map-browser-panel"/>
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                        <ui:VisualElement style="flex-grow: 1; height: 20%; width: 100%; align-items: stretch; flex-direction: row;">
+                            <ui:VisualElement style="width: 50%; justify-content: center; align-items: flex-start;">
+                                <ui:VisualElement style="width: 50%;">
+                                    <ui:Button text="Seleccionar Campaña" name="sp-campaign-select-button"/>
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                            <ui:VisualElement style="flex-grow: 1; width: 50%;"/>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement name="RightBody" style="width: 50%; height: auto; align-items: center; justify-content: space-around;">
+                <ui:VisualElement style="width: 90%; height: 90%; align-items: center; justify-content: center; border-top-width: 2px; border-right-width: 2px; border-bottom-width: 2px; border-left-width: 2px; border-left-color: rgb(0, 0, 0); border-right-color: rgb(0, 0, 0); border-top-color: rgb(0, 0, 0); border-bottom-color: rgb(0, 0, 0);">
+                    <ui:VisualElement style="border-top-width: 2px; border-right-width: 2px; border-bottom-width: 2px; border-left-width: 2px; border-left-color: rgb(0, 0, 0); border-right-color: rgb(0, 0, 0); border-top-color: rgb(0, 0, 0); border-bottom-color: rgb(0, 0, 0); width: 95%; height: 90%;">
+                        <ui:VisualElement style="flex-grow: 1; width: 100%; height: 10%; justify-content: flex-end; align-items: stretch; align-self: auto;">
+                            <ui:Label text="Configuracion de campaña" style="font-size: 20px;"/>
+                        </ui:VisualElement>
+                        <ui:VisualElement style="flex-grow: 1; height: 70%; align-items: stretch; justify-content: flex-start; flex-direction: column; width: 100%; align-self: auto; border-top-width: 2px; border-bottom-width: 2px; border-left-color: rgb(0, 0, 0); border-right-color: rgb(0, 0, 0); border-top-color: rgb(0, 0, 0); border-bottom-color: rgb(0, 0, 0);"/>
+                        <ui:VisualElement style="flex-grow: 1; height: 20%; width: 100%; align-items: stretch; flex-direction: row;">
+                            <ui:VisualElement style="width: 80%; justify-content: center; align-items: center; flex-direction: row; align-self: center; height: 100%;">
+                                <ui:VisualElement style="width: 30%;">
+                                    <ui:Button text="Iniciar Campaña" name="sp-campaign-start-button"/>
+                                </ui:VisualElement>
+                                <ui:VisualElement style="flex-grow: 1;">
+                                    <ui:Label text="Selecciona una campaña para continuar."/>
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                            <ui:VisualElement style="flex-grow: 1; width: 20%;"/>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

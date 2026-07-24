@@ -1,0 +1,31 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:VisualElement name="main-menu-panel" style="flex-grow: 1; justify-content: flex-start; align-items: flex-start; flex-direction: column; flex-wrap: nowrap; background-color: rgb(51, 114, 94);">
+        <ui:VisualElement name="HeadElement" style="flex-grow: 1; width: 100%; flex-direction: row; height: 30%;">
+            <ui:VisualElement style="height: auto; width: 50%; align-items: flex-start; justify-content: flex-end; flex-direction: column-reverse;">
+                <ui:VisualElement style="height: 100%; width: 100%; align-items: stretch; justify-content: space-around; flex-direction: column-reverse;">
+                    <ui:Label text="Configuracion" style="font-size: 60px; -unity-text-align: upper-left; height: auto; width: auto; -unity-font-style: normal;"/>
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement style="height: auto; width: 50%; align-items: center; justify-content: space-around; flex-direction: row;">
+                <ui:VisualElement style="width: 50%; height: 100%;"/>
+                <ui:VisualElement style="flex-grow: 1; width: 50%; height: 100%; align-items: center; justify-content: center;">
+                    <ui:Button text="Retroceder" name="mp-menu-back-button" style="height: 33%; width: 50%; -unity-font-style: normal;"/>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="Body" style="align-self: stretch; flex-direction: row; height: 80%;">
+            <ui:VisualElement name="LeftBody" style="width: 50%; height: auto; align-items: center; justify-content: center;">
+                <ui:VisualElement style="width: 90%; height: 90%; border-top-width: 2px; border-right-width: 2px; border-bottom-width: 2px; border-left-width: 2px; border-left-color: rgb(0, 0, 0); border-right-color: rgb(0, 0, 0); border-top-color: rgb(0, 0, 0); border-bottom-color: rgb(0, 0, 0); align-items: center; justify-content: center;">
+                    <ui:VisualElement style="width: 30%; height: 60%; justify-content: space-around;">
+                        <ui:Button text="Ajustes multi jugador" name="mp-settings-button"/>
+                        <ui:Button text="Ajustes graficos" name="graphics-setting-button"/>
+                        <ui:Button text="Ajustes sonido" name="sound-setting-button"/>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement name="RightBody" style="width: 50%; height: auto; align-items: center; justify-content: space-around;">
+                <ui:VisualElement style="width: 90%; height: 90%; border-top-width: 2px; border-right-width: 2px; border-bottom-width: 2px; border-left-width: 2px; border-left-color: rgb(0, 0, 0); border-right-color: rgb(0, 0, 0); border-top-color: rgb(0, 0, 0); border-bottom-color: rgb(0, 0, 0); justify-content: center; align-items: center;"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

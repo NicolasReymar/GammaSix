@@ -1,0 +1,132 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:VisualElement name="main-menu-panel" style="flex-grow: 1; justify-content: flex-start; align-items: flex-start; flex-direction: column; flex-wrap: nowrap; background-color: rgb(51, 114, 94);">
+        <ui:VisualElement name="HeadElement" style="flex-grow: 1; width: 100%; flex-direction: row; height: 30%;">
+            <ui:VisualElement style="height: auto; width: 50%; align-items: flex-start; justify-content: flex-end; flex-direction: column-reverse;">
+                <ui:VisualElement style="height: 100%; width: 100%; align-items: stretch; justify-content: space-around; flex-direction: column-reverse;">
+                    <ui:Label text="Un jugador - Escaramuza" style="font-size: 60px; -unity-text-align: upper-left; height: auto; width: auto; -unity-font-style: normal;"/>
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement style="height: auto; width: 50%; align-items: center; justify-content: space-around; flex-direction: row;">
+                <ui:VisualElement style="width: 50%; height: 100%;"/>
+                <ui:VisualElement style="flex-grow: 1; width: 50%; height: 100%; align-items: center; justify-content: center;">
+                    <ui:Button text="Retroceder" name="sp-menu-back-button" style="height: 33%; width: 50%; -unity-font-style: normal;"/>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="Body" style="align-self: stretch; flex-direction: row; height: 80%;">
+            <ui:VisualElement name="LeftBody" style="width: 50%; height: auto; align-items: center; justify-content: center; border-top-width: 0; border-right-width: 0; border-bottom-width: 0; border-left-width: 0;">
+                <ui:VisualElement style="width: 90%; height: 90%; align-items: center; justify-content: center; border-top-width: 2px; border-right-width: 2px; border-bottom-width: 2px; border-left-width: 2px; border-left-color: rgb(0, 0, 0); border-right-color: rgb(0, 0, 0); border-top-color: rgb(0, 0, 0); border-bottom-color: rgb(0, 0, 0);">
+                    <ui:VisualElement style="border-top-width: 2px; border-right-width: 2px; border-bottom-width: 2px; border-left-width: 2px; border-left-color: rgb(0, 0, 0); border-right-color: rgb(0, 0, 0); border-top-color: rgb(0, 0, 0); border-bottom-color: rgb(0, 0, 0); width: 95%; height: 90%;">
+                        <ui:VisualElement style="flex-grow: 1; width: 100%; height: 10%; justify-content: flex-end; align-items: stretch; align-self: auto;">
+                            <ui:Label text="Lista de Jugadores" style="font-size: 20px;"/>
+                        </ui:VisualElement>
+                        <ui:VisualElement style="flex-grow: 1; height: 70%; align-items: stretch; justify-content: flex-start; flex-direction: column; width: 100%; align-self: auto;">
+                            <ui:VisualElement name="player_1_label" style="border-top-width: 2px; border-right-width: 0; border-bottom-width: 1px; border-left-width: 0; border-left-color: rgb(51, 51, 51); border-right-color: rgb(51, 51, 51); border-top-color: rgb(51, 51, 51); border-bottom-color: rgb(51, 51, 51); flex-direction: row;">
+                                <ui:VisualElement style="flex-grow: 1;">
+                                    <ui:Label text="Label" name="player-name-label-1"/>
+                                </ui:VisualElement>
+                                <ui:VisualElement style="flex-grow: 1;">
+                                    <ui:Label text="Label" name="player-name-label-1"/>
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                            <ui:VisualElement name="player_2_label" style="border-top-width: 1px; border-right-width: 0; border-bottom-width: 1px; border-left-width: 0; border-left-color: rgb(51, 51, 51); border-right-color: rgb(51, 51, 51); border-top-color: rgb(51, 51, 51); border-bottom-color: rgb(51, 51, 51); flex-direction: row;">
+                                <ui:VisualElement style="flex-grow: 1;">
+                                    <ui:Label text="Label" name="player-name-label-2"/>
+                                </ui:VisualElement>
+                                <ui:VisualElement style="flex-grow: 1;">
+                                    <ui:Label text="Label"/>
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                            <ui:VisualElement name="player_3_label" style="border-top-width: 1px; border-right-width: 0; border-bottom-width: 1px; border-left-width: 0; border-left-color: rgb(51, 51, 51); border-right-color: rgb(51, 51, 51); border-top-color: rgb(51, 51, 51); border-bottom-color: rgb(51, 51, 51); flex-direction: row;">
+                                <ui:VisualElement style="flex-grow: 1;">
+                                    <ui:Label text="Label" name="player-name-label-3"/>
+                                </ui:VisualElement>
+                                <ui:VisualElement style="flex-grow: 1;">
+                                    <ui:Label text="Label"/>
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                            <ui:VisualElement name="player_4_label" style="border-top-width: 1px; border-right-width: 0; border-bottom-width: 1px; border-left-width: 0; border-left-color: rgb(51, 51, 51); border-right-color: rgb(51, 51, 51); border-top-color: rgb(51, 51, 51); border-bottom-color: rgb(51, 51, 51); flex-direction: row;">
+                                <ui:VisualElement style="flex-grow: 1;">
+                                    <ui:Label text="Label" name="player-name-label-4"/>
+                                </ui:VisualElement>
+                                <ui:VisualElement style="flex-grow: 1;">
+                                    <ui:Label text="Label"/>
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                            <ui:VisualElement name="player_5_label" style="border-top-width: 1px; border-right-width: 0; border-bottom-width: 1px; border-left-width: 0; border-left-color: rgb(51, 51, 51); border-right-color: rgb(51, 51, 51); border-top-color: rgb(51, 51, 51); border-bottom-color: rgb(51, 51, 51); flex-direction: row;">
+                                <ui:VisualElement style="flex-grow: 1;">
+                                    <ui:Label text="Label" name="player-name-label-5"/>
+                                </ui:VisualElement>
+                                <ui:VisualElement style="flex-grow: 1;">
+                                    <ui:Label text="Label"/>
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                            <ui:VisualElement name="player_6_label" style="border-top-width: 1px; border-right-width: 0; border-bottom-width: 1px; border-left-width: 0; border-left-color: rgb(51, 51, 51); border-right-color: rgb(51, 51, 51); border-top-color: rgb(51, 51, 51); border-bottom-color: rgb(51, 51, 51); flex-direction: row;">
+                                <ui:VisualElement style="flex-grow: 1;">
+                                    <ui:Label text="Label" name="player-name-label-6"/>
+                                </ui:VisualElement>
+                                <ui:VisualElement style="flex-grow: 1;">
+                                    <ui:Label text="Label"/>
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                            <ui:VisualElement name="player_7_label" style="border-top-width: 1px; border-right-width: 0; border-bottom-width: 1px; border-left-width: 0; border-left-color: rgb(51, 51, 51); border-right-color: rgb(51, 51, 51); border-top-color: rgb(51, 51, 51); border-bottom-color: rgb(51, 51, 51); flex-direction: row;">
+                                <ui:VisualElement style="flex-grow: 1;">
+                                    <ui:Label text="Label" name="player-name-label-7"/>
+                                </ui:VisualElement>
+                                <ui:VisualElement style="flex-grow: 1;">
+                                    <ui:Label text="Label"/>
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                            <ui:VisualElement name="player_8_label" style="border-top-width: 1px; border-right-width: 0; border-bottom-width: 2px; border-left-width: 0; border-left-color: rgb(51, 51, 51); border-right-color: rgb(51, 51, 51); border-top-color: rgb(51, 51, 51); border-bottom-color: rgb(51, 51, 51); flex-direction: row;">
+                                <ui:VisualElement style="flex-grow: 1;">
+                                    <ui:Label text="Label" name="player-name-label-8"/>
+                                </ui:VisualElement>
+                                <ui:VisualElement style="flex-grow: 1;">
+                                    <ui:Label text="Label"/>
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                        <ui:VisualElement style="height: 20%; width: 100%; justify-content: center;">
+                            <ui:VisualElement style="width: 100%; flex-direction: row; align-items: center; justify-content: flex-start; height: 100%;">
+                                <ui:VisualElement style="width: 40%;">
+                                    <ui:VisualElement style="flex-grow: 1; align-items: center;">
+                                        <ui:Button text="Iniciar Escaramuza" name="sp-menu-start-button" style="width: 80%;"/>
+                                    </ui:VisualElement>
+                                </ui:VisualElement>
+                                <ui:VisualElement style="flex-grow: 1; justify-content: flex-start; width: 60%;">
+                                    <ui:Label text="Selecciona una escaramuza para iniciar." name="sp-status-label"/>
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement name="RightBody" style="width: 50%; height: auto; align-items: center; justify-content: space-around;">
+                <ui:VisualElement style="width: 90%; height: 90%; align-items: center; justify-content: center; border-top-width: 2px; border-right-width: 2px; border-bottom-width: 2px; border-left-width: 2px; border-left-color: rgb(0, 0, 0); border-right-color: rgb(0, 0, 0); border-top-color: rgb(0, 0, 0); border-bottom-color: rgb(0, 0, 0);">
+                    <ui:VisualElement style="width: 95%; height: 90%;">
+                        <ui:VisualElement style="flex-grow: 1; width: 100%; height: 50%; justify-content: flex-end; align-items: stretch; align-self: auto; border-top-width: 2px; border-right-width: 2px; border-bottom-width: 2px; border-left-width: 2px; border-left-color: rgb(0, 0, 0); border-right-color: rgb(0, 0, 0); border-top-color: rgb(0, 0, 0); border-bottom-color: rgb(0, 0, 0);">
+                            <ui:VisualElement style="flex-grow: 1; height: 20%; border-bottom-width: 2px; border-left-color: rgb(0, 0, 0); border-right-color: rgb(0, 0, 0); border-top-color: rgb(0, 0, 0); border-bottom-color: rgb(0, 0, 0);">
+                                <ui:Label text="Configuracion de Escaramuza" style="font-size: 20px;"/>
+                            </ui:VisualElement>
+                            <ui:VisualElement style="flex-grow: 1; height: 80%;"/>
+                        </ui:VisualElement>
+                        <ui:VisualElement style="flex-grow: 1; flex-direction: row; height: 20px; width: 100%;">
+                            <ui:Label text="Escaramuza seleccionada:" name="sp-selected-map-title-label"/>
+                            <ui:Label text="Ninguna" name="sp-selected-map-label"/>
+                        </ui:VisualElement>
+                        <ui:VisualElement name="VisualElement" style="flex-grow: 1; height: 30%; align-items: stretch; justify-content: flex-start; flex-direction: row; width: 100%; align-self: auto;">
+                            <ui:VisualElement name="" style="flex-grow: 1; border-top-width: 0; border-right-width: 0; border-bottom-width: 0; border-left-width: 0; border-left-color: rgb(0, 0, 0); border-right-color: rgb(0, 0, 0); border-top-color: rgb(0, 0, 0); border-bottom-color: rgb(0, 0, 0); width: 100%;">
+                                <ui:Foldout text="Selecciona una Escaramuza" name="sp-map-browser-panel" style="border-bottom-width: 2px; border-left-color: rgb(0, 0, 0); border-right-color: rgb(0, 0, 0); border-top-color: rgb(0, 0, 0); border-bottom-color: rgb(0, 0, 0); width: 100%; height: 100%; border-top-width: 2px; border-right-width: 2px; border-left-width: 2px;"/>
+                            </ui:VisualElement>
+                            <ui:VisualElement style="flex-grow: 1; width: 100%; align-items: center;">
+                                <ui:VisualElement style="flex-grow: 1; justify-content: center; width: 80%;">
+                                    <ui:Button text="Seleccionar Escaramuza" name="sp-select-skirmish-button"/>
+                                </ui:VisualElement>
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

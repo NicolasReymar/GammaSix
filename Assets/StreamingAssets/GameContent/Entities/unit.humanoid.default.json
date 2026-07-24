@@ -1,0 +1,19 @@
+{
+  "id": "unit.humanoid.default",
+  "name": "Soldado",
+  "kind": "unit",
+  "maxHealth": 100,
+  "moveSpeed": 4.0,
+  "solid": true,
+  "visual": "capsule",
+  "scale": { "x": 0.8, "y": 1.0, "z": 0.8 },
+  "attributes": [
+    "entity",
+    "entity.unit",
+    "unit.humanoid",
+    "movement.ground",
+    "interaction.selectable",
+    "interaction.controllable",
+    "physics.solid"
+  ]
+}
