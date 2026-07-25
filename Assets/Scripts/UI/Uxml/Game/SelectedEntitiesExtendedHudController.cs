@@ -89,7 +89,7 @@ public sealed class SelectedEntitiesExtendedHudController : MonoBehaviour
     private void Refresh(bool force)
     {
         NetworkUnitSystem system = NetworkUnitSystem.Instance;
-        IReadOnlyList<SelectionInspectionGroup> groups = system?.GetSelectionInspectionGroups()
+        IReadOnlyList<SelectionInspectionGroup> groups = system?.GetExtendedSelectionInspectionGroups()
             ?? Array.Empty<SelectionInspectionGroup>();
         int inspectedIndex = system?.InspectedSelectionGroupIndex ?? 0;
 

@@ -32,6 +32,7 @@ public sealed class DraggableHudPanel
         root.RegisterCallback<GeometryChangedEvent>(OnRootGeometryChanged);
         panel.RegisterCallback<GeometryChangedEvent>(OnPanelGeometryChanged);
         HudLayoutState.EditingUnlockedChanged += SetEditingUnlocked;
+        HudPointerGuard.Register(panel);
 
         UpdateEditingVisualState();
     }
@@ -46,6 +47,7 @@ public sealed class DraggableHudPanel
         root.UnregisterCallback<GeometryChangedEvent>(OnRootGeometryChanged);
         panel.UnregisterCallback<GeometryChangedEvent>(OnPanelGeometryChanged);
         HudLayoutState.EditingUnlockedChanged -= SetEditingUnlocked;
+        HudPointerGuard.Unregister(panel);
     }
 
     public void SetEditingUnlocked(bool unlocked)

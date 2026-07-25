@@ -49,6 +49,7 @@ public class NetworkUnitSystem : MonoBehaviour
     private Vector2 dragCurrent;
     private float lastClickTime = -10f;
     private int lastClickedUnitId = -1;
+    private bool selectionPointerStartedOverHud;
 
     private void Awake()
     {
@@ -392,13 +393,36 @@ public class NetworkUnitSystem : MonoBehaviour
 
         if (LeftPressedThisFrame())
         {
+            selectionPointerStartedOverHud = HudPointerGuard.IsPointerOverHud(mousePosition);
+            if (selectionPointerStartedOverHud)
+            {
+                CancelPendingSelectionDrag();
+                return;
+            }
+
             dragStart = mousePosition;
             dragCurrent = mousePosition;
             draggingSelection = false;
         }
 
+        if (selectionPointerStartedOverHud)
+        {
+            if (LeftReleasedThisFrame())
+                selectionPointerStartedOverHud = false;
+            return;
+        }
+
         if (LeftIsPressed())
         {
+            // Si el cursor entra sobre un panel durante el gesto, se cancela la
+            // selección para no dibujar el rectángulo verde detrás del HUD.
+            if (HudPointerGuard.IsPointerOverHud(mousePosition))
+            {
+                CancelPendingSelectionDrag();
+                selectionPointerStartedOverHud = true;
+                return;
+            }
+
             dragCurrent = mousePosition;
             if (!draggingSelection && Vector2.Distance(dragStart, dragCurrent) >= DragThreshold)
                 draggingSelection = true;
@@ -414,6 +438,7 @@ public class NetworkUnitSystem : MonoBehaviour
             CompleteClickSelection(mousePosition, shift);
 
         draggingSelection = false;
+        selectionPointerStartedOverHud = false;
     }
 
     private void CompleteClickSelection(Vector2 mousePosition, bool shift)
@@ -421,19 +446,41 @@ public class NetworkUnitSystem : MonoBehaviour
         NetworkUnitView clicked = GetSelectableEntityUnderCursor(mousePosition);
         if (clicked == null)
         {
-            if (!shift && !KeepLockedTargetSelected())
-                ClearSelection();
+            if (!shift)
+            {
+                // Mientras la cámara sigue bloqueada sobre una unidad, un clic
+                // sobre terreno o una entidad no seleccionable limpia cualquier
+                // selección adicional y conserva únicamente la unidad controlada.
+                if (GetLockedTargetForSelection() != null)
+                    ClearSelectionExceptLockedTarget();
+                else
+                    ClearSelection();
+            }
             return;
         }
+
+        bool clickedOwnedByLocalPlayer = IsOwnedByLocalPlayer(clicked);
+
+        // Una entidad ajena (enemiga, neutral o aliada de otro jugador) es siempre
+        // una selección individual. Si ya está seleccionada, Shift no puede añadir
+        // ninguna otra entidad al conjunto.
+        if (shift && HasNonOwnedSelection())
+            return;
+
+        // Una selección múltiple propia no puede mezclarse ni reemplazarse con
+        // entidades neutrales, enemigas o pertenecientes a otro jugador aliado.
+        if (HasLocalOwnedSelectionGroup() && !clickedOwnedByLocalPlayer)
+            return;
+
+        // Shift solo extiende una selección propia con otras entidades propias.
+        if (shift && !clickedOwnedByLocalPlayer)
+            return;
 
         bool isDoubleClick = clicked.UnitId == lastClickedUnitId && Time.unscaledTime - lastClickTime <= DoubleClickWindow;
         lastClickedUnitId = clicked.UnitId;
         lastClickTime = Time.unscaledTime;
 
-        // El doble clic grupal solo puede seleccionar unidades propias.
-        // Las entidades enemigas o neutrales siguen siendo inspeccionables,
-        // pero nunca arrastran a otras entidades de su equipo a la selección.
-        if (isDoubleClick && IsOwnedByLocalPlayer(clicked))
+        if (isDoubleClick && clickedOwnedByLocalPlayer)
         {
             SelectSameTypeVisible(clicked, shift);
             return;
@@ -649,6 +696,32 @@ public class NetworkUnitSystem : MonoBehaviour
         return screen.z > 0f && screen.x >= 0f && screen.x <= 1f && screen.y >= 0f && screen.y <= 1f;
     }
 
+    private bool HasLocalOwnedSelectionGroup()
+    {
+        return selectedUnits.Count(IsOwnedByLocalPlayer) > 1;
+    }
+
+    private bool HasNonOwnedSelection()
+    {
+        return selectedUnits.Any(view => view != null && !IsOwnedByLocalPlayer(view));
+    }
+
+    private void ClearSelectionExceptLockedTarget()
+    {
+        NetworkUnitView locked = GetLockedTargetForSelection();
+        foreach (NetworkUnitView view in selectedUnits.ToList())
+        {
+            if (view == null || view == locked)
+                continue;
+            RemoveSelection(view);
+        }
+
+        if (locked != null && !selectedUnits.Contains(locked))
+            AddSelection(locked);
+
+        NormalizeInspectedSelectionGroupIndex();
+    }
+
     private void SetExclusiveSelection(NetworkUnitView view)
     {
         NetworkUnitView locked = GetLockedTargetForSelection();
@@ -714,6 +787,46 @@ public class NetworkUnitSystem : MonoBehaviour
 
         foreach (IGrouping<string, NetworkUnitView> group in selectedUnits
                      .Where(view => view != null && !view.HasAttribute(EntityAttributeIds.Heroic))
+                     .GroupBy(view => string.IsNullOrWhiteSpace(view.EntityDefinitionId)
+                         ? view.UnitTypeId
+                         : view.EntityDefinitionId)
+                     .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase))
+        {
+            List<NetworkUnitView> members = group.OrderBy(view => view.UnitId).ToList();
+            NetworkUnitView representative = members
+                .OrderByDescending(view => view.Health)
+                .ThenByDescending(view => view.MaxHealth)
+                .ThenBy(view => view.UnitId)
+                .First();
+            groups.Add(new SelectionInspectionGroup(
+                $"group:{group.Key}", representative.UnitName, false, members, representative));
+        }
+
+        return groups;
+    }
+
+    public IReadOnlyList<SelectionInspectionGroup> GetExtendedSelectionInspectionGroups()
+    {
+        List<NetworkUnitView> originalSelection = selectedUnits.ToList();
+        List<NetworkUnitView> localSelection = originalSelection
+            .Where(IsOwnedByLocalPlayer)
+            .ToList();
+
+        if (localSelection.Count == 0)
+            return Array.Empty<SelectionInspectionGroup>();
+
+        List<SelectionInspectionGroup> groups = new();
+        foreach (NetworkUnitView heroic in localSelection
+                     .Where(view => view.HasAttribute(EntityAttributeIds.Heroic))
+                     .OrderBy(view => view.UnitId))
+        {
+            groups.Add(new SelectionInspectionGroup(
+                $"heroic:{heroic.UnitId}", heroic.UnitName, true,
+                new List<NetworkUnitView> { heroic }, heroic));
+        }
+
+        foreach (IGrouping<string, NetworkUnitView> group in localSelection
+                     .Where(view => !view.HasAttribute(EntityAttributeIds.Heroic))
                      .GroupBy(view => string.IsNullOrWhiteSpace(view.EntityDefinitionId)
                          ? view.UnitTypeId
                          : view.EntityDefinitionId)

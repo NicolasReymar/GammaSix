@@ -20,8 +20,8 @@ ox no se ve el circulo verde bajo las unidades
 - alt mas alguna tecla, se escucha sonido de windows
 - agregar funcionalidad para mantener unidades seleccionadas utilizando ctrl + 1,  ctrl + 2 y ctrl + 3
 
-- al cargar el escenario o campana y esta trae configuraciones con overrides, se deben mantener los botones utilizables en la pantalla de configuracion de escaramuza para el host. el host debe poder clickear los botones de configuracion que el mapa trae como override.
-	- en base a esto corregir equipos fijos que aparece en el ui del lobby y dejarlo desbloqueado aunque se traiga con override en true.
+o al cargar el escenario o campana y esta trae configuraciones con overrides, se deben mantener los botones utilizables en la pantalla de configuracion de escaramuza para el host. el host debe poder clickear los botones de configuracion que el mapa trae como override.
+	o en base a esto corregir equipos fijos que aparece en el ui del lobby y dejarlo desbloqueado aunque se traiga con override en true.
 o las entidades de otro equipo se deben poder seleccionar, pero estas solo deben responder al jugador propietario.
 	o al clickear a una unidad de otro equipo, se debe poder marcar pero en vez de un halo verde, saldra un halo amarillo.
 	o esto se hara para poder visualizar las estadisticas de esas entidades en una vision que se hara de ui mas tarde (wip aun no se hace el tema de la ui de partida.)
@@ -30,24 +30,18 @@ o entidades diferentes al equipo propio no se deben poder seleccionar todas con 
 o cuadro de estadisticas del lado izquierdo de la ui del juego esta en el lado superior izquiero, debe quedar abajo.
 	o se deben separar los cuadros uxml de oro y de entidades seleccionadas, separar archivos y la funcionalidad si la modularizacion queda mejor.
 		o agregar funcionalidad para que al mantener apretado control + click en un UI del juego, este pueda arrastrarse. esto para que se pueda modificar el como se ve el ui a gusto del jugador.
-			- si el objeto ui que esta arrastrando pasa alguno de los bordes, se debe mostrar la mitad del objeto ui que esta arrastrando el jugador en la pantalla. esto se hace para que no se pierdan los objetos ui si se arrastran mucho.
-			
-	
+			o si el objeto ui que esta arrastrando pasa alguno de los bordes, se debe mostrar la mitad del objeto ui que esta arrastrando el jugador en la pantalla. esto se hace para que no se pierdan los objetos ui si se arrastran mucho.
 
-	o- generar los ui utilizados en uxml, para poder modificarlos manualmente
-		- 
+
 - se ve cuadrado verde cuando se arrastran los UI
  - correjir haciendo que al clickear un objeto y este es UI no suceda esto.
 
 - cuando se tiene un grupo de entidades seleccionado, no se deben poder seleccionar entidades de otro jugador o neutrales.
 	- cuando se agrupa un grupo de entidades del equipo del jugador entonces ya no se puede seleccionar una entidades enemiga, neutral o aliada (de otro jugador) para agrupar a la seleccion.
-	- esto se debe corregir restringiendo el shift click izquiero en entidades diferentes a las del player cuando ya se tiene agrupada una seleccion, o corrige segun corresponda
+	x las entidades neutrales, aliadas (del equipo de otro jugador) o enemigas no se deben mostrar en el hud de entidades seleccionadas agrupadas.
+		o tampoco se deben poder seleccionar con shift + click izquierdo si el jugador ya posee un grupo de entidades seleccionadas.
+			xo esto se debe corregir restringiendo el shift click izquiero en entidades diferentes a las del player cuando ya se tiene agrupada una seleccion, o corrige segun corresponda
 
-
-
-
-- configuracion de modo de camara bloqueada en RTS
-	- se debe modificar el modo para que cuando el jugador
 
 
 
@@ -361,7 +355,17 @@ o se debe hacer un sistema para clickear las entidades del mapa.
 		o shift arrastre selecciona o deselecciona el grupo de unidades
 	o al presionar doble click sobre una unidad, se deben seleccionar las unidades del mismo tipo 
 o si se esta con la camara desbloqueada, entonces al presionar el boton del medio del mouse (normalmente click en la rueda de mouse) se "pegara" el mouse en la posicion y se movera la camara arrastrandose por el mapa, debe tener arrastre smooth y que siga moviendose un poco si el jugador la suelta rapido.
-	
+
+o correcciones modo camara rts
+	o las entidades neutrales, aliadas (del equipo de otro jugador) o enemigas no se deben mostrar en el hud de entidades seleccionadas agrupadas.
+	o cuando se selecciona una unidad enemiga, una unidad neutral o unidad aliada (del equipo de otro jugador) y luego se hace shift click para seleccionar entidades, se pueden agrupar en la seleccion entidades.
+		o este caso esta malo ya que cuando se selecciona una unidad que no sea propia ( enemiga, una unidad neutral o unidad aliada (del equipo de otro jugador) ) slamente se debe poder seleccionar esa unidad y no agrupar las unidades.
+
+o correciones para modo 3rd persona bloqueado
+	o al seleccionar otra entidad que no sea una entidad seleccionable, se debe deseleccionar todo excepto la entidad controlada
+o correciones para modo 3rd persona bloqueado
+	o  cuando cuando se selecciona una entidad que no sea propia y luego se presiona tab, se puede ver 
+
 
 
 

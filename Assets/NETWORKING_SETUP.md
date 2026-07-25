@@ -349,3 +349,13 @@ Controles:
 - Doble pulsación de `Alt`: alternar cursor bloqueado/desbloqueado sin salir de tercera persona.
 
 La entidad controlada permanece seleccionada en ambos estados.
+
+## Corrección: interacción HUD y selección propia homogénea
+
+- Los paneles HUD registran su geometría en `HudPointerGuard`.
+- Un clic o arrastre iniciado sobre un panel no inicia selección RTS ni dibuja el rectángulo verde.
+- Si el cursor entra en un panel durante un arrastre de selección, el gesto se cancela.
+- Una selección múltiple de entidades propias no puede mezclarse ni reemplazarse con entidades neutrales, enemigas o pertenecientes a otro jugador.
+- `Shift + clic` sobre una entidad ajena se ignora cuando existe una selección múltiple propia.
+- `SelectedEntitiesExtendedHud` muestra solamente entidades propiedad del cliente local.
+- Las entidades ajenas todavía pueden seleccionarse individualmente para inspección cuando no existe una selección múltiple propia.
