@@ -52,7 +52,7 @@ public class AuraBuildingTrigger : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        NetworkUnitView view = other.GetComponentInParent<NetworkUnitView>();
+        NetworkEntityView view = other.GetComponentInParent<NetworkEntityView>();
         if (view == null || !view.HasAttribute(EntityAttributeIds.Humanoid))
             return;
         humanoidsInside++;
@@ -62,7 +62,7 @@ public class AuraBuildingTrigger : MonoBehaviour
 
     private void OnTriggerExit(Collider other)
     {
-        NetworkUnitView view = other.GetComponentInParent<NetworkUnitView>();
+        NetworkEntityView view = other.GetComponentInParent<NetworkEntityView>();
         if (view == null || !view.HasAttribute(EntityAttributeIds.Humanoid))
             return;
         humanoidsInside = Mathf.Max(0, humanoidsInside - 1);

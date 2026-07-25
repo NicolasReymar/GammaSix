@@ -24,7 +24,7 @@ public class GameSceneController : MonoBehaviour
 
         GameManager.Instance?.SetState(GameState.Playing);
         LoadMatch(MatchManager.Instance.CurrentMatchConfig);
-        EnsureNetworkUnitSystem();
+        EnsureNetworkEntityCoordinator();
         EnsureGameHud();
     }
 
@@ -37,16 +37,16 @@ public class GameSceneController : MonoBehaviour
         hudObject.AddComponent<GameHudController>();
     }
 
-    private void EnsureNetworkUnitSystem()
+    private void EnsureNetworkEntityCoordinator()
     {
         bool networkMatchActive = NetworkSessionManager.Instance != null &&
                                   NetworkSessionManager.Instance.IsConnectedClient;
 
-        if (!networkMatchActive || NetworkUnitSystem.Instance != null)
+        if (!networkMatchActive || NetworkEntityCoordinator.Instance != null)
             return;
 
-        GameObject unitSystemObject = new("Network Unit System");
-        unitSystemObject.AddComponent<NetworkUnitSystem>();
+        GameObject unitSystemObject = new("Network Entity Coordinator");
+        unitSystemObject.AddComponent<NetworkEntityCoordinator>();
     }
 
     private void LoadMatch(MatchConfig matchConfig)

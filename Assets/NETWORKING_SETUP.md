@@ -79,18 +79,18 @@ En esta etapa las unidades son representaciones locales sincronizadas mediante s
 
 Los mapas se leen como archivos `.json` desde:
 
-`Application.persistentDataPath/Maps`
+`Application.persistentDataPath/GameContent/Scenarios`
 
 En Windows normalmente corresponde a:
 
-`C:\Users\<usuario>\AppData\LocalLow\<CompanyName>\<ProductName>\Maps`
+`C:\Users\<usuario>\AppData\LocalLow\<CompanyName>\<ProductName>\GameContent\Scenarios`
 
-La ruta exacta se imprime en la consola con el prefijo `[MapRepository]` al abrir la selección de mapas.
+La ruta exacta se imprime en la consola con el prefijo `[GameContentRepository]`.
 
 
 ## Lobby: equipos, colores y jugadores listos
 
-- La sesión admite un máximo de 4 jugadores.
+- La sesión admite hasta 8 jugadores, limitada además por `maxPlayers` del escenario seleccionado.
 - El host recibe Equipo 1; los siguientes jugadores reciben Equipos 2, 3 y 4.
 - Cada jugador recibe un color único de la paleta: rojo, azul, amarillo, verde, morado, naranja, café, celeste y rosa.
 - Los jugadores pueden cambiar su propio color cuando `Colores fijos` está desactivado.
@@ -204,8 +204,7 @@ Las entidades del escenario pueden declarar atributos:
     "unit.soldier",
     "movement.ground",
     "interaction.selectable",
-    "interaction.controllable",
-    "camera.driver"
+    "interaction.controllable"
   ]
 }
 ```
@@ -216,15 +215,14 @@ El código del sistema está separado en:
 Scripts/Game/Entities/Attributes/
 ```
 
-`EntityAttributeCatalog` agrega los atributos básicos de `soldado` y combina los atributos adicionales declarados en el escenario. La selección exige `interaction.selectable` y el movimiento autoritativo exige `interaction.controllable`.
+`EntityAttributeResolver` combina los atributos de la definición con los atributos adicionales declarados en la instancia del escenario y aplica dependencias. La selección exige `interaction.selectable` y el movimiento autoritativo exige `interaction.controllable`.
 
-## Atributos Hero y cámara en tercera persona
+## Atributo heroic y cámara en tercera persona
 
-- `unit.hero`: identifica una unidad heroica.
+- `unit.heroic`: asciende un humanoide a entidad heroica.
 - `camera.third-person`: autoriza el bloqueo de cámara y el control en tercera persona con `Alt + R`.
-- Todo tipo `heroe`, `héroe` o `hero` recibe ambos atributos automáticamente.
-- Una entidad no heroica puede habilitar tercera persona declarando explícitamente `camera.third-person`.
-- `camera.driver` se conserva únicamente por compatibilidad y ya no autoriza el cambio de vista.
+- `EntityAttributeResolver` deriva automáticamente `camera.third-person` cuando encuentra `unit.heroic`.
+- No existe compatibilidad con `unit.hero`, tipos `hero` ni `camera.driver`.
 
 ## Lobby y configuraciones
 
@@ -293,7 +291,7 @@ El HUD de partida está separado en dos módulos independientes:
 - `GameGoldHudController` + `GoldHud.uxml` + `GoldHud.uss`
 - `SelectedEntityHudController` + `SelectedEntityHud.uxml` + `SelectedEntityHud.uss`
 
-Mantén Control y arrastra con clic izquierdo sobre cualquiera de los paneles para reposicionarlo. La posición se guarda mediante `PlayerPrefs`. El sistema limita la posición para mantener al menos la mitad del panel visible dentro de la pantalla.
+Cuando el modo de edición del HUD está desbloqueado, arrastra cualquier panel con clic izquierdo. La posición se guarda mediante `PlayerPrefs` y el sistema mantiene al menos la mitad del panel visible dentro de la pantalla.
 
 ## HUD runtime: PanelSettings y edición
 
@@ -352,10 +350,14 @@ La entidad controlada permanece seleccionada en ambos estados.
 
 ## Corrección: interacción HUD y selección propia homogénea
 
-- Los paneles HUD registran su geometría en `HudPointerGuard`.
+- Los paneles HUD registran su geometría en `HudInteractionService`.
 - Un clic o arrastre iniciado sobre un panel no inicia selección RTS ni dibuja el rectángulo verde.
 - Si el cursor entra en un panel durante un arrastre de selección, el gesto se cancela.
 - Una selección múltiple de entidades propias no puede mezclarse ni reemplazarse con entidades neutrales, enemigas o pertenecientes a otro jugador.
 - `Shift + clic` sobre una entidad ajena se ignora cuando existe una selección múltiple propia.
 - `SelectedEntitiesExtendedHud` muestra solamente entidades propiedad del cliente local.
 - Las entidades ajenas todavía pueden seleccionarse individualmente para inspección cuando no existe una selección múltiple propia.
+
+## Refacción estructural – fase 1
+
+La coordinación de entidades fue dividida en servicios de input, selección, spawn, movimiento, vistas y DTO de red. El coordinador principal ahora se llama `NetworkEntityCoordinator`. Consulta `ARCHITECTURE_REFACTOR.md` para ver responsabilidades y dependencias.
