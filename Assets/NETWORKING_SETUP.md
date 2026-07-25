@@ -308,3 +308,44 @@ GameHudController.Instance.SetHudEditingUnlocked(false); // paneles bloqueados
 ```
 
 `GameHudController` inicia con `hudEditingUnlocked = true` para facilitar las pruebas. Este booleano puede conectarse más adelante a un Toggle del menú de opciones.
+
+## Estado RTS de cámara y retorno desde tercera persona
+
+`RTSCameraController` mantiene el estado de la cámara RTS separado del modo de tercera persona.
+
+Valores iniciales configurables:
+- `initialRtsPosition`: posición de inicio RTS.
+- `initialRtsEulerAngles`: ángulo de inicio RTS.
+- `returnToRtsSmoothness`: velocidad de la transición de regreso.
+
+Al entrar en tercera persona se guarda el transform RTS actual. Al salir mediante Alt+R, se restaura suavemente la posición y rotación guardadas.
+
+## Retorno de tercera persona centrado en la entidad
+
+Al salir de tercera persona con `Alt + R`, la cámara conserva la altura y la
+rotación del último estado RTS, pero calcula una nueva posición para que el
+centro de la vista quede sobre la entidad que estaba siguiendo. De esta forma
+el jugador continúa observando la misma zona del mapa.
+
+## Selección extendida e inspección con Tab
+
+- Las entidades con `unit.heroic` se muestran individualmente.
+- Las demás entidades seleccionadas se agrupan por `EntityDefinitionId`.
+- El representante de cada grupo es la entidad con mayor vida actual.
+- `Tab` alterna el grupo cuyas estadísticas muestra el inspector.
+- El visor `SelectedEntitiesExtendedHud` admite hasta 30 grupos, distribuidos en 3 filas de 10.
+- Durante la cámara en tercera persona, la entidad controlada no puede deseleccionarse al hacer clic en el terreno o en otra entidad.
+
+## Modos de cursor en tercera persona
+
+La cámara fijada a una entidad posee dos estados internos:
+
+- **Tercera persona bloqueada**: cursor oculto y capturado. El movimiento del mouse controla la cámara y no se procesan selecciones RTS.
+- **Tercera persona desbloqueada**: cursor visible y libre. La cámara continúa siguiendo a la entidad controlada y el jugador puede seleccionar otras entidades. Mantener Alt permite orbitar temporalmente.
+
+Controles:
+
+- `Alt + R`: entrar o salir de tercera persona.
+- Doble pulsación de `Alt`: alternar cursor bloqueado/desbloqueado sin salir de tercera persona.
+
+La entidad controlada permanece seleccionada en ambos estados.

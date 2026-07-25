@@ -13,40 +13,43 @@ GammaSixProyect
 
 
 @bugs
+- modif agregar zoom con la rueda del mouse, que sea un zoom fijo desde la perspectiva inicial hasta un 20% pero que el zoom tenga un porcentage de curvatura hacia el horizonte del mapa y abajo, asi no se perdera tanta perspectiva.
 
 ox no se ve el circulo verde bajo las unidades 
 	-se ve pero falta agregarle visibilidad.
 - alt mas alguna tecla, se escucha sonido de windows
+- agregar funcionalidad para mantener unidades seleccionadas utilizando ctrl + 1,  ctrl + 2 y ctrl + 3
 
 - al cargar el escenario o campana y esta trae configuraciones con overrides, se deben mantener los botones utilizables en la pantalla de configuracion de escaramuza para el host. el host debe poder clickear los botones de configuracion que el mapa trae como override.
 	- en base a esto corregir equipos fijos que aparece en el ui del lobby y dejarlo desbloqueado aunque se traiga con override en true.
-- las unidades de otro equipo se deben poder seleccionar, pero estas solo deben responder al jugador propietario.
-	- al clickear a una unidad de otro equipo, se debe poder marcar pero en vez de un halo verde, saldra un halo amarillo.
-	- esto se hara para poder visualizar las estadisticas de esas unidades en una vision que se hara de ui mas tarde (wip aun no se hace el tema de la ui de partida.)
+o las entidades de otro equipo se deben poder seleccionar, pero estas solo deben responder al jugador propietario.
+	o al clickear a una unidad de otro equipo, se debe poder marcar pero en vez de un halo verde, saldra un halo amarillo.
+	o esto se hara para poder visualizar las estadisticas de esas entidades en una vision que se hara de ui mas tarde (wip aun no se hace el tema de la ui de partida.)
 
-- unidades diferentes al equipo propio no se deben poder seleccionar todas con un doble click.
+o entidades diferentes al equipo propio no se deben poder seleccionar todas con un doble click.
+o cuadro de estadisticas del lado izquierdo de la ui del juego esta en el lado superior izquiero, debe quedar abajo.
+	o se deben separar los cuadros uxml de oro y de entidades seleccionadas, separar archivos y la funcionalidad si la modularizacion queda mejor.
+		o agregar funcionalidad para que al mantener apretado control + click en un UI del juego, este pueda arrastrarse. esto para que se pueda modificar el como se ve el ui a gusto del jugador.
+			- si el objeto ui que esta arrastrando pasa alguno de los bordes, se debe mostrar la mitad del objeto ui que esta arrastrando el jugador en la pantalla. esto se hace para que no se pierdan los objetos ui si se arrastran mucho.
+			
+	
+
+	o- generar los ui utilizados en uxml, para poder modificarlos manualmente
+		- 
+- se ve cuadrado verde cuando se arrastran los UI
+ - correjir haciendo que al clickear un objeto y este es UI no suceda esto.
+
+- cuando se tiene un grupo de entidades seleccionado, no se deben poder seleccionar entidades de otro jugador o neutrales.
+	- cuando se agrupa un grupo de entidades del equipo del jugador entonces ya no se puede seleccionar una entidades enemiga, neutral o aliada (de otro jugador) para agrupar a la seleccion.
+	- esto se debe corregir restringiendo el shift click izquiero en entidades diferentes a las del player cuando ya se tiene agrupada una seleccion, o corrige segun corresponda
 
 
 
 
+- configuracion de modo de camara bloqueada en RTS
+	- se debe modificar el modo para que cuando el jugador
 
 
-
-
-
-
-
-
-
-
-
-- eliminar oro inicial de team setup.
-	- el oro de un equipo debe estar seteado en el mapa y si no, en su defecto sera 0.
-
-- crear el ui para cuando se este ene l juego.
-	- por el momento se necesita que en la parte inferior este un cuadro con los atributos de la unidad seleccionada
-	- en la parte superior que aparezca el oro inicial
-		- que en el mapa de la partida se haga oro inicial 500 
 
 
 
@@ -68,7 +71,7 @@ ox no se ve el circulo verde bajo las unidades
 
 @qa
 
-- el sistema de bloqueo de camara solo debe ser para personajes con atributo Heroico o atributo 3rd per camera.
+o el sistema de bloqueo de camara solo debe ser para personajes con atributo Heroico o atributo 3rd per camera.
 
 
 
@@ -169,48 +172,11 @@ Sistema de items y de contenedores
 @QA 
 
 
-xo el juego debe soportar 2 sistemas de control de personaje, el control de posicion con wasd y el control de posicion por click y click drag.
-	
-	- movimiento de la camara
-		- la camara podra moverse por situaciones controladas por el sistema (movimientos al presionar ciertas funciones y por pelicula de los escenarios) y por el control del jugador.
-			- cuando el jugador mueve la pantalla, puede moverla de 2 formas:
-				o camara desbloqueada en el mapa, se mueve con las flechas del teclado arrastrandose por el mapa 
-				- camara bloqueada en unidad designada por jugador, la camara se lockea en un personaje, el jugador puede presionar alt para mover la direccion de la camara, si el jugador presiona 2 veces alt, el movimiento de la camara queda libre con el mouse. esto se hace hasta que se vuelta a presionar alt 2 veces o que se desactive el modo camara en el personaje.
-				- movimiento de la camara cuando un jugador bloquea la camara en una unidad.
-					ox el jugador puede bloquear la camara cuando tiene a un heroe seleccionado (o la unidad tiene el atributo de camera_driver on, los heroes tienen este atributo activo por default )y mantiene presionado alt + R
-					x el zoom que hace hacia afuera al hacer alt +r para salir de la perspectiva 3ra persona no es el correcto, definir zoom inicial para volver a obtenerlo.
-					o- modif agregar zoom con la rueda del mouse, que sea un zoom fijo desde la perspectiva inicial hasta un 20% pero que el zoom tenga un porcentage de curvatura hacia el horizonte del mapa y abajo, asi no se perdera tanta perspectiva.
-				- cuando el jugador bloquea la camara en una unidad, la camara se debe posicionar arrastrandose smooth encima del personaje en un angulo que se vea en tercera persona.
-- el control de posicion con wasd tambien hara que se pueda mover la camara arrastrando el cursor
-- las unidades de otros jugadores o equipos no deben poder ser seleccionadas cuando el jugador arrastra el mouse y selecciona.
-- se debe hacer un sistema para clickear las entidades del mapa.
-	- si se clickea una unidad, debe aparecer un circulo verde abajo (debe ser un halo en forma de 'o' debe escalar en base al tamaño de la unidad.
-	- al apretar click izquierdo y arrastrar, se deben poder seleccionar las unidades que el cursor arrastro.
-		- el maximo de unidades seleccionadas por el momento sera de 50.
-		- crear un rectangulo cuadrado de borde fino para mostrar el arrastre de la zona donde se seleccionaran las unidades
-	- agregar funcionalidades de poder mantener shift y click izquierdo para descartar unidades seleccionadas y clickear arrastrando + mantener shift tambien debe descartar o seleccionar (el shift click debe hacer lo inverso a si esta la unidad deseleccionada o lo inverso a si esta seleccionada)
-		- shift click izqr deselecciona o selecciona segun inverso de la unidad seleccionada
-		- shift arrastre selecciona o deselecciona el grupo de unidades
-	- al presionar doble click sobre una unidad, se deben seleccionar las unidades del mismo tipo 
-	- agregar funcionalidad para mantener unidades seleccionadas utilizando ctrl + 1,  ctrl + 2 y ctrl + 3
-- si se esta con la camara desbloqueada, entonces al presionar el boton del medio del mouse (normalmente click en la rueda de mouse) se "pegara" el mouse en la posicion y se movera la camara arrastrandose por el mapa, debe tener arrastre smooth y que siga moviendose un poco si el jugador la suelta rapido.
-	
 
 
 
 
 
-
--se debe modificar el comportamiento del menu de host de multijugador para que pueda comportarse correctamente.
-	- al presionar ser anfitrion, se desplegara un menu de crear sesion local (cambiar a sesion multijugador.)
-		- en el menu estara el nombre de host, puerto y la carga del mapa. la carga de mapa se cambiara para esta pestana porque asi las configuraciones de la partida se pre ven ahi y no en la lobby.
-		- en el lobby multijugador se seguiran mostrando las configuraciones de partida para el host como sigue siendo.
-	- en el lobby multijugador escaramuza, eliminar el cuadro reglas del escenario ya que las reglas que se deben mostrar son las de configuracion. si el escenario las modifica entonces que el sistema cargue la configuracion en el siguiente menu de lobby de espera.
-	- en el lobby multijugador se mostraran las casillas maximas que deja la configuracion de la partida cargada para ser hosteada. por ejemplo si el maximo de jugadores es de 2 entonces se desplegaran 2 casillas. si faltan jugadores entonces que salga 'casilla vacia' 
-	- al cargar una partida con colores de equipo fijos, la regla de colores fijos quedara marcada y los colores de los equipos quedaran seteados en los equipos respectivos.
-- se debe poder cambiar el equipo del jugador como se puede cambiar de color.
-- cuando un jugador esta en listo, se debe bloquear el cambio de color de este. solo puede cambiar el color en ese caso el host pero eso deja al jugador al cual se le cambio el color como no listo nuevamente (incluido host).
-- en menu unirse a partida, no se debe poder cambiar nombre de jugador, casilla debe estar fix bloqueada
 
 
 
@@ -247,7 +213,7 @@ o Los equipos deben seleccionarse cuando se entra a la sesion.
 	o cuando se inicia la partida, el color seleccionado sera desplegado en el color de las unidades del jugador.
 o cuando se esta en el lobby de multijugador, se debe poder seleccionar el equipo al que pertenece el jugador y un color para las unidades del jugador (que se vea una paleta de los colores disponibles en el UI)
 
--hacer un sistema de carga. el sistema debe poder leer campañas o escenarios, segun sea.
+o hacer un sistema de carga. el sistema debe poder leer campañas o escenarios, segun sea.
 	o una campaña se puede componer de multiples escenarios, de videos entre escenarios u otra cosa que se implemente despues y que se pueda dejar en la seguidilla de procesos de una partida.
 	o un escenario se puede componerse de la partida guardada y de los eventos y triggers, tambien como misiones y demases
 
@@ -312,8 +278,90 @@ ocrear edificios.
 		
 o generar un mapa como el de 3v3 pero que tenga un edificio de mercenarios y un circulo de aura, que el edificio de mercenarios sea del equipo 1 y el aura sea neutral.
 	
+o no se puede ver unidad heroica cuando se carga el atributo en carga de mapa.
+o cuando se sale de modo 3ra persona, la camara no vuelve a su estado anterior.
+	o setear un estado de camara inicial, con una altura predefinida y un angulo predefinido.
+		o cuando se inicie el juego la camara estara en los valores predefinidos.
+		o el modo 3ra persona no se ve influenciado
+		o cuando se salga del modo 3ra persona, la camara debe tomar la posicion y angulo que tenia antes, para que se pueda ver correctamente el juego.
 
+o cuando se sale del modo 3ra persona, la camara debe setearse encima de la entidad desde la cual salio de 3ra persona.
+	o esto se hace para que no se pierda el lugar donde el jugador esta observando la situacion.
+	o que cuando se salga de la camara en 3ra persona, la camara se posicione en el lugar donde esta la entidad, pero que este encima en la zona de vista rts.
 
+o seleccion de entidades
+	o cuando se selecciona un grupo de entidades donde hay mas de un tipo de entidad, se debe poder cambiar entre las estadisticas de las diferentes entidades.
+		o se utilizara el tab para poder cambiar entre las entidades seleccionadas y ver las diferentes estadisticas.
+			o esto se hara para que cuando se seleccionan diferentes entidades (por ejemplo 2 heroes, 1 soldado y un edificio) se pueda circular entre todos los tipos de entidades seleccionadas.
+			o las entidades agrupadas que pertenezcan al mismo tipo estaran agrupadas y solamente se veran los atributos de la que tiene mayor vida.
+			o si en el grupo de entidades seleccionadas hay entidades con atributo heroico, entonces estas se veran individualmente al presionar tab
+
+o visualizador de entidades 
+	o se debe hacer un rectangulo horizontal uxml inferior, al lado derecho de las estadisticas e independiente, que mostrara las entidades agrupadas en la seleccion.
+	o se deben mostrar todas las entidades que se han seleccionado, priorizando al inicio a los heroes.
+	o por el momento solo crear un cuadrado negro por cada entidad, luego se hara un sprite que cargar o algo (eso es WIP)
+		o que los diferentes tipos de entidades agrupadas aparezcan en el mismo cuadro, pero con un numero de unidades basandose en la cantidad de estas.
+			o los heroes no se agrupan
+			o el rectangulo adentro tendra espacio para 30 grupos de entidades diferentes.
+				o la distribucion de los cuadrados para guardar las unidades sera de izquierda a derecha, ariiba a abajo, en 3 hileras de 10 cuadrados.
+				o los cuadrados no deben mostrarse en un principio. deben ser invisibles y se deben llenar dinamicamente con las unidades seleccionadas.
+				o el rectangulo de la seccion debe mostrarse para que se sepa donde esta
+				o que se llame de alguna forma entendible y agregale _extended o algo.
+					o este sera el modo extendido de este visor de unidades, en un futuro haremos un visor corto para mejorar experiencia ui (ignora lo del visor corto por ahora ya que eso es trabajo para futuro)
+	o las unidades mostradas en el rectangulo deben estar encerradas en un cuadrado amarillo, 3 pixeles.
+		o el cuadro sera mas grueso (8 px) para las entidades que esten seleccionadas y a la vez sus estadisticas esten siendo visualizadas en el inspector de atributos.
+		o el cuadrado amarillo no aparecera si todas las entidades seleccionadas son del mismo tipo 
+
+o cuando el jugador esta en 3ra persona, al clickear cualquier lugar hace que se deseleccione la entidad que esta controlado.
+	o se debe corregir ya que cuando se esta controlando a una entidad esta entidad debe estar seleccionada todo momento.
+	o si se tiene la camara bloqueada en el sistema RTS, el jugador podra usar el mouse y podra seleccionar otras entidades.
+		o la seleccion en tercera persona esta mal.
+			o	 tenemos 2 tipos de 3ra persona, la bloqueada (mouse fijo, invisible, sin poder de seleccion de otras entidades.) y desbloqueada(mouse visible en la pantalla, con el cual se puede seleccionar).
+				o	se debe corregir para que funcione segun lo descrito
+		o si el jugador esta en 3ra persona y selecciona otras unidades mas, entonces las otras entidades tambien estas unidades tambien se visualizaran en el rectangulo de abajo (si ya pasa por las reglas de arriba entonces todo ok)
+
+o eliminar oro inicial de team setup.
+	o el oro de un equipo debe estar seteado en el mapa y si no, en su defecto sera 0.
+
+o crear el ui para cuando se este ene l juego.
+	o por el momento se necesita que en la parte inferior este un cuadro con los atributos de la unidad seleccionada
+	o en la parte superior que aparezca el oro inicial
+		o que en el mapa de la partida se haga oro inicial 500 
+
+o se debe modificar el comportamiento del menu de host de multijugador para que pueda comportarse correctamente.
+	o al presionar ser anfitrion, se desplegara un menu de crear sesion local (cambiar a sesion multijugador.)
+		o en el menu estara el nombre de host, puerto y la carga del mapa. la carga de mapa se cambiara para esta pestana porque asi las configuraciones de la partida se pre ven ahi y no en la lobby.
+		o en el lobby multijugador se seguiran mostrando las configuraciones de partida para el host como sigue siendo.
+	o en el lobby multijugador escaramuza, eliminar el cuadro reglas del escenario ya que las reglas que se deben mostrar son las de configuracion. si el escenario las modifica entonces que el sistema cargue la configuracion en el siguiente menu de lobby de espera.
+	o en el lobby multijugador se mostraran las casillas maximas que deja la configuracion de la partida cargada para ser hosteada. por ejemplo si el maximo de jugadores es de 2 entonces se desplegaran 2 casillas. si faltan jugadores entonces que salga 'casilla vacia' 
+	o al cargar una partida con colores de equipo fijos, la regla de colores fijos quedara marcada y los colores de los equipos quedaran seteados en los equipos respectivos.
+o se debe poder cambiar el equipo del jugador como se puede cambiar de color.
+o cuando un jugador esta en listo, se debe bloquear el cambio de color de este. solo puede cambiar el color en ese caso el host pero eso deja al jugador al cual se le cambio el color como no listo nuevamente (incluido host).
+o en menu unirse a partida, no se debe poder cambiar nombre de jugador, casilla debe estar fix bloqueada
+o el juego debe soportar 2 sistemas de control de personaje, el control de posicion con wasd y el control de posicion por click y click drag.
+	
+	o movimiento de la camara
+		o la camara podra moverse por situaciones controladas por el sistema (movimientos al presionar ciertas funciones y por pelicula de los escenarios) y por el control del jugador.
+			o cuando el jugador mueve la pantalla, puede moverla de 2 formas:
+				o camara desbloqueada en el mapa, se mueve con las flechas del teclado arrastrandose por el mapa 
+				o camara bloqueada en unidad designada por jugador, la camara se lockea en un personaje, el jugador puede presionar alt para mover la direccion de la camara, si el jugador presiona 2 veces alt, el movimiento de la camara queda libre con el mouse. esto se hace hasta que se vuelta a presionar alt 2 veces o que se desactive el modo camara en el personaje.
+				o movimiento de la camara cuando un jugador bloquea la camara en una unidad.
+					o el jugador puede bloquear la camara cuando tiene a un heroe seleccionado (o la unidad tiene el atributo de camera_driver on, los heroes tienen este atributo activo por default )y mantiene presionado alt + R
+					o el zoom que hace hacia afuera al hacer alt +r para salir de la perspectiva 3ra persona no es el correcto, definir zoom inicial para volver a obtenerlo.
+				o cuando el jugador bloquea la camara en una unidad, la camara se debe posicionar arrastrandose smooth encima del personaje en un angulo que se vea en tercera persona.
+o el control de posicion con wasd tambien hara que se pueda mover la camara arrastrando el cursor
+o las unidades de otros jugadores o equipos no deben poder ser seleccionadas cuando el jugador arrastra el mouse y selecciona.
+o se debe hacer un sistema para clickear las entidades del mapa.
+	o si se clickea una unidad, debe aparecer un circulo verde abajo (debe ser un halo en forma de 'o' debe escalar en base al tamaño de la unidad.
+	o al apretar click izquierdo y arrastrar, se deben poder seleccionar las unidades que el cursor arrastro.
+		o el maximo de unidades seleccionadas por el momento sera de 50.
+		o crear un rectangulo cuadrado de borde fino para mostrar el arrastre de la zona donde se seleccionaran las unidades
+	o agregar funcionalidades de poder mantener shift y click izquierdo para descartar unidades seleccionadas y clickear arrastrando + mantener shift tambien debe descartar o seleccionar (el shift click debe hacer lo inverso a si esta la unidad deseleccionada o lo inverso a si esta seleccionada)
+		o shift click izqr deselecciona o selecciona segun inverso de la unidad seleccionada
+		o shift arrastre selecciona o deselecciona el grupo de unidades
+	o al presionar doble click sobre una unidad, se deben seleccionar las unidades del mismo tipo 
+o si se esta con la camara desbloqueada, entonces al presionar el boton del medio del mouse (normalmente click en la rueda de mouse) se "pegara" el mouse en la posicion y se movera la camara arrastrandose por el mapa, debe tener arrastre smooth y que siga moviendose un poco si el jugador la suelta rapido.
+	
 
 
 

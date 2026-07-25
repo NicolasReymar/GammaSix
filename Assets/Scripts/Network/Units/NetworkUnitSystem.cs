@@ -28,7 +28,10 @@ public class NetworkUnitSystem : MonoBehaviour
     private readonly Dictionary<int, UnitRuntimeState> serverUnits = new();
     private readonly Dictionary<int, NetworkUnitView> unitViews = new();
     private readonly List<NetworkUnitView> selectedUnits = new();
-    public NetworkUnitView PrimarySelectedEntity => selectedUnits.FirstOrDefault();
+    private int inspectedSelectionGroupIndex;
+    public IReadOnlyList<NetworkUnitView> SelectedEntities => selectedUnits;
+    public NetworkUnitView PrimarySelectedEntity => GetInspectedSelectionGroup()?.Representative;
+    public int InspectedSelectionGroupIndex => inspectedSelectionGroupIndex;
     private readonly Dictionary<int, List<int>> controlGroups = new();
 
     private NetworkManager Manager => NetworkRuntimeBootstrap.Instance != null
@@ -121,12 +124,6 @@ public class NetworkUnitSystem : MonoBehaviour
 
     private void PreparePrototypeScene()
     {
-        if (gameplayCamera != null)
-        {
-            gameplayCamera.transform.position = new Vector3(0f, 16f, -14f);
-            gameplayCamera.transform.rotation = Quaternion.Euler(48f, 0f, 0f);
-        }
-
         if (GameObject.Find("RTS Prototype Ground") == null)
         {
             GameObject ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
@@ -219,7 +216,9 @@ public class NetworkUnitSystem : MonoBehaviour
                 : GetSpawnPosition(runtimeId - 1, scenario.entities.Length);
             spawnPosition.y = GetEntityGroundY(definition, spawnPosition.y);
 
-            EntityAttributeSet attributes = EntityAttributeCatalog.Create(definition.attributes);
+            EntityAttributeSet attributes = EntityAttributeCatalog.Create(
+                definition.attributes,
+                placement.attributes);
             UnitRuntimeState entity = new()
             {
                 UnitId = runtimeId,
@@ -361,8 +360,16 @@ public class NetworkUnitSystem : MonoBehaviour
             return;
 
         HandleControlGroups();
+        HandleSelectionInspectionCycle();
         HandleCameraLockShortcut();
-        HandleSelectionInput();
+
+        // En tercera persona bloqueada, el cursor está capturado y no puede
+        // seleccionar entidades. Al desbloquear el cursor con doble Alt, la
+        // cámara sigue fijada a la unidad pero la selección RTS vuelve a estar activa.
+        if (cameraController == null || cameraController.CanSelectWithPointer)
+            HandleSelectionInput();
+        else
+            CancelPendingSelectionDrag();
 
         // Alt + R es la única transición entre control RTS y control directo.
         // Cámara libre: órdenes por clic. Cámara fijada: movimiento WASD de la unidad conductora.
@@ -370,6 +377,13 @@ public class NetworkUnitSystem : MonoBehaviour
             HandleDirectMovement();
         else
             HandleClickMovement();
+    }
+
+    private void CancelPendingSelectionDrag()
+    {
+        draggingSelection = false;
+        dragStart = Vector2.zero;
+        dragCurrent = Vector2.zero;
     }
 
     private void HandleSelectionInput()
@@ -407,7 +421,7 @@ public class NetworkUnitSystem : MonoBehaviour
         NetworkUnitView clicked = GetSelectableEntityUnderCursor(mousePosition);
         if (clicked == null)
         {
-            if (!shift)
+            if (!shift && !KeepLockedTargetSelected())
                 ClearSelection();
             return;
         }
@@ -442,7 +456,12 @@ public class NetworkUnitSystem : MonoBehaviour
             .ToList();
 
         if (!shift)
+        {
+            NetworkUnitView locked = GetLockedTargetForSelection();
             ClearSelection();
+            if (locked != null)
+                AddSelection(locked);
+        }
 
         foreach (NetworkUnitView view in inside)
         {
@@ -632,14 +651,22 @@ public class NetworkUnitSystem : MonoBehaviour
 
     private void SetExclusiveSelection(NetworkUnitView view)
     {
+        NetworkUnitView locked = GetLockedTargetForSelection();
         ClearSelection();
+        if (locked != null && locked != view)
+            AddSelection(locked);
         AddSelection(view);
     }
 
     private void ToggleSelection(NetworkUnitView view)
     {
         if (selectedUnits.Contains(view))
+        {
+            // La entidad controlada en tercera persona debe permanecer seleccionada.
+            if (view == GetLockedTargetForSelection())
+                return;
             RemoveSelection(view);
+        }
         else
             AddSelection(view);
     }
@@ -650,6 +677,7 @@ public class NetworkUnitSystem : MonoBehaviour
             return;
         selectedUnits.Add(view);
         view.SetSelected(true);
+        NormalizeInspectedSelectionGroupIndex();
     }
 
     private void RemoveSelection(NetworkUnitView view)
@@ -657,6 +685,7 @@ public class NetworkUnitSystem : MonoBehaviour
         if (view == null || !selectedUnits.Remove(view))
             return;
         view.SetSelected(false);
+        NormalizeInspectedSelectionGroupIndex();
     }
 
     private void ClearSelection()
@@ -667,6 +696,95 @@ public class NetworkUnitSystem : MonoBehaviour
                 view.SetSelected(false);
         }
         selectedUnits.Clear();
+        inspectedSelectionGroupIndex = 0;
+    }
+
+    public IReadOnlyList<SelectionInspectionGroup> GetSelectionInspectionGroups()
+    {
+        List<SelectionInspectionGroup> groups = new();
+
+        foreach (NetworkUnitView heroic in selectedUnits
+                     .Where(view => view != null && view.HasAttribute(EntityAttributeIds.Heroic))
+                     .OrderBy(view => view.UnitId))
+        {
+            groups.Add(new SelectionInspectionGroup(
+                $"heroic:{heroic.UnitId}", heroic.UnitName, true,
+                new List<NetworkUnitView> { heroic }, heroic));
+        }
+
+        foreach (IGrouping<string, NetworkUnitView> group in selectedUnits
+                     .Where(view => view != null && !view.HasAttribute(EntityAttributeIds.Heroic))
+                     .GroupBy(view => string.IsNullOrWhiteSpace(view.EntityDefinitionId)
+                         ? view.UnitTypeId
+                         : view.EntityDefinitionId)
+                     .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase))
+        {
+            List<NetworkUnitView> members = group.OrderBy(view => view.UnitId).ToList();
+            NetworkUnitView representative = members
+                .OrderByDescending(view => view.Health)
+                .ThenByDescending(view => view.MaxHealth)
+                .ThenBy(view => view.UnitId)
+                .First();
+            groups.Add(new SelectionInspectionGroup(
+                $"group:{group.Key}", representative.UnitName, false, members, representative));
+        }
+
+        return groups;
+    }
+
+    public SelectionInspectionGroup GetInspectedSelectionGroup()
+    {
+        IReadOnlyList<SelectionInspectionGroup> groups = GetSelectionInspectionGroups();
+        if (groups.Count == 0)
+            return null;
+        inspectedSelectionGroupIndex = Mathf.Clamp(inspectedSelectionGroupIndex, 0, groups.Count - 1);
+        return groups[inspectedSelectionGroupIndex];
+    }
+
+    public void SetInspectedSelectionGroup(int index)
+    {
+        IReadOnlyList<SelectionInspectionGroup> groups = GetSelectionInspectionGroups();
+        if (groups.Count == 0)
+        {
+            inspectedSelectionGroupIndex = 0;
+            return;
+        }
+        inspectedSelectionGroupIndex = Mathf.Clamp(index, 0, groups.Count - 1);
+    }
+
+    private void HandleSelectionInspectionCycle()
+    {
+        if (!TabPressedThisFrame())
+            return;
+
+        IReadOnlyList<SelectionInspectionGroup> groups = GetSelectionInspectionGroups();
+        if (groups.Count <= 1)
+            return;
+
+        inspectedSelectionGroupIndex = (inspectedSelectionGroupIndex + 1) % groups.Count;
+    }
+
+    private void NormalizeInspectedSelectionGroupIndex()
+    {
+        int count = GetSelectionInspectionGroups().Count;
+        inspectedSelectionGroupIndex = count == 0 ? 0 : Mathf.Clamp(inspectedSelectionGroupIndex, 0, count - 1);
+    }
+
+    private bool KeepLockedTargetSelected()
+    {
+        NetworkUnitView locked = GetLockedTargetForSelection();
+        if (locked == null)
+            return false;
+        if (!selectedUnits.Contains(locked))
+            AddSelection(locked);
+        return true;
+    }
+
+    private NetworkUnitView GetLockedTargetForSelection()
+    {
+        return cameraController != null && cameraController.IsLocked
+            ? cameraController.LockedTarget
+            : null;
     }
 
     private bool TryGetGroundPoint(Vector2 mousePosition, out Vector3 point)
@@ -1001,6 +1119,15 @@ public class NetworkUnitSystem : MonoBehaviour
 #endif
     }
 
+    private static bool TabPressedThisFrame()
+    {
+#if ENABLE_INPUT_SYSTEM
+        return Keyboard.current != null && Keyboard.current.tabKey.wasPressedThisFrame;
+#else
+        return Input.GetKeyDown(KeyCode.Tab);
+#endif
+    }
+
     private static bool NumberPressedThisFrame(int number)
     {
 #if ENABLE_INPUT_SYSTEM
@@ -1075,6 +1202,26 @@ public class NetworkUnitSystem : MonoBehaviour
         public int MaxHealth;
         public bool Solid;
         public string[] Attributes;
+    }
+}
+
+public sealed class SelectionInspectionGroup
+{
+    public string Key { get; }
+    public string DisplayName { get; }
+    public bool IsHeroic { get; }
+    public IReadOnlyList<NetworkUnitView> Members { get; }
+    public NetworkUnitView Representative { get; }
+    public int Count => Members?.Count ?? 0;
+
+    public SelectionInspectionGroup(string key, string displayName, bool isHeroic,
+        IReadOnlyList<NetworkUnitView> members, NetworkUnitView representative)
+    {
+        Key = key;
+        DisplayName = displayName;
+        IsHeroic = isHeroic;
+        Members = members;
+        Representative = representative;
     }
 }
 

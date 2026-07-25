@@ -77,6 +77,10 @@ public class ScenarioEntityDefinition
     // Se ignora para teamId 0.
     public int ownerTeamSlot = 1;
 
+    // Atributos adicionales aplicados únicamente a esta instancia.
+    // Se combinan con los atributos definidos por entityId.
+    public string[] attributes;
+
     public ScenarioVector3 position;
 }
 

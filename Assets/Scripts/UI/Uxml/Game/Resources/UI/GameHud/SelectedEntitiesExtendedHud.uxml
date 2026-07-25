@@ -1,0 +1,11 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="SelectedEntitiesExtendedHud.uss" />
+    <ui:VisualElement name="selected-entities-extended-root" class="selected-entities-extended-root" picking-mode="Ignore">
+        <ui:VisualElement name="selected-entities-extended-panel" class="selected-entities-extended-panel" picking-mode="Position">
+            <ui:Label text="Selección extendida" class="selected-entities-extended-title" />
+            <ui:Label text="Tab cambia la entidad o grupo inspeccionado." class="selected-entities-extended-help" />
+            <ui:VisualElement name="selected-entities-extended-grid" class="selected-entities-extended-grid" />
+            <ui:Label text="No hay entidades seleccionadas." name="selected-entities-extended-empty" class="selected-entities-extended-empty" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

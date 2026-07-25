@@ -4,13 +4,38 @@ using UnityEngine.InputSystem;
 #endif
 
 /// <summary>
-/// Cámara RTS local. No sincroniza su estado porque cada jugador controla su propia vista.
-/// Soporta desplazamiento libre, arrastre con rueda, inercia y seguimiento de una unidad.
+/// Cámara local del jugador. Mantiene un estado RTS independiente del modo
+/// de tercera persona. Al desbloquearse, conserva la altura y orientación RTS,
+/// pero centra la cámara sobre la entidad desde la que se salió.
 /// </summary>
 public sealed class RTSCameraController : MonoBehaviour
 {
+    [Header("Estado inicial RTS")]
+    [SerializeField] private Vector3 initialRtsPosition = new(0f, 16f, -14f);
+    [SerializeField] private Vector3 initialRtsEulerAngles = new(48f, 0f, 0f);
+
+    [Header("Transiciones")]
+    [SerializeField, Min(0.1f)] private float followSmoothness = 9f;
+    [SerializeField, Min(0.1f)] private float returnToRtsSmoothness = 8f;
+    [SerializeField, Min(0.001f)] private float returnPositionTolerance = 0.02f;
+    [SerializeField, Min(0.01f)] private float returnRotationTolerance = 0.15f;
+
     public bool IsLocked => lockedTarget != null;
+    public bool IsReturningToRts => returningToRts;
     public NetworkUnitView LockedTarget => lockedTarget;
+
+    /// <summary>
+    /// Verdadero cuando la cámara sigue a una entidad en tercera persona y el
+    /// cursor está capturado, oculto y dedicado al control de la cámara.
+    /// </summary>
+    public bool IsThirdPersonPointerLocked => lockedTarget != null && !thirdPersonPointerUnlocked;
+
+    /// <summary>
+    /// Indica si el cursor puede utilizarse para seleccionar entidades.
+    /// En tercera persona esto solo ocurre después de desbloquear el cursor
+    /// mediante una doble pulsación de Alt.
+    /// </summary>
+    public bool CanSelectWithPointer => lockedTarget == null || thirdPersonPointerUnlocked;
 
     private Camera controlledCamera;
     private NetworkUnitView lockedTarget;
@@ -22,8 +47,15 @@ public sealed class RTSCameraController : MonoBehaviour
     private float pitch = 38f;
     private float distance = 9f;
     private bool middleDragging;
-    private bool freeMouseOrbit;
+    private bool thirdPersonPointerUnlocked;
     private float lastAltPressTime = -10f;
+
+    // Último estado válido de la cámara RTS. Se captura antes de entrar en tercera persona.
+    private Vector3 savedRtsPosition;
+    private Quaternion savedRtsRotation;
+    private bool hasSavedRtsState;
+    private bool returningToRts;
+    private bool initialized;
 
     private const float FreeMoveSpeed = 18f;
     private const float KeyboardAcceleration = 8f;
@@ -31,7 +63,6 @@ public sealed class RTSCameraController : MonoBehaviour
     private const float DragSensitivity = 0.035f;
     private const float DragInertiaDamping = 4.5f;
     private const float OrbitSensitivity = 0.18f;
-    private const float FollowSmoothness = 9f;
     private const float DoubleAltWindow = 0.32f;
 
     public void Initialize(Camera cameraToControl)
@@ -40,14 +71,41 @@ public sealed class RTSCameraController : MonoBehaviour
         if (controlledCamera == null)
             return;
 
+        if (!initialized)
+        {
+            ApplyInitialRtsState();
+            initialized = true;
+        }
+
         Vector3 euler = controlledCamera.transform.rotation.eulerAngles;
         yaw = euler.y;
         pitch = 38f;
     }
 
+    /// <summary>
+    /// Aplica los valores iniciales configurables de la cámara RTS.
+    /// </summary>
+    public void ApplyInitialRtsState()
+    {
+        if (controlledCamera == null)
+            controlledCamera = Camera.main;
+        if (controlledCamera == null)
+            return;
+
+        controlledCamera.transform.SetPositionAndRotation(
+            initialRtsPosition,
+            Quaternion.Euler(initialRtsEulerAngles));
+
+        savedRtsPosition = initialRtsPosition;
+        savedRtsRotation = Quaternion.Euler(initialRtsEulerAngles);
+        hasSavedRtsState = true;
+        returningToRts = false;
+        ResetFreeMovement();
+    }
+
     public void ToggleLock(NetworkUnitView target)
     {
-        if (target == null)
+        if (target == null || controlledCamera == null)
             return;
 
         if (lockedTarget == target)
@@ -56,20 +114,99 @@ public sealed class RTSCameraController : MonoBehaviour
             return;
         }
 
+        // Si cambia directamente de objetivo, conserva el estado RTS capturado
+        // antes del primer bloqueo en vez de guardar una posición de tercera persona.
+        if (lockedTarget == null)
+            SaveCurrentRtsState();
+
+        returningToRts = false;
         lockedTarget = target;
-        SetLockedCursorState(true);
-        yaw = controlledCamera != null ? controlledCamera.transform.rotation.eulerAngles.y : 0f;
+        thirdPersonPointerUnlocked = false;
+        ApplyThirdPersonCursorState();
+        yaw = controlledCamera.transform.rotation.eulerAngles.y;
         pitch = 32f;
         distance = Mathf.Max(6f, target.SelectionRadius * 5.5f);
-        freeMoveVelocity = Vector3.zero;
-        middleDragVelocity = Vector2.zero;
+        ResetFreeMovement();
     }
 
     public void Unlock()
     {
+        if (lockedTarget == null && !returningToRts)
+            return;
+
+        // Antes de soltar el objetivo, construye el nuevo estado RTS sobre la
+        // posición actual de la entidad. Se conserva la altura y rotación que
+        // tenía la cámara RTS antes de entrar en tercera persona.
+        if (lockedTarget != null)
+            PrepareRtsReturnAboveTarget(lockedTarget);
+
         lockedTarget = null;
-        freeMouseOrbit = false;
+        thirdPersonPointerUnlocked = false;
         SetLockedCursorState(false);
+        ResetFreeMovement();
+
+        if (hasSavedRtsState)
+            returningToRts = true;
+        else
+            ApplyInitialRtsState();
+    }
+
+    private void PrepareRtsReturnAboveTarget(NetworkUnitView target)
+    {
+        if (target == null || controlledCamera == null)
+            return;
+
+        Quaternion rtsRotation = hasSavedRtsState
+            ? savedRtsRotation
+            : Quaternion.Euler(initialRtsEulerAngles);
+
+        float rtsHeight = hasSavedRtsState
+            ? savedRtsPosition.y
+            : initialRtsPosition.y;
+
+        Vector3 groundFocus = target.transform.position;
+        Vector3 forward = rtsRotation * Vector3.forward;
+
+        // Calcula una posición cuya línea central de visión termine en la entidad
+        // manteniendo la altura RTS anterior. Si el ángulo fuera casi horizontal,
+        // utiliza un desplazamiento seguro basado en la posición inicial.
+        float verticalLook = -forward.y;
+        Vector3 targetCameraPosition;
+
+        if (verticalLook > 0.01f)
+        {
+            float distanceToFocus = Mathf.Max(1f, (rtsHeight - groundFocus.y) / verticalLook);
+            targetCameraPosition = groundFocus - forward * distanceToFocus;
+        }
+        else
+        {
+            Vector3 initialOffset = initialRtsPosition;
+            initialOffset.y = 0f;
+            targetCameraPosition = groundFocus + initialOffset;
+            targetCameraPosition.y = rtsHeight;
+        }
+
+        targetCameraPosition.x = Mathf.Clamp(targetCameraPosition.x, -45f, 45f);
+        targetCameraPosition.z = Mathf.Clamp(targetCameraPosition.z, -45f, 45f);
+        targetCameraPosition.y = Mathf.Clamp(rtsHeight, 6f, 30f);
+
+        savedRtsPosition = targetCameraPosition;
+        savedRtsRotation = rtsRotation;
+        hasSavedRtsState = true;
+    }
+
+    private void SaveCurrentRtsState()
+    {
+        savedRtsPosition = controlledCamera.transform.position;
+        savedRtsRotation = controlledCamera.transform.rotation;
+        hasSavedRtsState = true;
+    }
+
+    private void ResetFreeMovement()
+    {
+        freeMoveVelocity = Vector3.zero;
+        middleDragVelocity = Vector2.zero;
+        middleDragging = false;
     }
 
     private void OnDisable()
@@ -87,14 +224,13 @@ public sealed class RTSCameraController : MonoBehaviour
         }
 
         if (lockedTarget != null)
-            SetLockedCursorState(true);
+            ApplyThirdPersonCursorState();
     }
 
     private static void SetLockedCursorState(bool locked)
     {
         if (locked)
         {
-            // Locked mantiene el puntero fijo y entrega movimiento relativo del mouse.
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
@@ -103,6 +239,17 @@ public sealed class RTSCameraController : MonoBehaviour
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
         }
+    }
+
+    private void ApplyThirdPersonCursorState()
+    {
+        if (lockedTarget == null)
+        {
+            SetLockedCursorState(false);
+            return;
+        }
+
+        SetLockedCursorState(!thirdPersonPointerUnlocked);
     }
 
     private void LateUpdate()
@@ -115,9 +262,39 @@ public sealed class RTSCameraController : MonoBehaviour
         HandleAltDoublePress();
 
         if (lockedTarget != null)
+        {
             UpdateLockedCamera();
-        else
-            UpdateFreeCamera();
+            return;
+        }
+
+        if (returningToRts)
+        {
+            UpdateReturnToRts();
+            return;
+        }
+
+        UpdateFreeCamera();
+    }
+
+    private void UpdateReturnToRts()
+    {
+        float blend = 1f - Mathf.Exp(-returnToRtsSmoothness * Time.deltaTime);
+        Transform cameraTransform = controlledCamera.transform;
+
+        cameraTransform.position = Vector3.Lerp(cameraTransform.position, savedRtsPosition, blend);
+        cameraTransform.rotation = Quaternion.Slerp(cameraTransform.rotation, savedRtsRotation, blend);
+
+        bool positionReady = Vector3.Distance(cameraTransform.position, savedRtsPosition) <= returnPositionTolerance;
+        bool rotationReady = Quaternion.Angle(cameraTransform.rotation, savedRtsRotation) <= returnRotationTolerance;
+
+        if (!positionReady || !rotationReady)
+            return;
+
+        cameraTransform.SetPositionAndRotation(savedRtsPosition, savedRtsRotation);
+        returningToRts = false;
+
+        Vector3 euler = savedRtsRotation.eulerAngles;
+        yaw = euler.y;
     }
 
     private void UpdateFreeCamera()
@@ -152,7 +329,10 @@ public sealed class RTSCameraController : MonoBehaviour
         if (lockedTarget == null)
             return;
 
-        bool orbitHeld = IsAltHeld() || freeMouseOrbit;
+        // En el modo bloqueado el movimiento del mouse controla siempre la cámara.
+        // En el modo desbloqueado el cursor queda disponible para selección y la
+        // cámara solo orbita mientras Alt está presionado.
+        bool orbitHeld = IsThirdPersonPointerLocked || IsAltHeld();
         if (orbitHeld)
         {
             Vector2 delta = ReadMouseDelta();
@@ -167,17 +347,18 @@ public sealed class RTSCameraController : MonoBehaviour
         Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);
         Vector3 focus = lockedTarget.transform.position + Vector3.up * Mathf.Max(1.2f, lockedTarget.SelectionRadius * 1.4f);
         Vector3 desiredPosition = focus - rotation * Vector3.forward * distance;
+        float blend = 1f - Mathf.Exp(-followSmoothness * Time.deltaTime);
 
         controlledCamera.transform.position = Vector3.Lerp(
             controlledCamera.transform.position,
             desiredPosition,
-            1f - Mathf.Exp(-FollowSmoothness * Time.deltaTime));
+            blend);
 
         Quaternion desiredRotation = Quaternion.LookRotation(focus - controlledCamera.transform.position, Vector3.up);
         controlledCamera.transform.rotation = Quaternion.Slerp(
             controlledCamera.transform.rotation,
             desiredRotation,
-            1f - Mathf.Exp(-FollowSmoothness * Time.deltaTime));
+            blend);
     }
 
     private void HandleMiddleMouseDrag(Vector3 flatForward, Vector3 flatRight)
@@ -214,7 +395,10 @@ public sealed class RTSCameraController : MonoBehaviour
 
         float now = Time.unscaledTime;
         if (now - lastAltPressTime <= DoubleAltWindow)
-            freeMouseOrbit = !freeMouseOrbit;
+        {
+            thirdPersonPointerUnlocked = !thirdPersonPointerUnlocked;
+            ApplyThirdPersonCursorState();
+        }
         lastAltPressTime = now;
     }
 

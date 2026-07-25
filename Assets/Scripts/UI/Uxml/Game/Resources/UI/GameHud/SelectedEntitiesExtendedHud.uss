@@ -1,0 +1,133 @@
+.selected-entities-extended-root {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.selected-entities-extended-panel {
+    position: absolute;
+    left: 410px;
+    bottom: 20px;
+    width: 690px;
+    min-height: 236px;
+    padding-left: 14px;
+    padding-right: 14px;
+    padding-top: 12px;
+    padding-bottom: 14px;
+    background-color: rgba(10, 13, 12, 0.82);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgba(255, 255, 255, 0.55);
+    border-right-color: rgba(255, 255, 255, 0.55);
+    border-top-color: rgba(255, 255, 255, 0.55);
+    border-bottom-color: rgba(255, 255, 255, 0.55);
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+}
+
+.selected-entities-extended-title {
+    color: white;
+    font-size: 16px;
+    unity-font-style: bold;
+}
+
+.selected-entities-extended-help {
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 11px;
+    margin-top: 2px;
+    margin-bottom: 9px;
+}
+
+.selected-entities-extended-grid {
+    flex-direction: row;
+    flex-wrap: wrap;
+    width: 650px;
+    height: 174px;
+    align-content: flex-start;
+}
+
+.selected-entities-extended-slot {
+    position: relative;
+    width: 56px;
+    height: 50px;
+    margin-right: 8px;
+    margin-bottom: 8px;
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    background-color: rgb(8, 8, 8);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgba(255, 255, 255, 0.28);
+    border-right-color: rgba(255, 255, 255, 0.28);
+    border-top-color: rgba(255, 255, 255, 0.28);
+    border-bottom-color: rgba(255, 255, 255, 0.28);
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+    border-bottom-left-radius: 3px;
+    border-bottom-right-radius: 3px;
+}
+
+.selected-entities-extended-slot--multi {
+    border-left-width: 3px;
+    border-right-width: 3px;
+    border-top-width: 3px;
+    border-bottom-width: 3px;
+    border-left-color: rgb(255, 214, 20);
+    border-right-color: rgb(255, 214, 20);
+    border-top-color: rgb(255, 214, 20);
+    border-bottom-color: rgb(255, 214, 20);
+}
+
+.selected-entities-extended-slot--active {
+    border-left-width: 8px;
+    border-right-width: 8px;
+    border-top-width: 8px;
+    border-bottom-width: 8px;
+}
+
+.selected-entities-extended-slot--heroic {
+    background-color: rgb(18, 18, 18);
+}
+
+.selected-entities-extended-slot-name {
+    position: absolute;
+    left: 5px;
+    top: 3px;
+    color: white;
+    font-size: 14px;
+    unity-font-style: bold;
+}
+
+.selected-entities-extended-slot-count {
+    position: absolute;
+    right: 5px;
+    bottom: 3px;
+    color: white;
+    font-size: 13px;
+    unity-font-style: bold;
+}
+
+.selected-entities-extended-empty {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 13px;
+    margin-top: 12px;
+}
+
+.selected-entities-extended-panel.hud-panel-editing-unlocked {
+    border-left-color: rgb(255, 216, 74);
+    border-right-color: rgb(255, 216, 74);
+    border-top-color: rgb(255, 216, 74);
+    border-bottom-color: rgb(255, 216, 74);
+}
