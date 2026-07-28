@@ -207,7 +207,15 @@ public partial class MainMenuController
         row.style.paddingRight = 14;
         row.style.paddingTop = 10;
         row.style.paddingBottom = 10;
-        row.style.backgroundColor = player == null ? new Color(1f, 1f, 1f, 0.06f) : new Color(1f, 1f, 1f, 0.13f);
+        row.style.backgroundColor = player == null ? new Color(1f, 1f, 1f, 0.035f) : new Color(1f, 1f, 1f, 0.075f);
+        row.style.borderLeftWidth = 1;
+        row.style.borderRightWidth = 1;
+        row.style.borderTopWidth = 1;
+        row.style.borderBottomWidth = 1;
+        row.style.borderLeftColor = new Color(0.35f, 0.55f, 0.46f, 0.28f);
+        row.style.borderRightColor = new Color(0.35f, 0.55f, 0.46f, 0.28f);
+        row.style.borderTopColor = new Color(0.35f, 0.55f, 0.46f, 0.28f);
+        row.style.borderBottomColor = new Color(0.35f, 0.55f, 0.46f, 0.28f);
         row.style.borderTopLeftRadius = 10;
         row.style.borderTopRightRadius = 10;
         row.style.borderBottomLeftRadius = 10;
@@ -216,7 +224,7 @@ public partial class MainMenuController
         Label slotLabel = new($"Casilla {slotNumber}");
         slotLabel.style.width = 76;
         slotLabel.style.fontSize = 12;
-        slotLabel.style.color = new Color(0.12f, 0.18f, 0.16f, 0.65f);
+        slotLabel.style.color = new Color(0.62f, 0.75f, 0.69f, 1f);
         row.Add(slotLabel);
 
         if (player == null)
@@ -225,7 +233,7 @@ public partial class MainMenuController
             empty.style.flexGrow = 1;
             empty.style.fontSize = 16;
             empty.style.unityFontStyleAndWeight = FontStyle.Italic;
-            empty.style.color = new Color(0.12f, 0.18f, 0.16f, 0.55f);
+            empty.style.color = new Color(0.52f, 0.65f, 0.59f, 1f);
             row.Add(empty);
             return row;
         }
@@ -236,10 +244,11 @@ public partial class MainMenuController
         Label name = new(player.PlayerName + (player.ClientId == localClientId ? " (Tú)" : string.Empty));
         name.style.fontSize = 17;
         name.style.unityFontStyleAndWeight = FontStyle.Bold;
+        name.style.color = new Color(0.94f, 0.98f, 0.96f, 1f);
         identity.Add(name);
         Label ready = new(player.IsReady ? "LISTO" : "NO LISTO");
         ready.style.fontSize = 12;
-        ready.style.color = player.IsReady ? new Color(0.10f, 0.48f, 0.17f) : new Color(0.68f, 0.16f, 0.16f);
+        ready.style.color = player.IsReady ? new Color(0.32f, 0.90f, 0.55f) : new Color(1f, 0.43f, 0.43f);
         identity.Add(ready);
         row.Add(identity);
 
@@ -247,6 +256,7 @@ public partial class MainMenuController
         bool canHostEdit = session.IsHost;
 
         Button teamButton = new() { text = $"Equipo {player.TeamId}" };
+        teamButton.AddToClassList("gs-button");
         teamButton.style.width = 112;
         teamButton.style.height = 38;
         teamButton.style.marginRight = 8;
@@ -256,6 +266,7 @@ public partial class MainMenuController
         row.Add(teamButton);
 
         Button colorButton = new() { text = PlayerColorPalette.GetName(player.ColorId) };
+        colorButton.AddToClassList("gs-button");
         colorButton.style.width = 118;
         colorButton.style.height = 38;
         colorButton.style.backgroundColor = PlayerColorPalette.GetColor(player.ColorId);

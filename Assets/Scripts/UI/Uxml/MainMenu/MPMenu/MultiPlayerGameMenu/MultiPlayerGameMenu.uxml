@@ -1,61 +1,64 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
-    <ui:VisualElement name="main-menu-panel" style="flex-grow:1; background-color:rgb(39,97,83); padding-left:24px; padding-right:24px; padding-top:20px; padding-bottom:20px; align-items:center;">
-        <ui:VisualElement name="mp-shell" style="width:100%; max-width:1600px; flex-grow:1;">
-            <ui:VisualElement name="mp-header" style="flex-direction:row; justify-content:space-between; align-items:center; min-height:76px; margin-bottom:18px; flex-wrap:wrap;">
-                <ui:VisualElement style="flex-grow:1; min-width:320px; margin-right:16px;">
-                    <ui:Label text="Multijugador - Escaramuza" style="font-size:42px; unity-font-style:bold; color:rgb(18,31,27);" />
-                    <ui:Label name="mp-screen-subtitle" text="Configura la sesión antes de abrir el lobby." style="font-size:14px; color:rgba(15,25,22,0.78); margin-top:4px; white-space:normal;" />
+    <Style src="project://database/Assets/Scripts/UI/Uxml/MainMenu/Shared/MainMenuTheme.uss?fileID=7433441132597879392&amp;guid=9e28c42f3b8f4ec993d64783ddb4d799&amp;type=3#MainMenuTheme"/>
+    <ui:VisualElement name="main-menu-panel" class="gs-screen">
+        <ui:VisualElement class="gs-top-accent"/>
+        <ui:VisualElement name="mp-header" class="gs-header">
+            <ui:VisualElement class="gs-header-main">
+                <ui:Label text="MULTIJUGADOR" class="gs-eyebrow"/>
+                <ui:Label text="Escaramuza" class="gs-title"/>
+                <ui:Label text="Configura la sesión antes de abrir el lobby." name="mp-screen-subtitle" class="gs-subtitle"/>
+            </ui:VisualElement>
+            <ui:VisualElement class="gs-header-actions">
+                <ui:Button text="Volver" name="mp-menu-back-button" class="gs-button"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="mp-create-session-view" class="gs-content gs-two-column">
+            <ui:ScrollView name="mp-create-session-left" class="gs-card gs-column-main gs-scroll">
+                <ui:Label text="Crear sesión" class="gs-card-title"/>
+                <ui:VisualElement class="gs-divider"/>
+                <ui:TextField label="Nombre del anfitrión" name="mp-host-name-field" class="gs-field"/>
+                <ui:IntegerField label="Puerto" name="mp-host-port-field" class="gs-field"/>
+                <ui:VisualElement class="gs-setting-action-card">
+                    <ui:Label text="Antes de abrir la sala" class="gs-card-title-small"/>
+                    <ui:Label text="Selecciona y confirma el contenido en el panel derecho. El lobby heredará sus límites y reglas." class="gs-card-description"/>
                 </ui:VisualElement>
-                <ui:Button text="Retroceder" name="mp-menu-back-button" style="min-width:220px; height:46px; background-color:rgba(255,255,255,0.85); color:rgb(30,40,35); border-top-left-radius:8px; border-top-right-radius:8px; border-bottom-left-radius:8px; border-bottom-right-radius:8px;" />
+                <ui:VisualElement class="gs-spacer"/>
+                <ui:Button text="Abrir lobby como anfitrión" name="mp-host-button" class="gs-button gs-button-primary gs-button-large gs-button-wide"/>
+                <ui:Label text="Selecciona y confirma el contenido para crear la sesión." name="mp-network-status-label" class="gs-status"/>
+            </ui:ScrollView>
+            <ui:ScrollView name="mp-create-session-right" class="gs-card gs-column-side gs-scroll">
+                <ui:Label text="Contenido de la partida" class="gs-card-title"/>
+                <ui:VisualElement class="gs-divider"/>
+                <ui:Label text="Contenido confirmado" class="gs-section-title"/>
+                <ui:Label text="Ninguno" name="mp-selected-map-label" class="gs-selected-value"/>
+                <ui:Foldout text="Explorar contenido" name="mp-map-browser-panel" class="gs-foldout"/>
+                <ui:Button text="Confirmar contenido" name="mp-select-skirmish-button" class="gs-button gs-button-primary gs-button-wide"/>
+                <ui:VisualElement name="mp-host-preview-panel" class="gs-setting-action-card"/>
+            </ui:ScrollView>
+        </ui:VisualElement>
+        <ui:VisualElement name="mp-lobby-view" class="gs-content gs-two-column">
+            <ui:VisualElement name="mp-players-card" class="gs-card gs-column-main">
+                <ui:Label text="Jugadores y equipos" class="gs-card-title"/>
+                <ui:VisualElement class="gs-divider"/>
+                <ui:ScrollView name="mp-player-list" class="gs-scroll"/>
             </ui:VisualElement>
-
-            <ui:VisualElement name="mp-create-session-view" style="width:100%; max-width:1500px; align-self:center; flex-grow:1; flex-direction:row; flex-wrap:wrap;">
-                <ui:ScrollView name="mp-create-session-left" style="flex-grow:1; min-width:420px; margin-right:18px; margin-bottom:18px; background-color:rgba(255,255,255,0.16); border-top-left-radius:14px; border-top-right-radius:14px; border-bottom-left-radius:14px; border-bottom-right-radius:14px; padding-left:24px; padding-right:24px; padding-top:22px; padding-bottom:22px;">
-                    <ui:Label text="Crear sesión multijugador" style="font-size:28px; unity-font-style:bold; color:rgb(21,31,28); margin-bottom:6px;" />
-                    <ui:Label text="Define los datos de conexión que utilizará la sala multijugador." style="font-size:13px; white-space:normal; color:rgba(17,30,26,0.76); margin-bottom:18px;" />
-                    <ui:Label text="Nombre del host" />
-                    <ui:TextField name="mp-host-name-field" style="height:42px; margin-top:4px; margin-bottom:12px;" />
-                    <ui:Label text="Puerto" />
-                    <ui:IntegerField name="mp-host-port-field" style="height:42px; margin-top:4px; margin-bottom:16px;" />
-                    <ui:Button text="Crear sesión multijugador" name="mp-host-button" style="height:52px; margin-top:18px; font-size:18px; unity-font-style:bold;" />
-                    <ui:Label name="mp-network-status-label" text="Selecciona y confirma el contenido para crear la sesión." style="font-size:13px; white-space:normal; margin-top:12px;" />
-                </ui:ScrollView>
-
-                <ui:ScrollView name="mp-create-session-right" style="width:620px; min-width:420px; flex-shrink:0; margin-bottom:18px; background-color:rgba(255,255,255,0.16); border-top-left-radius:14px; border-top-right-radius:14px; border-bottom-left-radius:14px; border-bottom-right-radius:14px; padding-left:24px; padding-right:24px; padding-top:22px; padding-bottom:22px;">
-                    <ui:Label text="Contenido de la partida" style="font-size:28px; unity-font-style:bold; color:rgb(21,31,28); margin-bottom:6px;" />
-                    <ui:Label text="Selecciona un escenario o campaña y revisa su configuración antes de abrir la sala." style="font-size:13px; white-space:normal; color:rgba(17,30,26,0.76); margin-bottom:16px;" />
-                    <ui:Label name="mp-selected-map-label" text="Ninguno" style="font-size:14px; unity-font-style:bold; white-space:normal; margin-bottom:8px;" />
-                    <ui:Foldout text="Escenarios y campañas disponibles" name="mp-map-browser-panel" style="min-height:230px; background-color:rgba(255,255,255,0.08); border-top-left-radius:10px; border-top-right-radius:10px; border-bottom-left-radius:10px; border-bottom-right-radius:10px; padding-left:8px; padding-right:8px; padding-top:6px; padding-bottom:6px;" />
-                    <ui:Button text="Confirmar contenido" name="mp-select-skirmish-button" style="height:44px; margin-top:12px;" />
-                    <ui:VisualElement name="mp-host-preview-panel" style="display:none; margin-top:14px; padding-left:14px; padding-right:14px; padding-top:14px; padding-bottom:14px; background-color:rgba(0,0,0,0.13); border-top-left-radius:10px; border-top-right-radius:10px; border-bottom-left-radius:10px; border-bottom-right-radius:10px;" />
-                </ui:ScrollView>
-            </ui:VisualElement>
-
-            <ui:VisualElement name="mp-lobby-view" style="display:none; flex-grow:1; flex-direction:row; flex-wrap:wrap;">
-                <ui:VisualElement name="mp-players-card" style="flex-grow:1; min-width:520px; min-height:560px; margin-right:18px; margin-bottom:18px; background-color:rgba(255,255,255,0.16); border-top-left-radius:14px; border-top-right-radius:14px; border-bottom-left-radius:14px; border-bottom-right-radius:14px; padding-left:20px; padding-right:20px; padding-top:18px; padding-bottom:18px;">
-                    <ui:Label text="Jugadores y casillas" style="font-size:27px; unity-font-style:bold; color:rgb(21,31,28);" />
-                    <ui:Label text="Las casillas disponibles dependen de la configuración cargada por el host." style="font-size:13px; color:rgba(17,30,26,0.75); margin-top:3px; margin-bottom:12px; white-space:normal;" />
-                    <ui:ScrollView name="mp-player-list" style="flex-grow:1; min-height:320px; background-color:rgba(255,255,255,0.08); border-top-left-radius:10px; border-top-right-radius:10px; border-bottom-left-radius:10px; border-bottom-right-radius:10px; padding-left:12px; padding-right:12px; padding-top:12px; padding-bottom:12px;" />
-                    <ui:Button text="Marcar Listo" name="mp-ready-button" style="height:50px; margin-top:14px; unity-font-style:bold; font-size:16px;" />
+            <ui:ScrollView name="mp-settings-card" class="gs-card gs-card-accent gs-column-side gs-scroll">
+                <ui:Label text="Configuración de la sala" class="gs-card-title"/>
+                <ui:Label text="Contenido activo" class="gs-section-title"/>
+                <ui:Label text="Escenario: Ninguno" name="mp-lobby-content-label" class="gs-selected-value"/>
+                <ui:VisualElement class="gs-divider"/>
+                <ui:Toggle label="Colores fijos" name="mp-fixed-colors-toggle" class="gs-toggle"/>
+                <ui:Toggle label="Equipos fijos" name="mp-fixed-teams-toggle" class="gs-toggle"/>
+                <ui:VisualElement name="mp-content-overrides-panel" class="gs-setting-action-card"/>
+                <ui:VisualElement class="gs-divider"/>
+                <ui:VisualElement class="gs-profile-line">
+                    <ui:VisualElement name="mp-all-ready-light" style="width: 14px; height: 14px; margin-right: 10px; background-color: rgb(195, 45, 45); border-top-left-radius: 7px; border-top-right-radius: 7px; border-bottom-left-radius: 7px; border-bottom-right-radius: 7px;"/>
+                    <ui:Label text="Faltan jugadores por confirmar" name="mp-all-ready-label" class="gs-card-description"/>
                 </ui:VisualElement>
-
-                <ui:ScrollView name="mp-settings-card" style="width:460px; min-width:400px; flex-shrink:0; margin-bottom:18px; background-color:rgba(255,255,255,0.16); border-top-left-radius:14px; border-top-right-radius:14px; border-bottom-left-radius:14px; border-bottom-right-radius:14px; padding-left:20px; padding-right:20px; padding-top:18px; padding-bottom:18px;">
-                    <ui:Label text="Configuración de partida" style="font-size:24px; unity-font-style:bold; color:rgb(21,31,28); margin-bottom:10px;" />
-                    <ui:Label text="Contenido cargado" style="font-size:13px;" />
-                    <ui:Label name="mp-lobby-content-label" text="Ninguno" style="font-size:15px; unity-font-style:bold; white-space:normal; margin-top:4px; margin-bottom:12px;" />
-                    <ui:Toggle text="Colores fijos" name="mp-fixed-colors-toggle" style="height:34px; margin-bottom:8px;" />
-                    <ui:Toggle text="Equipos fijos" name="mp-fixed-teams-toggle" style="height:34px; margin-bottom:10px;" />
-                    <ui:VisualElement style="padding-top:14px; border-top-width:1px; border-top-color:rgba(0,0,0,0.10);">
-                        <ui:Label text="Estado de la sala" style="font-size:20px; unity-font-style:bold; margin-bottom:10px;" />
-                        <ui:VisualElement style="min-height:52px; flex-direction:row; align-items:center; padding-left:12px; padding-right:12px; padding-top:8px; padding-bottom:8px; background-color:rgba(255,255,255,0.10); border-top-left-radius:10px; border-top-right-radius:10px; border-bottom-left-radius:10px; border-bottom-right-radius:10px;">
-                            <ui:Button text="" name="mp-all-ready-light" picking-mode="Ignore" style="width:24px; height:24px; min-width:24px; border-top-left-radius:12px; border-top-right-radius:12px; border-bottom-left-radius:12px; border-bottom-right-radius:12px; background-color:rgb(190,25,25); margin-right:12px; padding-left:0; padding-right:0; padding-top:0; padding-bottom:0;" />
-                            <ui:Label text="Faltan jugadores por confirmar" name="mp-all-ready-label" style="font-size:15px; unity-font-style:bold; flex-grow:1; white-space:normal;" />
-                        </ui:VisualElement>
-                        <ui:Button text="Iniciar partida" name="mp-menu-start-button" style="height:52px; margin-top:12px; font-size:18px; unity-font-style:bold;" />
-                        <ui:Label name="mp-lobby-status-label" text="Esperando jugadores." style="margin-top:12px; font-size:13px; white-space:normal;" />
-                    </ui:VisualElement>
-                </ui:ScrollView>
-            </ui:VisualElement>
+                <ui:Button text="Marcar listo" name="mp-ready-button" class="gs-button gs-button-wide"/>
+                <ui:Button text="Iniciar partida" name="mp-menu-start-button" class="gs-button gs-button-primary gs-button-large gs-button-wide"/>
+                <ui:Label text="Esperando jugadores." name="mp-lobby-status-label" class="gs-status"/>
+            </ui:ScrollView>
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

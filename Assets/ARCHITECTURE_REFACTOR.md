@@ -161,3 +161,77 @@ MainMenuController.Settings.cs
 2. Convertir la cámara en una máquina de estados explícita.
 3. Crear un estado runtime de recursos de equipo con eventos para oro y futuros recursos.
 4. Agregar namespaces y archivos `.asmdef` cuando la estructura deje de cambiar con frecuencia.
+
+## Terreno y recursos
+
+La fase de terreno y recolección agrega módulos separados:
+
+```text
+Game/Terrain/Definitions
+Game/Terrain/Runtime
+Game/Entities/Resources
+```
+
+El terreno no es una entidad: se carga desde su propio catálogo y se combina en
+mallas de celdas. Los árboles y otros objetos de ambiente sí son entidades, por lo
+que reutilizan definición por ID, atributos, equipo neutral, snapshots y selección.
+La extracción es autoritativa y reutiliza `EntityMovementService` mediante el
+objetivo almacenado en `WorkerRuntimeState`.
+
+## Contextual entity interactions
+
+Contextual orders are resolved by `EntityInteractionRules` instead of checking
+specific unit definitions in the input controller.
+
+Current rules:
+
+- Any locally-owned entity with `interaction.controllable` may follow a unit or
+  building that is owned, allied, or neutral.
+- `unit.worker` only grants the specialized `ExtractResource` action when the
+  target has `entity.resource`.
+- Enemy targets currently resolve to no contextual action and are reserved for
+  the future combat system.
+- Each selected source resolves its action independently, allowing mixed
+  selections without coupling generic following to worker rules.
+
+Future actions such as attack, repair, trade, enter-building, heal, or escort
+should be added as new `ContextualEntityAction` values and resolved centrally.
+
+## Feedback de órdenes contextuales
+
+El feedback visual de una orden se centraliza en:
+
+```text
+Scripts/Game/Entities/Interaction/EntityCommandFeedbackService.cs
+```
+
+El servicio no decide reglas ni ejecuta gameplay. Solo confirma localmente el objetivo mediante el halo de `NetworkEntityView`. Cualquier acción contextual válida puede reutilizarlo sin implementar un parpadeo propio.
+
+## Colores de relación de entidades
+
+`EntityRelationshipVisuals` centraliza los colores usados por selección y feedback contextual:
+
+- Propia o aliada del mismo equipo: verde.
+- Neutral (team 0): amarillo.
+- Enemiga: rojo.
+
+El feedback no depende de la acción concreta, por lo que puede reutilizarse en seguir, extraer, atacar, reparar, curar o comerciar.
+
+
+## Overrides de atributos
+
+Los atributos que bloquean capacidades no se eliminan de la entidad. `EntityAttributeOverrideService` evalúa la configuración de la partida y permite ignorarlos temporalmente. El primer caso soportado es:
+
+```text
+interaction.not_selectable <-> override_not_selectable
+```
+
+Con `override_not_selectable: true`, las entidades conservan el atributo, pero pueden seleccionarse durante esa partida.
+
+## Separación entre interacción y física
+
+- `interaction.not_selectable` impide selección e interacción contextual.
+- `physics.not_solid` hace que la entidad no bloquee el movimiento.
+- El clic derecho sobre una entidad no seleccionable se transforma en movimiento al centro.
+- Solo puede atravesarse cuando la entidad también es efectivamente no sólida.
+- La colisión temporal por orden fue eliminada; la física depende únicamente de atributos y overrides.

@@ -1,0 +1,58 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/Scripts/UI/Uxml/Game/Resources/UI/GameHud/GamePauseMenu.uss?fileID=7433441132597879392&amp;guid=729dc21070ab4e818b2c985f0b7e2104&amp;type=3#GamePauseMenu"/>
+    <ui:VisualElement name="game-pause-root" picking-mode="Ignore" class="game-pause-root">
+        <ui:VisualElement name="game-pause-overlay" picking-mode="Position" class="game-pause-overlay">
+            <ui:VisualElement name="game-pause-main-page" class="game-menu-panel game-pause-main-page">
+                <ui:Label text="PARTIDA EN CURSO" class="game-menu-eyebrow"/>
+                <ui:Label text="Menú de partida" class="game-menu-title"/>
+                <ui:VisualElement class="game-menu-separator"/>
+                <ui:VisualElement class="game-menu-button-list">
+                    <ui:Button name="game-pause-return-button" text="Volver a la partida" class="game-menu-button game-menu-primary-button"/>
+                    <ui:Button name="game-pause-settings-button" text="Ajustes" class="game-menu-button"/>
+                    <ui:Button name="game-pause-future-button" text="Más opciones próximamente" class="game-menu-button game-menu-disabled-button"/>
+                    <ui:Button name="game-pause-exit-button" text="Salir de la partida" class="game-menu-button game-menu-danger-button"/>
+                </ui:VisualElement>
+                <ui:Label text="ESC para cerrar" class="game-menu-hint"/>
+            </ui:VisualElement>
+            <ui:VisualElement name="game-settings-page" class="game-menu-panel game-settings-page">
+                <ui:VisualElement class="game-settings-header">
+                    <ui:VisualElement class="game-settings-title-group">
+                        <ui:Label text="AJUSTES DE PARTIDA" class="game-menu-eyebrow"/>
+                        <ui:Label text="Ajustes" class="game-menu-title game-settings-title"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="game-settings-header-actions">
+                        <ui:Button name="game-settings-back-button" text="Volver" class="game-settings-header-button game-settings-back-button"/>
+                        <ui:Button name="game-settings-save-back-button" text="Guardar y volver" class="game-settings-header-button game-settings-save-back-button"/>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement class="game-menu-separator"/>
+                <ui:VisualElement class="game-settings-body">
+                    <ui:VisualElement class="game-settings-categories">
+                        <ui:Label text="CATEGORÍAS" class="game-menu-eyebrow"/>
+                        <ui:Button name="game-settings-video-button" text="Video" class="game-settings-category-button"/>
+                        <ui:Button name="game-settings-sound-button" text="Sonido" class="game-settings-category-button"/>
+                        <ui:Button name="game-settings-interface-button" text="Interfaz" class="game-settings-category-button"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="game-settings-content-shell">
+                        <ui:VisualElement name="game-settings-video-content" class="game-settings-content">
+                            <ui:Label text="Video" class="game-settings-content-title"/>
+                            <ui:Label text="Resolución, calidad gráfica y modo de pantalla se incorporarán aquí sin alterar la lógica actual." class="game-settings-empty-text"/>
+                            <ui:VisualElement class="game-settings-placeholder-card">
+                                <ui:Label text="Configuración pendiente" class="game-settings-placeholder-title"/>
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                        <ui:VisualElement name="game-settings-sound-content" class="game-settings-content">
+                            <ui:Label text="Sonido" class="game-settings-content-title"/>
+                            <ui:Label text="Volumen general, música, efectos, interfaz y voz se incorporarán en esta categoría." class="game-settings-empty-text"/>
+                            <ui:VisualElement class="game-settings-placeholder-card">
+                                <ui:Label text="Configuración pendiente" class="game-settings-placeholder-title"/>
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                        <ui:VisualElement name="game-settings-interface-content" class="game-settings-content"/>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:Label name="game-settings-global-status" text="" class="game-settings-global-status"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

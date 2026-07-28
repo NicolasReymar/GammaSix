@@ -1,0 +1,309 @@
+.game-pause-root {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.game-pause-overlay {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(2, 9, 7, 0.82);
+}
+
+.game-menu-panel {
+    color: rgb(238, 248, 243);
+    background-color: rgba(10, 27, 22, 0.99);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgb(66, 105, 89);
+    border-right-color: rgb(66, 105, 89);
+    border-top-color: rgb(66, 105, 89);
+    border-bottom-color: rgb(66, 105, 89);
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+    border-bottom-left-radius: 14px;
+    border-bottom-right-radius: 14px;
+    padding-left: 34px;
+    padding-right: 34px;
+    padding-top: 30px;
+    padding-bottom: 26px;
+}
+
+.game-pause-main-page {
+    width: 520px;
+    min-height: 570px;
+}
+
+.game-menu-eyebrow {
+    color: rgb(86, 220, 158);
+    font-size: 12px;
+    -unity-font-style: bold;
+    letter-spacing: 2px;
+    margin-bottom: 5px;
+}
+
+.game-menu-title {
+    color: rgb(247, 252, 249);
+    font-size: 34px;
+    -unity-font-style: bold;
+    margin-bottom: 8px;
+}
+
+.game-menu-description {
+    color: rgb(151, 181, 168);
+    font-size: 14px;
+    white-space: normal;
+}
+
+.game-menu-separator {
+    height: 1px;
+    margin-top: 20px;
+    margin-bottom: 22px;
+    background-color: rgba(134, 181, 160, 0.24);
+}
+
+.game-menu-button-list {
+    flex-grow: 1;
+    justify-content: center;
+}
+
+.game-menu-button {
+    height: 56px;
+    margin-top: 7px;
+    margin-bottom: 7px;
+    color: rgb(241, 249, 245);
+    font-size: 18px;
+    -unity-font-style: bold;
+    background-color: rgb(38, 66, 55);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgb(78, 116, 100);
+    border-right-color: rgb(78, 116, 100);
+    border-top-color: rgb(78, 116, 100);
+    border-bottom-color: rgb(78, 116, 100);
+    border-top-left-radius: 7px;
+    border-top-right-radius: 7px;
+    border-bottom-left-radius: 7px;
+    border-bottom-right-radius: 7px;
+}
+
+.game-menu-button:hover {
+    background-color: rgb(51, 86, 71);
+}
+
+.game-menu-primary-button {
+    background-color: rgb(35, 132, 91);
+    border-left-color: rgb(76, 202, 145);
+    border-right-color: rgb(76, 202, 145);
+    border-top-color: rgb(76, 202, 145);
+    border-bottom-color: rgb(76, 202, 145);
+}
+
+.game-menu-primary-button:hover {
+    background-color: rgb(43, 156, 107);
+}
+
+.game-menu-danger-button {
+    margin-top: 22px;
+    background-color: rgb(119, 50, 51);
+    border-left-color: rgb(174, 80, 81);
+    border-right-color: rgb(174, 80, 81);
+    border-top-color: rgb(174, 80, 81);
+    border-bottom-color: rgb(174, 80, 81);
+}
+
+.game-menu-danger-button:hover {
+    background-color: rgb(144, 58, 60);
+}
+
+.game-menu-disabled-button {
+    opacity: 0.42;
+}
+
+.game-menu-hint {
+    color: rgb(119, 150, 136);
+    font-size: 13px;
+    -unity-text-align: middle-center;
+    margin-top: 16px;
+}
+
+.game-settings-page {
+    width: 980px;
+    height: 690px;
+}
+
+.game-settings-header {
+    min-height: 64px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.game-settings-title-group {
+    flex-grow: 1;
+}
+
+.game-settings-title {
+    margin-bottom: 0;
+}
+
+.game-settings-header-actions {
+    flex-direction: row;
+    align-items: center;
+    margin-left: 20px;
+}
+
+.game-settings-header-button {
+    height: 42px;
+    min-width: 112px;
+    padding-left: 14px;
+    padding-right: 14px;
+    color: white;
+    font-size: 15px;
+    -unity-font-style: bold;
+    border-top-left-radius: 7px;
+    border-top-right-radius: 7px;
+    border-bottom-left-radius: 7px;
+    border-bottom-right-radius: 7px;
+}
+
+.game-settings-back-button {
+    margin-right: 10px;
+    background-color: rgb(38, 66, 55);
+}
+
+.game-settings-back-button:hover {
+    background-color: rgb(51, 86, 71);
+}
+
+.game-settings-save-back-button {
+    min-width: 174px;
+    background-color: rgb(35, 132, 91);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgb(76, 202, 145);
+    border-right-color: rgb(76, 202, 145);
+    border-top-color: rgb(76, 202, 145);
+    border-bottom-color: rgb(76, 202, 145);
+}
+
+.game-settings-save-back-button:hover {
+    background-color: rgb(43, 156, 107);
+}
+
+.game-settings-body {
+    flex-grow: 1;
+    flex-direction: row;
+    min-height: 0;
+}
+
+.game-settings-categories {
+    width: 220px;
+    min-width: 220px;
+    margin-right: 24px;
+    padding-right: 20px;
+    border-right-width: 1px;
+    border-right-color: rgba(134, 181, 160, 0.24);
+}
+
+.game-settings-category-button {
+    width: 100%;
+    height: 50px;
+    margin-bottom: 10px;
+    padding-left: 16px;
+    color: rgb(207, 228, 218);
+    font-size: 16px;
+    -unity-text-align: middle-left;
+    background-color: rgb(24, 52, 42);
+    border-left-width: 4px;
+    border-left-color: transparent;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+.game-settings-category-button:hover {
+    background-color: rgb(35, 73, 59);
+}
+
+.game-settings-category-selected {
+    color: white;
+    background-color: rgb(38, 91, 70);
+    border-left-color: rgb(79, 221, 153);
+}
+
+.game-settings-content-shell {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.game-settings-content {
+    flex-grow: 1;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+}
+
+.game-settings-content-title {
+    color: rgb(242, 250, 246);
+    font-size: 26px;
+    -unity-font-style: bold;
+    margin-bottom: 10px;
+}
+
+.game-settings-empty-text {
+    color: rgb(151, 181, 168);
+    font-size: 16px;
+    white-space: normal;
+}
+
+.game-settings-placeholder-card {
+    margin-top: 18px;
+    padding-left: 18px;
+    padding-right: 18px;
+    padding-top: 16px;
+    padding-bottom: 16px;
+    background-color: rgba(16, 43, 34, 0.86);
+    border-left-width: 3px;
+    border-left-color: rgb(66, 197, 139);
+    border-top-left-radius: 7px;
+    border-top-right-radius: 7px;
+    border-bottom-left-radius: 7px;
+    border-bottom-right-radius: 7px;
+}
+
+.game-settings-placeholder-title {
+    color: rgb(229, 243, 236);
+    font-size: 18px;
+    -unity-font-style: bold;
+    margin-bottom: 6px;
+}
+
+.game-settings-global-status {
+    min-height: 24px;
+    color: rgb(113, 222, 168);
+    font-size: 14px;
+    margin-top: 10px;
+}
+
+.game-settings-status-error {
+    color: rgb(255, 159, 159);
+}

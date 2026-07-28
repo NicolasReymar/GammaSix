@@ -1,0 +1,21 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="GameInterfaceSettings.uss" />
+    <ui:VisualElement name="game-interface-settings-root" class="game-interface-settings-root">
+        <ui:Label text="Interfaz" class="game-interface-settings-title" />
+        <ui:Label text="Guarda la distribución actual del HUD o restablece todos los paneles a sus posiciones predeterminadas." class="game-interface-settings-description" />
+
+        <ui:VisualElement class="game-interface-settings-card">
+            <ui:Label text="Guardar distribución actual" class="game-interface-settings-card-title" />
+            <ui:Label text="Registra las coordenadas de los paneles movibles para cargarlas al iniciar futuras partidas." class="game-interface-settings-card-description" />
+            <ui:Button name="save-ui-coordinates-button" text="Guardar posición del HUD" class="game-interface-settings-button game-interface-settings-save-button" />
+        </ui:VisualElement>
+
+        <ui:VisualElement class="game-interface-settings-card game-interface-settings-reset-card">
+            <ui:Label text="Restablecer distribución" class="game-interface-settings-card-title" />
+            <ui:Label text="Elimina las coordenadas guardadas y devuelve inmediatamente los paneles activos a su ubicación inicial." class="game-interface-settings-card-description" />
+            <ui:Button name="reset-ui-layout-button" text="Restablecer interfaz" class="game-interface-settings-button game-interface-settings-reset-button" />
+        </ui:VisualElement>
+
+        <ui:Label name="save-ui-coordinates-status" text="" class="game-interface-settings-status" />
+    </ui:VisualElement>
+</ui:UXML>

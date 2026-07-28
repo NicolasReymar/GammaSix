@@ -24,8 +24,23 @@ public class GameSceneController : MonoBehaviour
 
         GameManager.Instance?.SetState(GameState.Playing);
         LoadMatch(MatchManager.Instance.CurrentMatchConfig);
+        EnsureScenarioTerrain(MatchManager.Instance.CurrentMatchConfig.ScenarioId);
         EnsureNetworkEntityCoordinator();
         EnsureGameHud();
+    }
+
+    private void EnsureScenarioTerrain(string scenarioId)
+    {
+        ScenarioTerrainController existing = FindFirstObjectByType<ScenarioTerrainController>();
+        if (existing != null)
+        {
+            existing.Initialize(scenarioId);
+            return;
+        }
+
+        GameObject terrainObject = new("Scenario Terrain");
+        ScenarioTerrainController controller = terrainObject.AddComponent<ScenarioTerrainController>();
+        controller.Initialize(scenarioId);
     }
 
     private void EnsureGameHud()

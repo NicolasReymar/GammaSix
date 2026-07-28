@@ -16,6 +16,7 @@ public partial class MainMenuController : MonoBehaviour
     [SerializeField] private VisualTreeAsset multiPlayerGameMenuUxml;
     [SerializeField] private VisualTreeAsset settingsMenuUxml;
     [SerializeField] private VisualTreeAsset settingsMultiPlayerUxml;
+    [SerializeField] private VisualTreeAsset entityCreatorUxml;
 
     private UIDocument uiDocument;
     private string pendingSelectedScenarioId;
@@ -93,6 +94,7 @@ public partial class MainMenuController : MonoBehaviour
         RegisterButton(root, "single-player-button", ShowSinglePlayerMenu);
         RegisterButton(root, "multi-player-button", ShowMultiPlayerMenu);
         RegisterButton(root, "settings-button", ShowSettingsMenu);
+        RegisterButton(root, "entity-creator-button", ShowEntityCreator);
         RegisterButton(root, "main-menu-quit-button", QuitGame);
     }
 

@@ -2,12 +2,13 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 /// <summary>
-/// Permite arrastrar un panel con clic izquierdo cuando la edición del HUD está desbloqueada.
-/// Al menos la mitad del panel permanece visible dentro del HUD.
-/// La posición se guarda en PlayerPrefs por panel.
+/// Panel arrastrable del HUD. La restauración se repite durante varios frames
+/// hasta que UI Toolkit termina de aplicar UXML/USS y la geometría queda estable.
 /// </summary>
 public sealed class DraggableHudPanel
 {
+    private const int MaxRestoreAttempts = 30;
+
     private readonly VisualElement root;
     private readonly VisualElement panel;
     private readonly string preferenceKey;
@@ -15,8 +16,11 @@ public sealed class DraggableHudPanel
     private bool dragging;
     private int pointerId = -1;
     private Vector2 pointerOffset;
+    private Vector2 defaultPosition;
+    private bool hasDefaultPosition;
     private bool initialized;
     private bool editingUnlocked;
+    private int restoreAttempts;
 
     public DraggableHudPanel(VisualElement root, VisualElement panel, string preferenceKey)
     {
@@ -29,11 +33,14 @@ public sealed class DraggableHudPanel
         panel.RegisterCallback<PointerMoveEvent>(OnPointerMove);
         panel.RegisterCallback<PointerUpEvent>(OnPointerUp);
         panel.RegisterCallback<PointerCancelEvent>(OnPointerCancel);
-        root.RegisterCallback<GeometryChangedEvent>(OnRootGeometryChanged);
-        panel.RegisterCallback<GeometryChangedEvent>(OnPanelGeometryChanged);
+        root.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+        panel.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
         HudInteractionService.EditingUnlockedChanged += SetEditingUnlocked;
+        GameUiModalService.ModalStateChanged += OnModalStateChanged;
         HudInteractionService.RegisterPanel(panel);
+        HudLayoutPersistenceService.Register(preferenceKey, this);
 
+        ScheduleRestoreAttempt();
         UpdateEditingVisualState();
     }
 
@@ -44,10 +51,12 @@ public sealed class DraggableHudPanel
         panel.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
         panel.UnregisterCallback<PointerUpEvent>(OnPointerUp);
         panel.UnregisterCallback<PointerCancelEvent>(OnPointerCancel);
-        root.UnregisterCallback<GeometryChangedEvent>(OnRootGeometryChanged);
-        panel.UnregisterCallback<GeometryChangedEvent>(OnPanelGeometryChanged);
+        root.UnregisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+        panel.UnregisterCallback<GeometryChangedEvent>(OnGeometryChanged);
         HudInteractionService.EditingUnlockedChanged -= SetEditingUnlocked;
+        GameUiModalService.ModalStateChanged -= OnModalStateChanged;
         HudInteractionService.UnregisterPanel(panel);
+        HudLayoutPersistenceService.Unregister(preferenceKey, this);
     }
 
     public void SetEditingUnlocked(bool unlocked)
@@ -59,20 +68,37 @@ public sealed class DraggableHudPanel
         UpdateEditingVisualState();
     }
 
+    /// <summary>
+    /// Devuelve el panel a la posición definida por su UXML/USS, sin guardar una
+    /// nueva coordenada personalizada.
+    /// </summary>
+    public bool RestoreDefaultPosition()
+    {
+        EndDrag();
+        if (!EnsureInitialized() || !hasDefaultPosition)
+            return false;
+
+        return SetClampedPosition(defaultPosition);
+    }
+
+    private void OnModalStateChanged(bool isOpen)
+    {
+        if (isOpen)
+            EndDrag();
+    }
+
     private void UpdateEditingVisualState()
     {
-        if (editingUnlocked)
-            panel.AddToClassList("hud-panel-editing-unlocked");
-        else
-            panel.RemoveFromClassList("hud-panel-editing-unlocked");
+        panel.EnableInClassList("hud-panel-editing-unlocked", editingUnlocked);
     }
 
     private void OnPointerDown(PointerDownEvent evt)
     {
-        if (evt.button != 0 || !editingUnlocked)
+        if (evt.button != 0 || !editingUnlocked || GameUiModalService.BlocksGameplayInput)
             return;
 
-        ConvertAnchorsToLeftTop();
+        if (!EnsureInitialized())
+            return;
 
         dragging = true;
         HudInteractionService.BeginDrag();
@@ -80,8 +106,7 @@ public sealed class DraggableHudPanel
         panel.CapturePointer(pointerId);
 
         Vector2 pointerInRoot = root.WorldToLocal(new Vector2(evt.position.x, evt.position.y));
-        pointerOffset = pointerInRoot - new Vector2(panel.resolvedStyle.left, panel.resolvedStyle.top);
-
+        pointerOffset = pointerInRoot - CurrentPosition;
         evt.StopImmediatePropagation();
     }
 
@@ -101,7 +126,6 @@ public sealed class DraggableHudPanel
             return;
 
         EndDrag();
-        SavePosition();
         evt.StopImmediatePropagation();
     }
 
@@ -124,48 +148,99 @@ public sealed class DraggableHudPanel
             HudInteractionService.EndDrag();
     }
 
-    private void OnRootGeometryChanged(GeometryChangedEvent evt)
+    private void OnGeometryChanged(GeometryChangedEvent evt)
     {
-        TryInitialize();
-        ClampCurrentPosition();
+        if (!initialized)
+        {
+            ScheduleRestoreAttempt();
+            return;
+        }
+
+        if (!dragging)
+            ClampCurrentPosition();
     }
 
-    private void OnPanelGeometryChanged(GeometryChangedEvent evt)
+    private void ScheduleRestoreAttempt()
     {
-        TryInitialize();
-        ClampCurrentPosition();
-    }
-
-    private void TryInitialize()
-    {
-        if (initialized || root.resolvedStyle.width <= 0f || panel.resolvedStyle.width <= 0f)
+        if (initialized || restoreAttempts >= MaxRestoreAttempts || panel.panel == null)
             return;
 
-        initialized = true;
-        ConvertAnchorsToLeftTop();
-
-        if (PlayerPrefs.HasKey($"{preferenceKey}.x") && PlayerPrefs.HasKey($"{preferenceKey}.y"))
+        panel.schedule.Execute(_ =>
         {
-            Vector2 savedPosition = new(
-                PlayerPrefs.GetFloat($"{preferenceKey}.x"),
-                PlayerPrefs.GetFloat($"{preferenceKey}.y"));
-            SetClampedPosition(savedPosition);
+            if (initialized)
+                return;
+
+            restoreAttempts++;
+            if (!TryInitialize())
+                ScheduleRestoreAttempt();
+        }).ExecuteLater(1);
+    }
+
+    private bool TryInitialize()
+    {
+        if (initialized)
+            return true;
+
+        if (!HasValidGeometry())
+            return false;
+
+        // La posición por defecto debe capturarse antes de cambiar right/bottom a auto.
+        // De lo contrario, los paneles definidos desde el borde derecho o inferior en USS
+        // saltan a (0, 0) antes de que podamos conservar su layout inicial.
+        Rect defaultWorldBounds = panel.worldBound;
+        Vector2 defaultLocalPosition = root.WorldToLocal(defaultWorldBounds.position);
+        defaultPosition = defaultLocalPosition;
+        hasDefaultPosition = true;
+
+        Vector2 normalized;
+        bool hasSavedPosition = HudLayoutPersistenceService.TryGetSavedNormalizedPosition(
+            preferenceKey,
+            out normalized);
+
+        if (hasSavedPosition)
+        {
+            Vector2 restored = NormalizedToPosition(normalized);
+            if (!SetClampedPosition(restored))
+                return false;
         }
         else
         {
-            ClampCurrentPosition();
+            if (!SetClampedPosition(defaultLocalPosition))
+                return false;
         }
+
+        initialized = true;
+        Debug.Log(
+            hasSavedPosition
+                ? "[DraggableHudPanel] Posición restaurada para '" + preferenceKey +
+                  "' desde coordenadas normalizadas " + normalized + "."
+                : "[DraggableHudPanel] '" + preferenceKey + "' usa su posición por defecto.");
+        return true;
     }
 
-    private void ConvertAnchorsToLeftTop()
+    private bool EnsureInitialized()
     {
-        Rect worldBounds = panel.worldBound;
-        Vector2 localPosition = root.WorldToLocal(worldBounds.position);
+        return initialized || TryInitialize();
+    }
 
-        panel.style.left = localPosition.x;
-        panel.style.top = localPosition.y;
+    private bool HasValidGeometry()
+    {
+        return IsPositiveFinite(root.resolvedStyle.width)
+               && IsPositiveFinite(root.resolvedStyle.height)
+               && IsPositiveFinite(panel.resolvedStyle.width)
+               && IsPositiveFinite(panel.resolvedStyle.height);
+    }
+
+    private void ForceAbsoluteLeftTop()
+    {
+        panel.style.position = Position.Absolute;
         panel.style.right = StyleKeyword.Auto;
         panel.style.bottom = StyleKeyword.Auto;
+    }
+
+    private Vector2 CurrentPosition
+    {
+        get { return new Vector2(panel.resolvedStyle.left, panel.resolvedStyle.top); }
     }
 
     private void ClampCurrentPosition()
@@ -173,34 +248,94 @@ public sealed class DraggableHudPanel
         if (!initialized || dragging)
             return;
 
-        SetClampedPosition(new Vector2(panel.resolvedStyle.left, panel.resolvedStyle.top));
+        SetClampedPosition(CurrentPosition);
     }
 
-    private void SetClampedPosition(Vector2 desiredPosition)
+    private bool SetClampedPosition(Vector2 desiredPosition)
     {
         float rootWidth = root.resolvedStyle.width;
         float rootHeight = root.resolvedStyle.height;
         float panelWidth = panel.resolvedStyle.width;
         float panelHeight = panel.resolvedStyle.height;
 
-        if (rootWidth <= 0f || rootHeight <= 0f || panelWidth <= 0f || panelHeight <= 0f)
-            return;
+        if (!IsPositiveFinite(rootWidth)
+            || !IsPositiveFinite(rootHeight)
+            || !IsPositiveFinite(panelWidth)
+            || !IsPositiveFinite(panelHeight)
+            || !IsFinite(desiredPosition.x)
+            || !IsFinite(desiredPosition.y))
+        {
+            return false;
+        }
 
         float minX = -panelWidth * 0.5f;
         float maxX = rootWidth - panelWidth * 0.5f;
         float minY = -panelHeight * 0.5f;
         float maxY = rootHeight - panelHeight * 0.5f;
 
+        ForceAbsoluteLeftTop();
         panel.style.left = Mathf.Clamp(desiredPosition.x, minX, maxX);
         panel.style.top = Mathf.Clamp(desiredPosition.y, minY, maxY);
-        panel.style.right = StyleKeyword.Auto;
-        panel.style.bottom = StyleKeyword.Auto;
+        return true;
     }
 
-    private void SavePosition()
+    public bool TryCaptureNormalizedPosition(out Vector2 normalizedPosition)
     {
-        PlayerPrefs.SetFloat($"{preferenceKey}.x", panel.resolvedStyle.left);
-        PlayerPrefs.SetFloat($"{preferenceKey}.y", panel.resolvedStyle.top);
-        PlayerPrefs.Save();
+        normalizedPosition = default(Vector2);
+
+        if (panel == null || panel.panel == null || !EnsureInitialized() || !HasValidGeometry())
+            return false;
+
+        float rootWidth = root.resolvedStyle.width;
+        float rootHeight = root.resolvedStyle.height;
+        float panelWidth = panel.resolvedStyle.width;
+        float panelHeight = panel.resolvedStyle.height;
+
+        float minX = -panelWidth * 0.5f;
+        float maxX = rootWidth - panelWidth * 0.5f;
+        float minY = -panelHeight * 0.5f;
+        float maxY = rootHeight - panelHeight * 0.5f;
+
+        float xRange = maxX - minX;
+        float yRange = maxY - minY;
+        if (!IsPositiveFinite(xRange) || !IsPositiveFinite(yRange))
+            return false;
+
+        Vector2 position = CurrentPosition;
+        normalizedPosition = new Vector2(
+            Mathf.Clamp01((position.x - minX) / xRange),
+            Mathf.Clamp01((position.y - minY) / yRange));
+
+        Debug.Log(
+            "[DraggableHudPanel] Captura '" + preferenceKey + "': px=" + position +
+            ", normalizada=" + normalizedPosition + ".");
+        return true;
+    }
+
+    private Vector2 NormalizedToPosition(Vector2 normalized)
+    {
+        float rootWidth = root.resolvedStyle.width;
+        float rootHeight = root.resolvedStyle.height;
+        float panelWidth = panel.resolvedStyle.width;
+        float panelHeight = panel.resolvedStyle.height;
+
+        float minX = -panelWidth * 0.5f;
+        float maxX = rootWidth - panelWidth * 0.5f;
+        float minY = -panelHeight * 0.5f;
+        float maxY = rootHeight - panelHeight * 0.5f;
+
+        return new Vector2(
+            Mathf.Lerp(minX, maxX, Mathf.Clamp01(normalized.x)),
+            Mathf.Lerp(minY, maxY, Mathf.Clamp01(normalized.y)));
+    }
+
+    private static bool IsPositiveFinite(float value)
+    {
+        return value > 0f && IsFinite(value);
+    }
+
+    private static bool IsFinite(float value)
+    {
+        return !float.IsNaN(value) && !float.IsInfinity(value);
     }
 }

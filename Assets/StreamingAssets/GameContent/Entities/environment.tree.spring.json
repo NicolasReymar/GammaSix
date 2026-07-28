@@ -1,0 +1,47 @@
+{
+  "id": "environment.tree.spring",
+  "name": "Árbol de Primavera",
+  "kind": "environment",
+  "maxHealth": 250,
+  "moveSpeed": 0.0,
+  "solid": true,
+  "visual": "prefab",
+  "prefabResource": "EntityVisuals/TreeOne",
+  "scale": {
+    "x": 1.0,
+    "y": 1.0,
+    "z": 1.0
+  },
+  "groundOffset": 0.0,
+  "attributes": [
+    "entity",
+    "entity.environment",
+    "interaction.selectable",
+    "physics.solid",
+    "entity.resource"
+  ],
+  "resource": {
+    "infinite": false,
+    "onResourcesSpentEntityId": null,
+    "resources": [
+      {
+        "resourceId": "wood",
+        "amount": 100
+      }
+    ],
+    "resourceTier": 1,
+    "extractionTools": [],
+    "interactionRange": 0.75,
+    "amountPerExtraction": 5
+  },
+  "collisionSize": {
+    "x": 1.25,
+    "y": 3.2,
+    "z": 1.25
+  },
+  "visualSize": {
+    "x": 2.4,
+    "y": 4.0,
+    "z": 2.4
+  }
+}

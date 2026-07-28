@@ -124,25 +124,14 @@ public static class ScenarioEntitySpawner
         int colorId,
         Vector3 position)
     {
-        int maxHealth = definition.maxHealth > 0 ? definition.maxHealth : 1;
-        return new EntityRuntimeState
-        {
-            UnitId = runtimeId,
-            EntityDefinitionId = definition.id,
-            UnitName = string.IsNullOrWhiteSpace(definition.name) ? definition.id : definition.name,
-            UnitTypeId = definition.kind,
-            Attributes = EntityAttributeResolver.Resolve(definition.attributes, instanceAttributes),
-            OwnerClientId = ownerClientId,
-            TeamId = teamId,
-            ColorId = colorId,
-            Position = position,
-            Destination = position,
-            Health = maxHealth,
-            MaxHealth = maxHealth,
-            MoveSpeed = definition.moveSpeed,
-            Solid = definition.solid,
-            BoundsSize = definition.GetScale(new Vector3(0.8f, 1f, 0.8f))
-        };
+        return EntityRuntimeFactory.Create(
+            runtimeId,
+            definition,
+            instanceAttributes,
+            ownerClientId,
+            teamId,
+            colorId,
+            position);
     }
 
     private static float GetEntityGroundY(EntityDefinition definition, float requestedY)
@@ -150,10 +139,13 @@ public static class ScenarioEntitySpawner
         if (requestedY > 0f)
             return requestedY;
 
+        if (definition.groundOffset >= 0f)
+            return definition.groundOffset;
+
         Vector3 scale = definition.GetScale(new Vector3(0.8f, 1f, 0.8f));
-        return string.Equals(definition.kind, EntityKinds.Building, StringComparison.OrdinalIgnoreCase)
-            ? scale.y * 0.5f
-            : 0.5f;
+        return string.Equals(definition.kind, EntityKinds.Unit, StringComparison.OrdinalIgnoreCase)
+            ? 0.5f
+            : scale.y * 0.5f;
     }
 
     private static Vector3 GetSpawnPosition(int index, int entityCount)

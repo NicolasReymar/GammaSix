@@ -27,11 +27,13 @@ public class GameHudController : MonoBehaviour
         CreateModule<GameGoldHudController>("HUD - Oro");
         CreateModule<SelectedEntityHudController>("HUD - Entidad seleccionada");
         CreateModule<SelectedEntitiesExtendedHudController>("HUD - Selección extendida");
+        CreateModule<GamePauseMenuController>("HUD - Menú de partida");
     }
 
     private void OnDestroy()
     {
         HudInteractionService.ResetDragState();
+        GameUiModalService.Reset();
         if (Instance == this)
             Instance = null;
     }

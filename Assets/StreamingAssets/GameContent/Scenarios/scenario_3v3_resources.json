@@ -1,0 +1,266 @@
+{
+  "contentType": "scenario",
+  "id": "scenario_full_features_test",
+  "name": "Mapa completo de pruebas",
+  "description": "Mapa de prueba con terreno, unidades, héroes, trabajadores, árboles recurso, edificio de mercenarios, círculo de aura y configuraciones generales.",
+  "maxTeams": 2,
+  "maxPlayers": 2,
+  "fixedTeams": true,
+  "worldSize": {
+    "width": 48,
+    "height": 48
+  },
+  "terrain": {
+    "defaultTerrainId": "praderas_primavera",
+    "tiles": []
+  },
+  "spawnPoints": [
+    {
+      "teamId": 1,
+      "position": {
+        "x": -12,
+        "y": 0,
+        "z": -6
+      }
+    },
+    {
+      "teamId": 2,
+      "position": {
+        "x": 12,
+        "y": 0,
+        "z": 6
+      }
+    }
+  ],
+  "entities": [
+    {
+      "id": "team1_hero_01",
+      "entityId": "unit.humanoid.default",
+      "teamId": 1,
+      "ownerTeamSlot": 1,
+      "position": {
+        "x": -12,
+        "y": 0.5,
+        "z": -6
+      },
+      "attributes": [
+        "unit.heroic"
+      ]
+    },
+    {
+      "id": "team1_soldier_01",
+      "entityId": "unit.humanoid.default",
+      "teamId": 1,
+      "ownerTeamSlot": 1,
+      "position": {
+        "x": -10,
+        "y": 0.5,
+        "z": -6
+      }
+    },
+    {
+      "id": "team1_soldier_02",
+      "entityId": "unit.humanoid.default",
+      "teamId": 1,
+      "ownerTeamSlot": 1,
+      "position": {
+        "x": -11,
+        "y": 0.5,
+        "z": -4
+      }
+    },
+    {
+      "id": "team1_worker_01",
+      "entityId": "unit.humanoid.worker",
+      "teamId": 1,
+      "ownerTeamSlot": 1,
+      "position": {
+        "x": -13,
+        "y": 0.5,
+        "z": -4
+      }
+    },
+    {
+      "id": "team2_hero_01",
+      "entityId": "unit.humanoid.default",
+      "teamId": 2,
+      "ownerTeamSlot": 2,
+      "position": {
+        "x": 12,
+        "y": 0.5,
+        "z": 6
+      },
+      "attributes": [
+        "unit.heroic"
+      ]
+    },
+    {
+      "id": "team2_soldier_01",
+      "entityId": "unit.humanoid.default",
+      "teamId": 2,
+      "ownerTeamSlot": 2,
+      "position": {
+        "x": 10,
+        "y": 0.5,
+        "z": 6
+      }
+    },
+    {
+      "id": "team2_soldier_02",
+      "entityId": "unit.humanoid.default",
+      "teamId": 2,
+      "ownerTeamSlot": 2,
+      "position": {
+        "x": 11,
+        "y": 0.5,
+        "z": 4
+      }
+    },
+    {
+      "id": "team2_worker_01",
+      "entityId": "unit.humanoid.worker",
+      "teamId": 2,
+      "ownerTeamSlot": 2,
+      "position": {
+        "x": 13,
+        "y": 0.5,
+        "z": 4
+      }
+    },
+    {
+      "id": "mercenary_team1",
+      "entityId": "building.mercenary",
+      "teamId": 1,
+      "ownerTeamSlot": 1,
+      "position": {
+        "x": -18,
+        "y": 2.0,
+        "z": -2
+      }
+    },
+    {
+      "id": "mercenary_team2",
+      "entityId": "building.mercenary",
+      "teamId": 2,
+      "ownerTeamSlot": 2,
+      "position": {
+        "x": 18,
+        "y": 2.0,
+        "z": 2
+      }
+    },
+    {
+      "id": "neutral_aura_center",
+      "entityId": "building.aura",
+      "teamId": 0,
+      "ownerTeamSlot": 0,
+      "position": {
+        "x": 0,
+        "y": 0.04,
+        "z": 0
+      }
+    },
+    {
+      "id": "tree_01",
+      "entityId": "environment.tree.spring",
+      "teamId": 0,
+      "ownerTeamSlot": 0,
+      "position": {
+        "x": -4,
+        "y": 0,
+        "z": 5
+      }
+    },
+    {
+      "id": "tree_02",
+      "entityId": "environment.tree.spring",
+      "teamId": 0,
+      "ownerTeamSlot": 0,
+      "position": {
+        "x": -2,
+        "y": 0,
+        "z": 7
+      }
+    },
+    {
+      "id": "tree_03",
+      "entityId": "environment.tree.spring",
+      "teamId": 0,
+      "ownerTeamSlot": 0,
+      "position": {
+        "x": 4,
+        "y": 0,
+        "z": -5
+      }
+    },
+    {
+      "id": "tree_04",
+      "entityId": "environment.tree.spring",
+      "teamId": 0,
+      "ownerTeamSlot": 0,
+      "position": {
+        "x": 2,
+        "y": 0,
+        "z": -7
+      }
+    },
+    {
+      "id": "neutral_aura_side",
+      "entityId": "building.aura",
+      "teamId": 0,
+      "ownerTeamSlot": 0,
+      "position": {
+        "x": -8,
+        "y": 0.04,
+        "z": 8
+      },
+      "attributes": [
+        "interaction.not_selectable",
+        "physics.not_solid"
+      ]
+    }
+  ],
+  "missions": [],
+  "settingOverrides": [
+    {
+      "key": "fixedColors",
+      "displayName": "Colores fijos",
+      "value": "true",
+      "enabled": true
+    },
+    {
+      "key": "team1Color",
+      "displayName": "Color Equipo 1",
+      "value": "orange",
+      "enabled": true
+    },
+    {
+      "key": "team2Color",
+      "displayName": "Color Equipo 2",
+      "value": "green",
+      "enabled": true
+    },
+    {
+      "key": "override_not_selectable",
+      "displayName": "Ignorar not_selectable",
+      "value": "false",
+      "enabled": true
+    },
+    {
+      "key": "override_not_solid",
+      "displayName": "Ignorar not_solid",
+      "value": "false",
+      "enabled": true
+    }
+  ],
+  "teamResources": [
+    {
+      "teamId": 1,
+      "gold": 500
+    },
+    {
+      "teamId": 2,
+      "gold": 500
+    }
+  ]
+}

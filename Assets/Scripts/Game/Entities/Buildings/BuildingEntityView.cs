@@ -2,7 +2,11 @@ using UnityEngine;
 
 public static class BuildingEntityView
 {
-    public static GameObject Create(EntityDefinition definition, int runtimeId, int teamId)
+    public static GameObject Create(
+        EntityDefinition definition,
+        int runtimeId,
+        int teamId,
+        bool effectiveSolid)
     {
         PrimitiveType primitive = string.Equals(definition.visual, "aura", System.StringComparison.OrdinalIgnoreCase)
             ? PrimitiveType.Cylinder
@@ -16,24 +20,31 @@ public static class BuildingEntityView
             : new Vector3(2f, 0.04f, 2f);
         building.transform.localScale = definition.GetScale(fallback);
 
-        Collider collider = building.GetComponent<Collider>();
-        if (collider != null)
-        {
-            collider.isTrigger = !definition.solid;
-            collider.enabled = true;
-        }
-
-        if (!definition.solid)
-        {
-            Rigidbody body = building.AddComponent<Rigidbody>();
-            body.isKinematic = true;
-            body.useGravity = false;
-        }
+        ConfigureCollider(building, effectiveSolid);
 
         if (string.Equals(definition.visual, "aura", System.StringComparison.OrdinalIgnoreCase))
             building.AddComponent<AuraBuildingTrigger>();
 
         return building;
+    }
+
+    private static void ConfigureCollider(GameObject building, bool effectiveSolid)
+    {
+        Collider collider = building.GetComponent<Collider>();
+        if (collider != null)
+        {
+            // Las entidades no sólidas mantienen un trigger para raycast y eventos,
+            // pero no bloquean físicamente el movimiento.
+            collider.enabled = true;
+            collider.isTrigger = !effectiveSolid;
+        }
+
+        if (!effectiveSolid && building.GetComponent<Rigidbody>() == null)
+        {
+            Rigidbody body = building.AddComponent<Rigidbody>();
+            body.isKinematic = true;
+            body.useGravity = false;
+        }
     }
 }
 

@@ -20,4 +20,8 @@ public sealed class EntityRuntimeState
     public float MoveSpeed;
     public bool Solid;
     public Vector3 BoundsSize;
+    public ResourceRuntimeState Resource;
+    public WorkerRuntimeState Worker;
+    public int InteractionTargetUnitId = -1;
+    public float InteractionRange = 0.65f;
 }

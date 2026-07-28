@@ -1,31 +1,63 @@
-<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
-    <ui:VisualElement name="main-menu-panel" style="flex-grow: 1; justify-content: flex-start; align-items: flex-start; flex-direction: column; flex-wrap: nowrap; background-color: rgb(51, 114, 94);">
-        <ui:VisualElement name="HeadElement" style="flex-grow: 1; width: 100%; flex-direction: row; height: 30%;">
-            <ui:VisualElement style="height: auto; width: 50%; align-items: flex-start; justify-content: flex-end; flex-direction: column-reverse;">
-                <ui:VisualElement style="height: 100%; width: 100%; align-items: stretch; justify-content: space-around; flex-direction: column-reverse;">
-                    <ui:Label text="Configuracion" style="font-size: 60px; -unity-text-align: upper-left; height: auto; width: auto; -unity-font-style: normal;"/>
-                </ui:VisualElement>
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/Scripts/UI/Uxml/MainMenu/Shared/MainMenuTheme.uss?fileID=7433441132597879392&amp;guid=9e28c42f3b8f4ec993d64783ddb4d799&amp;type=3#MainMenuTheme"/>
+    <ui:VisualElement name="main-menu-panel" class="gs-screen">
+        <ui:VisualElement class="gs-top-accent"/>
+        <ui:VisualElement class="gs-header">
+            <ui:VisualElement class="gs-header-main">
+                <ui:Label text="SISTEMA" class="gs-eyebrow"/>
+                <ui:Label text="Ajustes" class="gs-title"/>
+                <ui:Label text="Las mismas categorías se utilizan dentro y fuera de una partida." class="gs-subtitle"/>
             </ui:VisualElement>
-            <ui:VisualElement style="height: auto; width: 50%; align-items: center; justify-content: space-around; flex-direction: row;">
-                <ui:VisualElement style="width: 50%; height: 100%;"/>
-                <ui:VisualElement style="flex-grow: 1; width: 50%; height: 100%; align-items: center; justify-content: center;">
-                    <ui:Button text="Retroceder" name="mp-menu-back-button" style="height: 33%; width: 50%; -unity-font-style: normal;"/>
-                </ui:VisualElement>
+            <ui:VisualElement class="gs-header-actions">
+                <ui:Button text="Volver" name="mp-menu-back-button" class="gs-button"/>
+                <ui:Button text="Guardar y volver" name="settings-save-back-button" class="gs-button gs-button-primary"/>
             </ui:VisualElement>
         </ui:VisualElement>
-        <ui:VisualElement name="Body" style="align-self: stretch; flex-direction: row; height: 80%;">
-            <ui:VisualElement name="LeftBody" style="width: 50%; height: auto; align-items: center; justify-content: center;">
-                <ui:VisualElement style="width: 90%; height: 90%; border-top-width: 2px; border-right-width: 2px; border-bottom-width: 2px; border-left-width: 2px; border-left-color: rgb(0, 0, 0); border-right-color: rgb(0, 0, 0); border-top-color: rgb(0, 0, 0); border-bottom-color: rgb(0, 0, 0); align-items: center; justify-content: center;">
-                    <ui:VisualElement style="width: 30%; height: 60%; justify-content: space-around;">
-                        <ui:Button text="Ajustes multi jugador" name="mp-settings-button"/>
-                        <ui:Button text="Ajustes graficos" name="graphics-setting-button"/>
-                        <ui:Button text="Ajustes sonido" name="sound-setting-button"/>
+        <ui:VisualElement class="gs-content gs-card">
+            <ui:VisualElement class="gs-settings-shell">
+                <ui:VisualElement class="gs-settings-nav">
+                    <ui:Label text="CATEGORÍAS" class="gs-eyebrow"/>
+                    <ui:Button text="Video" name="graphics-setting-button" class="gs-settings-nav-button"/>
+                    <ui:Button text="Sonido" name="sound-setting-button" class="gs-settings-nav-button"/>
+                    <ui:Button text="Interfaz" name="interface-setting-button" class="gs-settings-nav-button"/>
+                    <ui:Button text="Multijugador" name="mp-settings-button" class="gs-settings-nav-button"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="gs-settings-content">
+                    <ui:VisualElement name="settings-video-content" class="gs-setting-panel">
+                        <ui:Label text="Video" class="gs-card-title"/>
+                        <ui:VisualElement class="gs-setting-action-card">
+                            <ui:Label text="Configuración pendiente" class="gs-card-title-small"/>
+                            <ui:Label text="Esta sección conserva su espacio visual sin modificar la configuración gráfica actual del proyecto." class="gs-card-description"/>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                    <ui:VisualElement name="settings-sound-content" class="gs-setting-panel">
+                        <ui:Label text="Sonido" class="gs-card-title"/>
+                        <ui:VisualElement class="gs-setting-action-card">
+                            <ui:Label text="Configuración pendiente" class="gs-card-title-small"/>
+                            <ui:Label text="No se cambió el sistema de audio ni se agregaron valores simulados." class="gs-card-description"/>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                    <ui:VisualElement name="settings-interface-content" class="gs-setting-panel">
+                        <ui:Label text="Interfaz" class="gs-card-title"/>
+                        <ui:Label text="Posición guardada de los paneles del HUD." class="gs-card-description"/>
+                        <ui:VisualElement class="gs-setting-action-card">
+                            <ui:Label text="Restablecer distribución" class="gs-card-title-small"/>
+                            <ui:Label text="Elimina las coordenadas personalizadas. La próxima partida utilizará las posiciones predeterminadas de oro, selección y grupos." class="gs-card-description"/>
+                            <ui:Button text="Restablecer interfaz" name="settings-reset-interface-button" class="gs-button gs-button-danger"/>
+                        </ui:VisualElement>
+                        <ui:Label text="" name="settings-interface-status-label" class="gs-status"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement name="settings-multiplayer-content" class="gs-setting-panel">
+                        <ui:Label text="Multijugador" class="gs-card-title"/>
+                        <ui:VisualElement class="gs-setting-action-card">
+                            <ui:Label text="Identidad del jugador" class="gs-card-title-small"/>
+                            <ui:Label text="Abre la pantalla de identidad para modificar el nombre utilizado al conectarte." class="gs-card-description"/>
+                            <ui:Button text="Abrir ajustes multijugador" name="settings-open-multiplayer-button" class="gs-button gs-button-primary"/>
+                        </ui:VisualElement>
                     </ui:VisualElement>
                 </ui:VisualElement>
             </ui:VisualElement>
-            <ui:VisualElement name="RightBody" style="width: 50%; height: auto; align-items: center; justify-content: space-around;">
-                <ui:VisualElement style="width: 90%; height: 90%; border-top-width: 2px; border-right-width: 2px; border-bottom-width: 2px; border-left-width: 2px; border-left-color: rgb(0, 0, 0); border-right-color: rgb(0, 0, 0); border-top-color: rgb(0, 0, 0); border-bottom-color: rgb(0, 0, 0); justify-content: center; align-items: center;"/>
-            </ui:VisualElement>
+            <ui:Label text="" name="settings-global-status-label" class="gs-status"/>
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

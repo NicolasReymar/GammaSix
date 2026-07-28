@@ -501,6 +501,7 @@ MonoBehaviour:
   multiPlayerGameMenuUxml: {fileID: 9197481963319205126, guid: 175a20e4ef882924fac0e830128ddd11, type: 3}
   settingsMenuUxml: {fileID: 9197481963319205126, guid: 18e751b47fdae254fa56fcda075e4349, type: 3}
   settingsMultiPlayerUxml: {fileID: 9197481963319205126, guid: 60d33ae02f339a344926ac5708c12a1b, type: 3}
+  entityCreatorUxml: {fileID: 9197481963319205126, guid: 31231a9667924b4499b4ef3d5492e727, type: 3}
 --- !u!4 &990246422
 Transform:
   m_ObjectHideFlags: 0

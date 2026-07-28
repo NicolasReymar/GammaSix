@@ -206,6 +206,18 @@ public static class GameInputReader
         }
     }
 
+    public static bool EscapePressedThisFrame
+    {
+        get
+        {
+#if ENABLE_INPUT_SYSTEM
+            return Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame;
+#else
+            return Input.GetKeyDown(KeyCode.Escape);
+#endif
+        }
+    }
+
     public static Vector2 Wasd
     {
         get

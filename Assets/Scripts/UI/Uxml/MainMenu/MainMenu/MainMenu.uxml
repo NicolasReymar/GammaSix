@@ -1,32 +1,37 @@
-<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
-    <ui:VisualElement name="main-menu-panel" style="flex-grow: 1; justify-content: flex-start; align-items: flex-start; flex-direction: column; flex-wrap: nowrap; background-color: rgb(51, 114, 94);">
-        <ui:VisualElement name="HeadElement" style="flex-grow: 1; width: 100%; flex-direction: row; height: 30%;">
-            <ui:VisualElement style="height: auto; width: 50%; align-items: flex-start; justify-content: flex-end; flex-direction: column-reverse;">
-                <ui:VisualElement style="height: 100%; width: 100%; align-items: stretch; justify-content: space-around; flex-direction: column-reverse;">
-                    <ui:Label text="Gamma Six" style="font-size: 120px; -unity-text-align: upper-left; height: auto; width: auto; -unity-font-style: normal;"/>
-                </ui:VisualElement>
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/Scripts/UI/Uxml/MainMenu/Shared/MainMenuTheme.uss?fileID=7433441132597879392&amp;guid=9e28c42f3b8f4ec993d64783ddb4d799&amp;type=3#MainMenuTheme"/>
+    <ui:VisualElement name="main-menu-panel" class="gs-screen">
+        <ui:VisualElement class="gs-top-accent"/>
+        <ui:VisualElement class="gs-header">
+            <ui:VisualElement class="gs-header-main">
+                <ui:Label text="ESTRATEGIA · ROL · MULTIJUGADOR" class="gs-eyebrow"/>
+                <ui:Label text="GAMMA SIX" class="gs-title gs-title-large"/>
             </ui:VisualElement>
-            <ui:VisualElement style="height: auto; width: 50%; align-items: center; justify-content: space-around; flex-direction: row;">
-                <ui:VisualElement style="width: 50%; height: 100%;"/>
-                <ui:VisualElement style="flex-grow: 1; width: 50%; height: 100%; align-items: center; justify-content: center;">
-                    <ui:Button text="Salir del juego" name="main-menu-quit-button" style="height: 33%; width: 50%; -unity-font-style: normal;"/>
-                </ui:VisualElement>
+            <ui:VisualElement class="gs-header-actions">
+                <ui:Button text="Salir del juego" name="main-menu-quit-button" class="gs-button gs-button-danger"/>
             </ui:VisualElement>
         </ui:VisualElement>
-        <ui:VisualElement name="Body" style="align-self: stretch; flex-direction: row; height: 80%;">
-            <ui:VisualElement name="LeftBody" style="width: 50%; height: auto; align-items: center; justify-content: center;">
-                <ui:VisualElement style="width: 90%; height: 90%; border-top-width: 2px; border-right-width: 2px; border-bottom-width: 2px; border-left-width: 2px; border-left-color: rgb(0, 0, 0); border-right-color: rgb(0, 0, 0); border-top-color: rgb(0, 0, 0); border-bottom-color: rgb(0, 0, 0); align-items: center; justify-content: center;">
-                    <ui:VisualElement style="width: 30%; height: 60%; justify-content: space-around;">
-                        <ui:Button text="Un jugador" name="single-player-button"/>
-                        <ui:Button text="Multi jugador" name="multi-player-button"/>
-                    </ui:VisualElement>
+        <ui:VisualElement class="gs-content gs-choice-grid">
+            <ui:VisualElement class="gs-card gs-card-accent gs-choice-card">
+                <ui:VisualElement>
+                    <ui:Label text="JUGAR" class="gs-eyebrow"/>
+                    <ui:Label text="Comienza una partida" class="gs-card-title"/>
+                    <ui:VisualElement class="gs-divider"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="gs-action-stack">
+                    <ui:Button text="Un jugador" name="single-player-button" class="gs-button gs-button-primary"/>
+                    <ui:Button text="Multijugador" name="multi-player-button" class="gs-button"/>
                 </ui:VisualElement>
             </ui:VisualElement>
-            <ui:VisualElement name="RightBody" style="width: 50%; height: auto; align-items: center; justify-content: space-around;">
-                <ui:VisualElement style="width: 90%; height: 90%; border-top-width: 2px; border-right-width: 2px; border-bottom-width: 2px; border-left-width: 2px; border-left-color: rgb(0, 0, 0); border-right-color: rgb(0, 0, 0); border-top-color: rgb(0, 0, 0); border-bottom-color: rgb(0, 0, 0); align-items: center; justify-content: center;">
-                    <ui:VisualElement style="width: 30%; height: 60%; justify-content: center;">
-                        <ui:Button text="Configuracion" name="settings-button"/>
-                    </ui:VisualElement>
+            <ui:VisualElement class="gs-card gs-choice-card gs-choice-card-right">
+                <ui:VisualElement>
+                    <ui:Label text="SISTEMA" class="gs-eyebrow"/>
+                    <ui:Label text="Herramientas y ajustes" class="gs-card-title"/>
+                    <ui:VisualElement class="gs-divider"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="gs-action-stack">
+                    <ui:Button text="Creador de entidades" name="entity-creator-button" class="gs-button gs-button-primary"/>
+                    <ui:Button text="Ajustes" name="settings-button" class="gs-button"/>
                 </ui:VisualElement>
             </ui:VisualElement>
         </ui:VisualElement>

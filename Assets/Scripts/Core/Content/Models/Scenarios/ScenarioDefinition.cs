@@ -12,11 +12,27 @@ public sealed class ScenarioDefinition
     public int maxPlayers = 8;
     public bool fixedTeams;
     public ScenarioWorldSize worldSize;
+    public ScenarioTerrainDefinition terrain;
     public ScenarioSpawnPoint[] spawnPoints;
     public ScenarioEntityPlacement[] entities;
     public ScenarioMissionDefinition[] missions;
     public ScenarioTeamResourceDefinition[] teamResources;
     public ScenarioSettingOverride[] settingOverrides;
+}
+
+[Serializable]
+public sealed class ScenarioTerrainDefinition
+{
+    public string defaultTerrainId = "praderas_primavera";
+    public ScenarioTerrainTilePlacement[] tiles;
+}
+
+[Serializable]
+public sealed class ScenarioTerrainTilePlacement
+{
+    public int x;
+    public int z;
+    public string terrainId;
 }
 
 [Serializable]

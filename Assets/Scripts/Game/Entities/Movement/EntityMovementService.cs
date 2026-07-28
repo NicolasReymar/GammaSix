@@ -3,6 +3,8 @@ using UnityEngine;
 
 /// <summary>
 /// Reglas autoritativas de movimiento y colisión de entidades.
+/// La solidez efectiva se calcula al crear la entidad y ya contempla
+/// physics.solid, physics.not_solid y los overrides de la partida.
 /// </summary>
 public static class EntityMovementService
 {
@@ -29,9 +31,13 @@ public static class EntityMovementService
             Vector3 next = Vector3.MoveTowards(entity.Position, entity.Destination, entity.MoveSpeed * deltaTime);
             next.y = entity.Position.y;
             if (!IsPositionBlocked(entities, entity, next))
+            {
                 entity.Position = next;
+            }
             else
+            {
                 entity.Destination = entity.Position;
+            }
         }
     }
 
@@ -64,6 +70,13 @@ public static class EntityMovementService
         requestedDestination.x = Mathf.Clamp(requestedDestination.x, -MapLimit, MapLimit);
         requestedDestination.z = Mathf.Clamp(requestedDestination.z, -MapLimit, MapLimit);
         entity.Destination = requestedDestination;
+        entity.InteractionTargetUnitId = -1;
+        if (entity.Worker != null)
+        {
+            entity.Worker.TargetResourceUnitId = -1;
+            entity.Worker.ExtractionTimer = 0f;
+            entity.Worker.IsExtracting = false;
+        }
         return true;
     }
 
@@ -72,6 +85,7 @@ public static class EntityMovementService
         EntityRuntimeState moving,
         Vector3 candidate)
     {
+        // Una entidad no sólida no bloquea ni es bloqueada por otras entidades.
         if (!moving.Solid)
             return false;
 
@@ -81,24 +95,63 @@ public static class EntityMovementService
             if (other.UnitId == moving.UnitId || !other.Solid)
                 continue;
 
-            if (other.Attributes != null && other.Attributes.Has(EntityAttributeIds.Building))
-            {
-                float halfX = other.BoundsSize.x * 0.5f + movingRadius;
-                float halfZ = other.BoundsSize.z * 0.5f + movingRadius;
-                if (Mathf.Abs(candidate.x - other.Position.x) < halfX &&
-                    Mathf.Abs(candidate.z - other.Position.z) < halfZ)
-                    return true;
-            }
-            else
-            {
-                float otherRadius = Mathf.Max(other.BoundsSize.x, other.BoundsSize.z) * 0.5f;
-                Vector2 delta = new(candidate.x - other.Position.x, candidate.z - other.Position.z);
-                float combinedRadius = movingRadius + otherRadius;
-                if (delta.sqrMagnitude < combinedRadius * combinedRadius)
-                    return true;
-            }
+            bool blocked = other.Attributes != null && other.Attributes.Has(EntityAttributeIds.Building)
+                ? BlocksBuilding(moving, other, candidate, movingRadius)
+                : BlocksCircularEntity(moving, other, candidate, movingRadius);
+
+            if (blocked)
+                return true;
         }
 
         return false;
+    }
+
+    private static bool BlocksBuilding(
+        EntityRuntimeState moving,
+        EntityRuntimeState building,
+        Vector3 candidate,
+        float movingRadius)
+    {
+        float halfX = building.BoundsSize.x * 0.5f + movingRadius;
+        float halfZ = building.BoundsSize.z * 0.5f + movingRadius;
+
+        float candidateX = Mathf.Abs(candidate.x - building.Position.x);
+        float candidateZ = Mathf.Abs(candidate.z - building.Position.z);
+        if (candidateX >= halfX || candidateZ >= halfZ)
+            return false;
+
+        float currentX = Mathf.Abs(moving.Position.x - building.Position.x);
+        float currentZ = Mathf.Abs(moving.Position.z - building.Position.z);
+        bool currentlyInside = currentX < halfX && currentZ < halfZ;
+        if (!currentlyInside)
+            return true;
+
+        // Una entidad que haya aparecido solapada puede salir, pero no profundizar
+        // el solapamiento. Esta protección es general y no depende de atributos de interacción.
+        float currentPenetration = Mathf.Min(halfX - currentX, halfZ - currentZ);
+        float candidatePenetration = Mathf.Min(halfX - candidateX, halfZ - candidateZ);
+        return candidatePenetration >= currentPenetration - 0.0001f;
+    }
+
+    private static bool BlocksCircularEntity(
+        EntityRuntimeState moving,
+        EntityRuntimeState other,
+        Vector3 candidate,
+        float movingRadius)
+    {
+        float otherRadius = Mathf.Max(other.BoundsSize.x, other.BoundsSize.z) * 0.5f;
+        float combinedRadius = movingRadius + otherRadius;
+        float combinedRadiusSquared = combinedRadius * combinedRadius;
+
+        Vector2 candidateDelta = new(candidate.x - other.Position.x, candidate.z - other.Position.z);
+        if (candidateDelta.sqrMagnitude >= combinedRadiusSquared)
+            return false;
+
+        Vector2 currentDelta = new(
+            moving.Position.x - other.Position.x,
+            moving.Position.z - other.Position.z);
+
+        return currentDelta.sqrMagnitude >= combinedRadiusSquared ||
+               candidateDelta.sqrMagnitude <= currentDelta.sqrMagnitude + 0.0001f;
     }
 }

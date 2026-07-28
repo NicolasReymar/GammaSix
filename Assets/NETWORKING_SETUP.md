@@ -361,3 +361,26 @@ La entidad controlada permanece seleccionada en ambos estados.
 ## Refacción estructural – fase 1
 
 La coordinación de entidades fue dividida en servicios de input, selección, spawn, movimiento, vistas y DTO de red. El coordinador principal ahora se llama `NetworkEntityCoordinator`. Consulta `ARCHITECTURE_REFACTOR.md` para ver responsabilidades y dependencias.
+
+## Terreno, recursos y trabajadores
+
+El escenario puede declarar un terreno base mediante `terrain.defaultTerrainId`.
+`ScenarioTerrainController` crea la malla local en host y clientes desde el catálogo
+`GameContent/Terrains`.
+
+Para probar extracción:
+
+1. Cargar `scenario_3v3_resources`.
+2. Seleccionar la entidad `Trabajador` del equipo 1.
+3. Hacer clic derecho sobre uno de los árboles neutrales.
+4. El servidor valida tier y herramientas, mueve al trabajador y procesa ciclos de
+   extracción de 2 segundos.
+
+Mensajes nuevos:
+
+- `GammaSix.ResourceInteractionCommand`: cliente → servidor.
+- El estado restante del recurso y la carga temporal del trabajador viajan dentro
+  del snapshot de entidades usando `ReliableFragmentedSequenced`.
+
+El snapshot ahora usa bytes UTF-8 de tamaño dinámico y no queda limitado por
+`FixedString4096Bytes`.

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
@@ -63,7 +64,6 @@ public class NetworkEntityCoordinator : MonoBehaviour
     private void Start()
     {
         gameplayCamera = Camera.main;
-        PreparePrototypeScene();
         EnsureCameraController();
         TryRegisterMessageHandlers();
     }
@@ -87,6 +87,8 @@ public class NetworkEntityCoordinator : MonoBehaviour
             if (!serverInitialized)
                 InitializeServerUnits();
 
+            ResourceExtractionService.Update(serverUnits, Time.deltaTime);
+            EntityInteractionService.Update(serverUnits);
             EntityMovementService.Update(serverUnits, Time.deltaTime);
             snapshotTimer += Time.deltaTime;
             if (snapshotTimer >= SnapshotInterval)
@@ -103,7 +105,7 @@ public class NetworkEntityCoordinator : MonoBehaviour
     {
         ConsumeGameplayAltEvent();
 
-        if (!draggingSelection || HudInteractionService.IsDragging)
+        if (GameUiModalService.BlocksGameplayInput || !draggingSelection || HudInteractionService.IsDragging)
             return;
 
         Rect rect = GetScreenRect(dragStart, dragCurrent);
@@ -124,17 +126,6 @@ public class NetworkEntityCoordinator : MonoBehaviour
             (current.type == EventType.KeyDown || current.type == EventType.KeyUp))
         {
             current.Use();
-        }
-    }
-
-    private void PreparePrototypeScene()
-    {
-        if (GameObject.Find("RTS Prototype Ground") == null)
-        {
-            GameObject ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
-            ground.name = "RTS Prototype Ground";
-            ground.transform.position = Vector3.zero;
-            ground.transform.localScale = new Vector3(4f, 1f, 4f);
         }
     }
 
@@ -169,7 +160,7 @@ public class NetworkEntityCoordinator : MonoBehaviour
 
         serverInitialized = true;
         BroadcastSnapshot();
-        Debug.Log($"[NetworkEntityCoordinator] {serverUnits.Count} unidades iniciales creadas " +
+        Debug.Log($"[NetworkEntityCoordinator] {serverUnits.Count} entidades iniciales creadas " +
                   $"{(loadedFromScenario ? "desde el escenario" : "mediante fallback")}.");
     }
 
@@ -177,6 +168,12 @@ public class NetworkEntityCoordinator : MonoBehaviour
     {
         if (gameplayCamera == null || !Manager.IsConnectedClient)
             return;
+
+        if (GameUiModalService.BlocksGameplayInput)
+        {
+            CancelPendingSelectionDrag();
+            return;
+        }
 
         HandleControlGroups();
         HandleSelectionInspectionCycle();
@@ -190,12 +187,19 @@ public class NetworkEntityCoordinator : MonoBehaviour
         else
             CancelPendingSelectionDrag();
 
-        // Alt + R es la única transición entre control RTS y control directo.
-        // Cámara libre: órdenes por clic. Cámara fijada: movimiento WASD de la unidad conductora.
+        // La tercera persona bloqueada conserva el control directo y no acepta
+        // órdenes con puntero. Cuando el cursor se desbloquea, mantiene WASD pero
+        // además reutiliza exactamente las órdenes contextuales del modo RTS.
         if (cameraController != null && cameraController.IsLocked)
+        {
             HandleDirectMovement();
+            if (cameraController.CanSelectWithPointer)
+                HandleClickMovement();
+        }
         else
+        {
             HandleClickMovement();
+        }
     }
 
     private void CancelPendingSelectionDrag()
@@ -350,7 +354,7 @@ public class NetworkEntityCoordinator : MonoBehaviour
     {
         List<NetworkEntityView> sameType = unitViews.Values
             .Where(IsOwnedByLocalPlayer)
-            .Where(view => view != null && view.HasAttribute(EntityAttributeIds.Selectable))
+            .Where(view => view != null && view.IsSelectableForCurrentMatch())
             .Where(view => string.Equals(view.UnitName, source.UnitName, StringComparison.OrdinalIgnoreCase))
             .Where(IsVisibleOnScreen)
             .OrderBy(view => view.UnitId)
@@ -374,7 +378,60 @@ public class NetworkEntityCoordinator : MonoBehaviour
         if (!GameInputReader.RightPressedThisFrame || SelectedEntities.Count == 0)
             return;
 
-        if (!TryGetGroundPoint(GameInputReader.PointerPosition, out Vector3 destination))
+        Vector2 pointer = GameInputReader.PointerPosition;
+        NetworkEntityView target = GetEntityUnderCursor(pointer);
+        ulong localClientId = Manager.LocalClientId;
+
+        List<NetworkEntityView> ownedControllable = SelectedEntities
+            .Where(view => view != null && view.OwnerClientId == localClientId)
+            .Where(view => view.HasAttribute(EntityAttributeIds.Controllable))
+            .ToList();
+
+        if (target != null && ownedControllable.Count > 0)
+        {
+            // interaction.not_selectable bloquea la interacción contextual. El clic
+            // se convierte en movimiento hacia el centro. La posibilidad de atravesar
+            // el objetivo depende exclusivamente de physics.not_solid.
+            if (target.IsNotSelectableForCurrentMatch())
+            {
+                SendFormationMove(target.transform.position);
+                return;
+            }
+
+            bool issuedAnyContextualOrder = false;
+
+            // Cada entidad seleccionada resuelve su acción de manera independiente.
+            // El feedback visual es común a cualquier acción contextual válida:
+            // seguir, extraer y futuras acciones como atacar, reparar o comerciar.
+            foreach (NetworkEntityView source in ownedControllable)
+            {
+                ContextualEntityAction action = EntityInteractionRules.Resolve(
+                    source,
+                    target,
+                    localClientId);
+
+                switch (action)
+                {
+                    case ContextualEntityAction.ExtractResource:
+                        RequestResourceInteraction(source.UnitId, target.UnitId);
+                        issuedAnyContextualOrder = true;
+                        break;
+
+                    case ContextualEntityAction.Follow:
+                        RequestEntityInteraction(source.UnitId, target.UnitId);
+                        issuedAnyContextualOrder = true;
+                        break;
+                }
+            }
+
+            if (issuedAnyContextualOrder)
+            {
+                EntityCommandFeedbackService.AcknowledgeTarget(target);
+                return;
+            }
+        }
+
+        if (!TryGetGroundPoint(pointer, out Vector3 destination))
             return;
 
         SendFormationMove(destination);
@@ -482,18 +539,41 @@ public class NetworkEntityCoordinator : MonoBehaviour
             int column = i % columns;
             float offsetX = (column - (columns - 1) * 0.5f) * spacing;
             float offsetZ = (row - (rows - 1) * 0.5f) * spacing;
-            RequestMove(controllable[i].UnitId, center + new Vector3(offsetX, 0f, offsetZ));
+            RequestMove(
+                controllable[i].UnitId,
+                center + new Vector3(offsetX, 0f, offsetZ));
         }
+    }
+
+    private NetworkEntityView GetEntityUnderCursor(Vector2 mousePosition)
+    {
+        Ray ray = gameplayCamera.ScreenPointToRay(mousePosition);
+        RaycastHit[] hits = Physics.RaycastAll(
+            ray,
+            500f,
+            Physics.DefaultRaycastLayers,
+            QueryTriggerInteraction.Collide);
+        if (hits == null || hits.Length == 0)
+            return null;
+
+        // Priorizamos entidades frente al terreno u otros colliders que puedan
+        // estar delante o solaparse visualmente con ellas.
+        foreach (RaycastHit hit in hits.OrderBy(item => item.distance))
+        {
+            NetworkEntityView view = hit.collider != null
+                ? hit.collider.GetComponentInParent<NetworkEntityView>()
+                : null;
+            if (view != null)
+                return view;
+        }
+
+        return null;
     }
 
     private NetworkEntityView GetSelectableEntityUnderCursor(Vector2 mousePosition)
     {
-        Ray ray = gameplayCamera.ScreenPointToRay(mousePosition);
-        if (!Physics.Raycast(ray, out RaycastHit hit, 500f))
-            return null;
-
-        NetworkEntityView view = hit.collider.GetComponentInParent<NetworkEntityView>();
-        return view != null && view.HasAttribute(EntityAttributeIds.Selectable) ? view : null;
+        NetworkEntityView view = GetEntityUnderCursor(mousePosition);
+        return view != null && view.IsSelectableForCurrentMatch() ? view : null;
     }
 
     private bool IsOwnedByLocalPlayer(NetworkEntityView view)
@@ -501,7 +581,7 @@ public class NetworkEntityCoordinator : MonoBehaviour
         return view != null && Manager != null &&
                view.TeamId != 0 &&
                view.OwnerClientId == Manager.LocalClientId &&
-               view.HasAttribute(EntityAttributeIds.Selectable);
+               view.IsSelectableForCurrentMatch();
     }
 
     private bool IsViewInsideScreenRect(NetworkEntityView view, Rect rect)
@@ -608,6 +688,92 @@ public class NetworkEntityCoordinator : MonoBehaviour
         return true;
     }
 
+    private void RequestEntityInteraction(int sourceUnitId, int targetUnitId)
+    {
+        EntityInteractionCommand command = new()
+        {
+            SourceUnitId = sourceUnitId,
+            TargetUnitId = targetUnitId
+        };
+
+        if (Manager.IsServer)
+        {
+            ApplyEntityInteractionCommand(Manager.LocalClientId, command);
+            return;
+        }
+
+        string json = JsonUtility.ToJson(command);
+        FixedString512Bytes payload = json;
+        using FastBufferWriter writer = new(FastBufferWriter.GetWriteSize(payload), Allocator.Temp);
+        writer.WriteValueSafe(payload);
+        Manager.CustomMessagingManager.SendNamedMessage(
+            EntityNetworkMessageNames.EntityInteractionCommand,
+            NetworkManager.ServerClientId,
+            writer);
+    }
+
+    private void HandleEntityInteractionCommand(ulong senderClientId, FastBufferReader reader)
+    {
+        if (!Manager.IsServer)
+            return;
+
+        reader.ReadValueSafe(out FixedString512Bytes payload);
+        EntityInteractionCommand command = JsonUtility.FromJson<EntityInteractionCommand>(payload.ToString());
+        ApplyEntityInteractionCommand(senderClientId, command);
+    }
+
+    private void ApplyEntityInteractionCommand(ulong senderClientId, EntityInteractionCommand command)
+    {
+        if (EntityInteractionService.TryAssignFollow(serverUnits, senderClientId, command, out string rejectionReason))
+            return;
+
+        if (!string.IsNullOrWhiteSpace(rejectionReason))
+            Debug.LogWarning($"[NetworkEntityCoordinator] {rejectionReason}");
+    }
+
+    private void RequestResourceInteraction(int workerUnitId, int resourceUnitId)
+    {
+        ResourceInteractionCommand command = new()
+        {
+            WorkerUnitId = workerUnitId,
+            ResourceUnitId = resourceUnitId
+        };
+
+        if (Manager.IsServer)
+        {
+            ApplyResourceInteractionCommand(Manager.LocalClientId, command);
+            return;
+        }
+
+        string json = JsonUtility.ToJson(command);
+        FixedString512Bytes payload = json;
+        using FastBufferWriter writer = new(FastBufferWriter.GetWriteSize(payload), Allocator.Temp);
+        writer.WriteValueSafe(payload);
+        Manager.CustomMessagingManager.SendNamedMessage(
+            EntityNetworkMessageNames.ResourceInteractionCommand,
+            NetworkManager.ServerClientId,
+            writer);
+    }
+
+    private void HandleResourceInteractionCommand(ulong senderClientId, FastBufferReader reader)
+    {
+        if (!Manager.IsServer)
+            return;
+
+        reader.ReadValueSafe(out FixedString512Bytes payload);
+        ResourceInteractionCommand command = JsonUtility.FromJson<ResourceInteractionCommand>(payload.ToString());
+        ApplyResourceInteractionCommand(senderClientId, command);
+    }
+
+    private void ApplyResourceInteractionCommand(ulong senderClientId, ResourceInteractionCommand command)
+    {
+        if (ResourceExtractionService.TryAssignExtraction(serverUnits, senderClientId, command, out string rejectionReason))
+            return;
+
+        if (!string.IsNullOrWhiteSpace(rejectionReason))
+            Debug.LogWarning($"[NetworkEntityCoordinator] {rejectionReason}");
+    }
+
     private void RequestMove(int unitId, Vector3 destination)
     {
         EntityMoveCommand command = new()
@@ -673,7 +839,19 @@ public class NetworkEntityCoordinator : MonoBehaviour
                 Health = unit.Health,
                 MaxHealth = unit.MaxHealth,
                 Solid = unit.Solid,
-                Attributes = unit.Attributes?.ToArray()
+                Attributes = unit.Attributes?.ToArray(),
+                ResourceInfinite = unit.Resource?.Infinite ?? false,
+                ResourceTier = unit.Resource?.ResourceTier ?? 0,
+                Resources = unit.Resource?.Resources?
+                    .Select(resource => new ResourceSnapshotData
+                    {
+                        ResourceId = resource.ResourceId,
+                        Amount = resource.Amount
+                    })
+                    .ToArray(),
+                WorkerResourceName = unit.Worker?.CarriedResourceName,
+                WorkerCarriedAmount = unit.Worker?.CarriedResourceAmount ?? 0,
+                WorkerIsExtracting = unit.Worker?.IsExtracting ?? false
             });
         }
 
@@ -683,12 +861,13 @@ public class NetworkEntityCoordinator : MonoBehaviour
             return;
 
         string json = JsonUtility.ToJson(snapshot);
-        FixedString4096Bytes payload = json;
-        using FastBufferWriter writer = new(FastBufferWriter.GetWriteSize(payload), Allocator.Temp);
-        writer.WriteValueSafe(payload);
-        // Los snapshots pueden superar el MTU cuando el escenario contiene varias
-        // entidades y listas de atributos. Esta entrega fragmenta el mensaje y
-        // garantiza que el cliente lo reconstruya completo y en orden.
+        byte[] payload = Encoding.UTF8.GetBytes(json);
+        using FastBufferWriter writer = new(sizeof(int) + payload.Length, Allocator.Temp);
+        writer.WriteValueSafe(payload.Length);
+        writer.WriteBytesSafe(payload, payload.Length);
+        // Se usa un payload UTF-8 dinámico y entrega fragmentada: así el snapshot
+        // no queda limitado por FixedString4096 cuando crezcan entidades, recursos
+        // y estados especializados.
         Manager.CustomMessagingManager.SendNamedMessageToAll(
             EntityNetworkMessageNames.Snapshot,
             writer,
@@ -700,8 +879,16 @@ public class NetworkEntityCoordinator : MonoBehaviour
         if (Manager.IsServer)
             return;
 
-        reader.ReadValueSafe(out FixedString4096Bytes payload);
-        EntitySnapshotPayload snapshot = JsonUtility.FromJson<EntitySnapshotPayload>(payload.ToString());
+        reader.ReadValueSafe(out int length);
+        if (length <= 0 || length > 4 * 1024 * 1024)
+        {
+            Debug.LogWarning($"[NetworkEntityCoordinator] Snapshot inválido de {length} bytes.");
+            return;
+        }
+
+        byte[] payload = new byte[length];
+        reader.ReadBytesSafe(ref payload, length);
+        EntitySnapshotPayload snapshot = JsonUtility.FromJson<EntitySnapshotPayload>(Encoding.UTF8.GetString(payload));
         ApplySnapshot(snapshot);
     }
 
@@ -715,6 +902,16 @@ public class NetworkEntityCoordinator : MonoBehaviour
         foreach (EntitySnapshotData state in snapshot.Units)
         {
             receivedIds.Add(state.UnitId);
+
+            if (unitViews.TryGetValue(state.UnitId, out NetworkEntityView existingView) &&
+                !string.Equals(existingView.EntityDefinitionId, state.EntityDefinitionId, StringComparison.OrdinalIgnoreCase))
+            {
+                RemoveSelection(existingView);
+                if (cameraController != null && cameraController.LockedTarget == existingView)
+                    cameraController.Unlock();
+                Destroy(existingView.gameObject);
+                unitViews.Remove(state.UnitId);
+            }
 
             if (!unitViews.TryGetValue(state.UnitId, out NetworkEntityView view))
             {
@@ -743,6 +940,8 @@ public class NetworkEntityCoordinator : MonoBehaviour
 
         Manager.CustomMessagingManager.RegisterNamedMessageHandler(EntityNetworkMessageNames.Snapshot, HandleSnapshot);
         Manager.CustomMessagingManager.RegisterNamedMessageHandler(EntityNetworkMessageNames.MoveCommand, HandleMoveCommand);
+        Manager.CustomMessagingManager.RegisterNamedMessageHandler(EntityNetworkMessageNames.ResourceInteractionCommand, HandleResourceInteractionCommand);
+        Manager.CustomMessagingManager.RegisterNamedMessageHandler(EntityNetworkMessageNames.EntityInteractionCommand, HandleEntityInteractionCommand);
         handlersRegistered = true;
     }
 
@@ -753,6 +952,8 @@ public class NetworkEntityCoordinator : MonoBehaviour
 
         Manager.CustomMessagingManager.UnregisterNamedMessageHandler(EntityNetworkMessageNames.Snapshot);
         Manager.CustomMessagingManager.UnregisterNamedMessageHandler(EntityNetworkMessageNames.MoveCommand);
+        Manager.CustomMessagingManager.UnregisterNamedMessageHandler(EntityNetworkMessageNames.ResourceInteractionCommand);
+        Manager.CustomMessagingManager.UnregisterNamedMessageHandler(EntityNetworkMessageNames.EntityInteractionCommand);
         handlersRegistered = false;
     }
 

@@ -18,30 +18,30 @@
     padding-right: 18px;
     padding-top: 16px;
     padding-bottom: 16px;
-    background-color: rgba(10, 13, 12, 0.92);
+    background-color: rgba(8, 24, 18, 0.95);
     border-left-width: 1px;
     border-right-width: 1px;
     border-top-width: 1px;
     border-bottom-width: 1px;
-    border-left-color: rgba(255, 255, 255, 0.65);
-    border-right-color: rgba(255, 255, 255, 0.65);
-    border-top-color: rgba(255, 255, 255, 0.65);
-    border-bottom-color: rgba(255, 255, 255, 0.65);
-    border-top-left-radius: 14px;
-    border-top-right-radius: 14px;
-    border-bottom-left-radius: 14px;
-    border-bottom-right-radius: 14px;
+    border-left-color: rgba(91, 178, 139, 0.66);
+    border-right-color: rgba(91, 178, 139, 0.66);
+    border-top-color: rgba(91, 178, 139, 0.66);
+    border-bottom-color: rgba(91, 178, 139, 0.66);
+    border-top-left-radius: 11px;
+    border-top-right-radius: 11px;
+    border-bottom-left-radius: 11px;
+    border-bottom-right-radius: 11px;
 }
 
 .selected-entity-title {
-    color: white;
-    font-size: 22px;
-    unity-font-style: bold;
+    color: rgb(244, 250, 247);
+    font-size: 21px;
+    -unity-font-style: bold;
     white-space: normal;
 }
 
 .selected-entity-summary {
-    color: rgba(255, 255, 255, 0.75);
+    color: rgb(158, 188, 175);
     font-size: 13px;
     margin-top: 6px;
     margin-bottom: 12px;
@@ -58,7 +58,7 @@
 }
 
 .selected-entity-attribute-chip {
-    color: white;
+    color: rgb(231, 245, 238);
     font-size: 12px;
     margin-right: 6px;
     margin-bottom: 6px;
@@ -66,7 +66,7 @@
     padding-right: 9px;
     padding-top: 5px;
     padding-bottom: 5px;
-    background-color: rgba(68, 131, 111, 0.58);
+    background-color: rgba(51, 127, 94, 0.64);
     border-top-left-radius: 12px;
     border-top-right-radius: 12px;
     border-bottom-left-radius: 12px;
@@ -74,12 +74,16 @@
 }
 
 .selected-entity-empty {
-    color: rgba(255, 255, 255, 0.62);
+    color: rgb(144, 174, 161);
     font-size: 13px;
     white-space: normal;
 }
 
 .selected-entity-panel.hud-panel-editing-unlocked {
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
     border-left-color: rgb(255, 216, 74);
     border-right-color: rgb(255, 216, 74);
     border-top-color: rgb(255, 216, 74);

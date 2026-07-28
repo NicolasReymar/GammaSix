@@ -1,0 +1,28 @@
+{
+  "id": "unit.humanoid.worker",
+  "name": "Trabajador",
+  "kind": "unit",
+  "maxHealth": 80,
+  "moveSpeed": 4.0,
+  "solid": true,
+  "visual": "capsule",
+  "scale": { "x": 0.8, "y": 1.0, "z": 0.8 },
+  "attributes": [
+    "entity",
+    "entity.unit",
+    "unit.humanoid",
+    "unit.worker",
+    "movement.ground",
+    "interaction.selectable",
+    "interaction.controllable",
+    "physics.solid"
+  ],
+  "worker": {
+    "extractionTime": 2.0,
+    "repeatExtraction": true,
+    "resourceName": "wood",
+    "workerTier": 1,
+    "tools": [],
+    "interactionRange": 0.75
+  }
+}

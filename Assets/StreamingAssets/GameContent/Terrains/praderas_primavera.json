@@ -1,0 +1,14 @@
+{
+  "id": "praderas_primavera",
+  "name": "Praderas de Primavera",
+  "category": "pradera",
+  "subCategory": "primavera",
+  "tileSize": 1.0,
+  "color": "#4FAE55",
+  "walkable": true,
+  "movementCost": 1.0,
+  "attributes": [
+    "terrain.ground",
+    "terrain.walkable"
+  ]
+}

@@ -23,7 +23,7 @@ public static class HudDocumentFactory
         panelSettings = Object.Instantiate(template);
         panelSettings.name = $"{owner.name} PanelSettings (Runtime)";
         panelSettings.scaleMode = PanelScaleMode.ScaleWithScreenSize;
-        panelSettings.referenceResolution = new Vector2Int(1920, 1080);
+        panelSettings.referenceResolution = new Vector2Int(1920, 1024);
         panelSettings.screenMatchMode = PanelScreenMatchMode.MatchWidthOrHeight;
         panelSettings.match = 0.5f;
 

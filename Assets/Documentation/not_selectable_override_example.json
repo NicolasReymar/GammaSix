@@ -1,0 +1,14 @@
+{
+  "entityExample": {
+    "attributes": [
+      "interaction.selectable",
+      "interaction.not_selectable"
+    ]
+  },
+  "scenarioSettingOverride": {
+    "key": "override_not_selectable",
+    "displayName": "Permitir selección de entidades no seleccionables",
+    "value": "true",
+    "enabled": true
+  }
+}

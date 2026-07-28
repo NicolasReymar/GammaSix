@@ -127,6 +127,28 @@ public class SelectedEntityHudController : MonoBehaviour
             chip.AddToClassList("selected-entity-attribute-chip");
             attributesList.Add(chip);
         }
+
+        if (entity.HasAttribute(EntityAttributeIds.Resource))
+        {
+            string resources = entity.Resources != null && entity.Resources.Count > 0
+                ? string.Join(", ", entity.Resources.Select(resource =>
+                    $"{resource.ResourceId}: {(entity.ResourceInfinite ? "∞" : resource.Amount.ToString())}"))
+                : "Sin recursos disponibles";
+            Label resourceInfo = new($"Recurso tier {entity.ResourceTier} · {resources}");
+            resourceInfo.AddToClassList("selected-entity-empty");
+            attributesList.Add(resourceInfo);
+        }
+
+        if (entity.HasAttribute(EntityAttributeIds.Worker))
+        {
+            string carried = string.IsNullOrWhiteSpace(entity.WorkerResourceName)
+                ? "Sin recurso transportado"
+                : $"Transporta {entity.WorkerResourceName}: {entity.WorkerCarriedAmount}";
+            string status = entity.WorkerIsExtracting ? "Extrayendo" : "Disponible";
+            Label workerInfo = new($"{status} · {carried}");
+            workerInfo.AddToClassList("selected-entity-empty");
+            attributesList.Add(workerInfo);
+        }
     }
 
     private void RefreshEntitySummary(NetworkEntityView entity)

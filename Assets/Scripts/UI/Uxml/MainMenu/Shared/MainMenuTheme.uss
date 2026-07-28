@@ -1,0 +1,495 @@
+/* Gamma Six - sistema visual compartido para menús runtime */
+.gs-screen {
+    flex-grow: 1;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    padding-left: 38px;
+    padding-right: 38px;
+    padding-top: 28px;
+    padding-bottom: 30px;
+    background-color: rgb(8, 22, 18);
+    color: rgb(239, 248, 244);
+}
+
+.gs-top-accent {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 6px;
+    background-color: rgb(66, 197, 139);
+}
+
+.gs-header {
+    min-height: 112px;
+    flex-direction: row;
+    align-items: center;
+    padding-bottom: 20px;
+    border-bottom-width: 1px;
+    border-bottom-color: rgba(143, 196, 172, 0.28);
+}
+
+.gs-header-main {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.gs-eyebrow {
+    color: rgb(91, 218, 159);
+    font-size: 13px;
+    -unity-font-style: bold;
+    letter-spacing: 2px;
+    margin-bottom: 5px;
+}
+
+.gs-title {
+    color: rgb(247, 252, 249);
+    font-size: 42px;
+    -unity-font-style: bold;
+    white-space: normal;
+}
+
+.gs-title-large {
+    font-size: 64px;
+    letter-spacing: 3px;
+}
+
+.gs-subtitle {
+    color: rgb(156, 185, 173);
+    font-size: 15px;
+    margin-top: 6px;
+    white-space: normal;
+}
+
+.gs-header-actions {
+    flex-direction: row;
+    align-items: center;
+    margin-left: 24px;
+}
+
+.gs-header-actions .gs-button {
+    margin-left: 10px;
+}
+
+.gs-content {
+    flex-grow: 1;
+    min-height: 0;
+    padding-top: 24px;
+}
+
+.gs-row {
+    flex-direction: row;
+    min-width: 0;
+}
+
+.gs-row-wrap {
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.gs-spacer {
+    flex-grow: 1;
+}
+
+.gs-card {
+    min-width: 0;
+    padding-left: 22px;
+    padding-right: 22px;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    background-color: rgba(18, 45, 36, 0.96);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgba(113, 170, 145, 0.36);
+    border-right-color: rgba(113, 170, 145, 0.36);
+    border-top-color: rgba(113, 170, 145, 0.36);
+    border-bottom-color: rgba(113, 170, 145, 0.36);
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+}
+
+.gs-card-soft {
+    background-color: rgba(14, 37, 30, 0.86);
+}
+
+.gs-card-accent {
+    border-left-width: 4px;
+    border-left-color: rgb(66, 197, 139);
+}
+
+.gs-card-title {
+    color: rgb(242, 250, 246);
+    font-size: 24px;
+    -unity-font-style: bold;
+    margin-bottom: 7px;
+}
+
+.gs-card-title-small {
+    color: rgb(232, 244, 238);
+    font-size: 19px;
+    -unity-font-style: bold;
+    margin-bottom: 7px;
+}
+
+.gs-card-description,
+.gs-muted {
+    color: rgb(154, 184, 171);
+    font-size: 14px;
+    white-space: normal;
+}
+
+.gs-section-title {
+    color: rgb(224, 241, 233);
+    font-size: 18px;
+    -unity-font-style: bold;
+    margin-bottom: 10px;
+}
+
+.gs-divider {
+    height: 1px;
+    margin-top: 16px;
+    margin-bottom: 16px;
+    background-color: rgba(137, 184, 163, 0.22);
+}
+
+.gs-button {
+    min-width: 126px;
+    height: 44px;
+    padding-left: 18px;
+    padding-right: 18px;
+    color: rgb(242, 250, 246);
+    font-size: 15px;
+    -unity-font-style: bold;
+    background-color: rgb(42, 72, 61);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgb(83, 122, 106);
+    border-right-color: rgb(83, 122, 106);
+    border-top-color: rgb(83, 122, 106);
+    border-bottom-color: rgb(83, 122, 106);
+    border-top-left-radius: 7px;
+    border-top-right-radius: 7px;
+    border-bottom-left-radius: 7px;
+    border-bottom-right-radius: 7px;
+}
+
+.gs-button:hover {
+    background-color: rgb(55, 91, 77);
+    border-left-color: rgb(113, 163, 142);
+    border-right-color: rgb(113, 163, 142);
+    border-top-color: rgb(113, 163, 142);
+    border-bottom-color: rgb(113, 163, 142);
+}
+
+.gs-button-primary {
+    background-color: rgb(35, 132, 91);
+    border-left-color: rgb(75, 205, 146);
+    border-right-color: rgb(75, 205, 146);
+    border-top-color: rgb(75, 205, 146);
+    border-bottom-color: rgb(75, 205, 146);
+}
+
+.gs-button-primary:hover {
+    background-color: rgb(43, 157, 107);
+}
+
+.gs-button-danger {
+    background-color: rgb(120, 51, 52);
+    border-left-color: rgb(179, 83, 84);
+    border-right-color: rgb(179, 83, 84);
+    border-top-color: rgb(179, 83, 84);
+    border-bottom-color: rgb(179, 83, 84);
+}
+
+.gs-button-danger:hover {
+    background-color: rgb(146, 59, 61);
+}
+
+.gs-button-large {
+    height: 58px;
+    font-size: 18px;
+}
+
+.gs-button-wide {
+    width: 100%;
+}
+
+.gs-button-disabled {
+    opacity: 0.42;
+}
+
+.gs-action-stack .gs-button {
+    width: 100%;
+    height: 58px;
+    margin-bottom: 12px;
+    font-size: 18px;
+}
+
+.gs-field {
+    margin-bottom: 12px;
+    color: rgb(220, 236, 228);
+}
+
+.gs-field > .unity-base-field__label {
+    color: rgb(185, 211, 199);
+    min-width: 150px;
+}
+
+.gs-field > .unity-base-field__input {
+    min-height: 36px;
+    color: rgb(239, 248, 244);
+    background-color: rgb(7, 20, 16);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgb(55, 94, 77);
+    border-right-color: rgb(55, 94, 77);
+    border-top-color: rgb(55, 94, 77);
+    border-bottom-color: rgb(55, 94, 77);
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+}
+
+.gs-toggle {
+    color: rgb(215, 232, 224);
+    margin-bottom: 10px;
+}
+
+.gs-status {
+    min-height: 38px;
+    padding-left: 12px;
+    padding-right: 12px;
+    padding-top: 9px;
+    padding-bottom: 9px;
+    color: rgb(164, 215, 191);
+    background-color: rgba(7, 22, 17, 0.66);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+    white-space: normal;
+}
+
+.gs-status-error {
+    color: rgb(255, 172, 172);
+}
+
+.gs-choice-grid {
+    flex-grow: 1;
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: center;
+    min-height: 0;
+}
+
+.gs-choice-card {
+    flex-grow: 1;
+    flex-basis: 0;
+    max-width: 650px;
+    min-width: 320px;
+    margin-right: 18px;
+    justify-content: space-between;
+}
+
+.gs-choice-card-right {
+    margin-right: 0;
+}
+
+.gs-choice-number {
+    color: rgba(93, 223, 163, 0.66);
+    font-size: 54px;
+    -unity-font-style: bold;
+}
+
+.gs-chip {
+    align-self: flex-start;
+    min-height: 28px;
+    padding-left: 11px;
+    padding-right: 11px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    color: rgb(112, 232, 176);
+    font-size: 12px;
+    -unity-font-style: bold;
+    background-color: rgba(49, 145, 104, 0.24);
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+    border-bottom-left-radius: 14px;
+    border-bottom-right-radius: 14px;
+}
+
+.gs-two-column {
+    flex-grow: 1;
+    flex-direction: row;
+    min-height: 0;
+}
+
+.gs-column-main {
+    flex-grow: 1;
+    min-width: 0;
+    margin-right: 18px;
+}
+
+.gs-column-side {
+    width: 430px;
+    min-width: 360px;
+}
+
+.gs-scroll {
+    flex-grow: 1;
+    min-height: 0;
+}
+
+.gs-scroll .unity-scroller--horizontal {
+    display: none;
+}
+
+.gs-foldout {
+    flex-grow: 1;
+    color: rgb(225, 239, 232);
+}
+
+.gs-foldout > .unity-foldout__toggle {
+    min-height: 42px;
+    color: rgb(229, 243, 236);
+    -unity-font-style: bold;
+}
+
+.gs-foldout .unity-button {
+    min-height: 40px;
+    margin-top: 5px;
+    color: rgb(234, 246, 240);
+    background-color: rgb(35, 68, 56);
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+}
+
+.gs-selected-value {
+    color: rgb(94, 226, 164);
+    font-size: 18px;
+    -unity-font-style: bold;
+    white-space: normal;
+}
+
+.gs-settings-shell {
+    flex-grow: 1;
+    flex-direction: row;
+    min-height: 0;
+}
+
+.gs-settings-nav {
+    width: 245px;
+    min-width: 245px;
+    margin-right: 20px;
+    padding-right: 20px;
+    border-right-width: 1px;
+    border-right-color: rgba(137, 184, 163, 0.24);
+}
+
+.gs-settings-nav-button {
+    width: 100%;
+    height: 50px;
+    margin-bottom: 10px;
+    padding-left: 16px;
+    color: rgb(210, 231, 221);
+    -unity-text-align: middle-left;
+    background-color: rgb(26, 55, 45);
+    border-left-width: 4px;
+    border-left-color: transparent;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+.gs-settings-nav-button:hover {
+    background-color: rgb(36, 75, 61);
+}
+
+.gs-settings-nav-selected {
+    color: white;
+    background-color: rgb(38, 91, 70);
+    border-left-color: rgb(79, 221, 153);
+}
+
+.gs-settings-content {
+    flex-grow: 1;
+    min-width: 0;
+    padding-left: 8px;
+}
+
+.gs-setting-panel {
+    flex-grow: 1;
+    min-height: 0;
+}
+
+.gs-setting-action-card {
+    margin-top: 14px;
+    padding-left: 18px;
+    padding-right: 18px;
+    padding-top: 16px;
+    padding-bottom: 16px;
+    background-color: rgba(8, 27, 21, 0.58);
+    border-left-width: 3px;
+    border-left-color: rgb(66, 197, 139);
+    border-top-left-radius: 7px;
+    border-top-right-radius: 7px;
+    border-bottom-left-radius: 7px;
+    border-bottom-right-radius: 7px;
+}
+
+.gs-footer-actions {
+    flex-direction: row;
+    justify-content: flex-end;
+    margin-top: 16px;
+}
+
+.gs-footer-actions .gs-button {
+    margin-left: 10px;
+}
+
+.gs-profile-line {
+    flex-direction: row;
+    align-items: center;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.gs-profile-value {
+    flex-grow: 1;
+    color: rgb(95, 226, 165);
+    -unity-font-style: bold;
+    margin-left: 8px;
+}
+
+.gs-list-placeholder {
+    padding-left: 14px;
+    padding-right: 14px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    margin-bottom: 8px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-top-left-radius: 7px;
+    border-top-right-radius: 7px;
+    border-bottom-left-radius: 7px;
+    border-bottom-right-radius: 7px;
+}
+
+.gs-small-note {
+    color: rgb(131, 164, 149);
+    font-size: 12px;
+    white-space: normal;
+}

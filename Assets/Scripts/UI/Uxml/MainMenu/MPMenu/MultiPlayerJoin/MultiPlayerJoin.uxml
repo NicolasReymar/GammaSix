@@ -1,19 +1,28 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
-    <ui:VisualElement name="main-menu-panel" style="flex-grow:1; background-color:rgb(51,114,94); padding-left:40px; padding-right:40px; padding-top:30px; padding-bottom:30px;">
-        <ui:VisualElement style="flex-direction:row; justify-content:space-between; align-items:center; height:100px;">
-            <ui:Label text="Unirse a una partida" style="font-size:48px;" />
-            <ui:Button text="Retroceder" name="mp-join-menu-back-button" style="width:180px; height:48px;" />
+    <Style src="project://database/Assets/Scripts/UI/Uxml/MainMenu/Shared/MainMenuTheme.uss?fileID=7433441132597879392&amp;guid=9e28c42f3b8f4ec993d64783ddb4d799&amp;type=3#MainMenuTheme"/>
+    <ui:VisualElement name="main-menu-panel" class="gs-screen">
+        <ui:VisualElement class="gs-top-accent"/>
+        <ui:VisualElement class="gs-header">
+            <ui:VisualElement class="gs-header-main">
+                <ui:Label text="MULTIJUGADOR" class="gs-eyebrow"/>
+                <ui:Label text="Unirse a una partida" class="gs-title"/>
+            </ui:VisualElement>
+            <ui:VisualElement class="gs-header-actions">
+                <ui:Button text="Volver" name="mp-join-menu-back-button" class="gs-button"/>
+            </ui:VisualElement>
         </ui:VisualElement>
-        <ui:VisualElement style="width:560px; max-width:100%; align-self:center; margin-top:50px; padding-left:30px; padding-right:30px; padding-top:30px; padding-bottom:30px; background-color:rgba(255,255,255,0.18); border-top-left-radius:12px; border-top-right-radius:12px; border-bottom-left-radius:12px; border-bottom-right-radius:12px;">
-            <ui:Label text="Nombre del jugador" />
-            <ui:TextField name="mp-player-name-field" is-read-only="true" style="height:40px; margin-bottom:6px;" />
-            <ui:Label text="El nombre se cambia desde el menú multijugador." style="font-size:12px; margin-bottom:18px; white-space:normal;" />
-            <ui:Label text="Dirección IP del host" />
-            <ui:TextField name="mp-address-field" style="height:40px; margin-bottom:18px;" />
-            <ui:Label text="Puerto" />
-            <ui:IntegerField name="mp-port-field" style="height:40px; margin-bottom:24px;" />
-            <ui:Button text="Unirse" name="mp-join-button" style="height:52px; font-size:20px;" />
-            <ui:Label text="Ingresa la IP local del computador que inició la partida." name="mp-network-status-label" style="margin-top:20px; white-space:normal;" />
+        <ui:VisualElement class="gs-content" style="align-items: center; justify-content: center;">
+            <ui:VisualElement class="gs-card gs-card-accent" style="width: 720px; max-width: 92%;">
+                <ui:Label text="Datos de conexión" class="gs-card-title"/>
+                <ui:VisualElement class="gs-divider"/>
+                <ui:TextField label="Nombre del jugador" name="mp-player-name-field" class="gs-field"/>
+                <ui:TextField label="Dirección del servidor" name="mp-address-field" class="gs-field"/>
+                <ui:IntegerField label="Puerto" name="mp-port-field" class="gs-field"/>
+                <ui:VisualElement class="gs-footer-actions">
+                    <ui:Button text="Conectarse" name="mp-join-button" class="gs-button gs-button-primary gs-button-large"/>
+                </ui:VisualElement>
+                <ui:Label text="Esperando datos de conexión." name="mp-network-status-label" class="gs-status"/>
+            </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

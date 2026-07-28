@@ -14,23 +14,11 @@ GammaSixProyect
 
 @bugs
 - modif agregar zoom con la rueda del mouse, que sea un zoom fijo desde la perspectiva inicial hasta un 20% pero que el zoom tenga un porcentage de curvatura hacia el horizonte del mapa y abajo, asi no se perdera tanta perspectiva.
-
+- cuando entra otro jugador a la partida, todos los jugadores conectados listos pasan a no listo.
 ox no se ve el circulo verde bajo las unidades 
 	-se ve pero falta agregarle visibilidad.
 - alt mas alguna tecla, se escucha sonido de windows
 - agregar funcionalidad para mantener unidades seleccionadas utilizando ctrl + 1,  ctrl + 2 y ctrl + 3
-
-o al cargar el escenario o campana y esta trae configuraciones con overrides, se deben mantener los botones utilizables en la pantalla de configuracion de escaramuza para el host. el host debe poder clickear los botones de configuracion que el mapa trae como override.
-	o en base a esto corregir equipos fijos que aparece en el ui del lobby y dejarlo desbloqueado aunque se traiga con override en true.
-o las entidades de otro equipo se deben poder seleccionar, pero estas solo deben responder al jugador propietario.
-	o al clickear a una unidad de otro equipo, se debe poder marcar pero en vez de un halo verde, saldra un halo amarillo.
-	o esto se hara para poder visualizar las estadisticas de esas entidades en una vision que se hara de ui mas tarde (wip aun no se hace el tema de la ui de partida.)
-
-o entidades diferentes al equipo propio no se deben poder seleccionar todas con un doble click.
-o cuadro de estadisticas del lado izquierdo de la ui del juego esta en el lado superior izquiero, debe quedar abajo.
-	o se deben separar los cuadros uxml de oro y de entidades seleccionadas, separar archivos y la funcionalidad si la modularizacion queda mejor.
-		o agregar funcionalidad para que al mantener apretado control + click en un UI del juego, este pueda arrastrarse. esto para que se pueda modificar el como se ve el ui a gusto del jugador.
-			o si el objeto ui que esta arrastrando pasa alguno de los bordes, se debe mostrar la mitad del objeto ui que esta arrastrando el jugador en la pantalla. esto se hace para que no se pierdan los objetos ui si se arrastran mucho.
 
 
 - se ve cuadrado verde cuando se arrastran los UI
@@ -45,6 +33,61 @@ o cuadro de estadisticas del lado izquierdo de la ui del juego esta en el lado s
 
 
 
+circulo verde es mas pequeno ahora
+
+- terreno 
+	- se debe hacer un terreno.
+		- este terreno sera un cuadrado verde, sera 1 x1 unidades cuadrado.
+		- la dea es hacer un terreno para poder utilizar en el juego. 
+			- el terreno debe estar creado y registrado en el juego y debe cargarse segun el archivo guardado.
+				- la idea de registrarlo es para poder hacer un catalogo de terrenos.
+				- el terreno en si debera contener por lo tanto, el id del terreno(por ejemplo praderas_primavera), una categoria y una sub categoria (las sub categorias para los terrenos seran opcional), agregar mas opciones segun sea correspondiente.
+			
+
+- objetos del terreno y ambiente
+	- se debe hacer un objeto de ambiente, en este caso un arbol.
+		- utilizar el archivo de /fbx para poder crear el arbol inicial.
+		- integrar con el arbol la colision.
+		- la idea es hacer un arbol para poder generarlo en el mapa.
+			- registrar el arbol en entidades.
+				- generar un tag atributo para las entidades que se llamara recurso.
+					- lo que hara recurso es que las unidades trabajadoras podran extraer recursos desde esta entidad.
+						- el tag recurso hara que la entidad posea lo siguiente:
+							- un nuevo bool "infinito"
+								- como dice el nombre del bool, sera para hacer la extraccion del recurso desde esta entidad infinita
+							- una referencia llamada algo asi como "on resources spent" 
+								- esta referencia se hara hacia otra entidad para cuando el objeto se queda sin recursos.
+								- cuando esta referencia posee un null, el recurso simplemente se destruira para eliminarse.
+							- un arreglo el recurso y la cantidad que se posee en la entidad.
+							- un integer tier_recurso, que sera el tier del recurso y el tier que se necesitara de trabajador para que este pueda interactuar con el recurso.
+							- Ya que aun no se ha hecho el sistema de inventario ni de armas, esto de abajo por el momento estara wip (lo que empieza con el o)
+								o un arreglo de herramientas para extraer el recurso.
+									o un arreglo que bloqueara el uso del recurso en base a la herramienta que posee el recurso para poder ser extraido. 
+										o la herramienta respondera a la arma que la entidad posea 
+									o para que esta funcionalidad esta funcionando ok, si el arreglo de herramientas esta vacio null, entonces se ignorara el arreglo de herramientas.
+							- se debe ver como se guardara el movimiento de la entidad recurso al momento de que la entidad trabajadora interactua con el objeto
+								
+	
+
+- generar el tag atributo para las entidades que se llamara trabajador
+	- el tag servira para poder hacer que la entidad trabajadora tenga interaccion con la entidad recurso.
+	- la entidad trabajadora con tag trabajador poseera lo siguiente:
+		- tiempo extraccion recurso
+		- bool repetir extraccion
+		- nombre recurso
+		- se debe ver como se guardara el movimiento de la entidad trabajadora al momento de interactuar con el objeto
+		- 
+	- accion de sacar recurso
+		- si tier recurso y el arreglo de herramientas estan activos, entonces se tienen que verificar ambos 
+		- si es posible sacar el recurso y la entidad esta en la distancia de interaccion, entonces se podra extraer el recurso.
+			- cuando se extrae el recurso
+				- 1 se va a esperar el tiempo de extraccion de recurso.
+				- 2 se va a extraer  
+			- pasado el tiempo de extraccion, si la entidad tiene el bool repetir extraccion false
+				- no se sigue extrayendo.
+			- si la entidad tiene el bool repetir extraccion en true
+				- se vuelve a comenzar la extraccion, repitiendo el tiempo extraccion recurso.
+	
 
 
 
@@ -105,6 +148,24 @@ qa
 
 
 @todo
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 Sistema de items y de contenedores
@@ -365,6 +426,18 @@ o correciones para modo 3rd persona bloqueado
 	o al seleccionar otra entidad que no sea una entidad seleccionable, se debe deseleccionar todo excepto la entidad controlada
 o correciones para modo 3rd persona bloqueado
 	o  cuando cuando se selecciona una entidad que no sea propia y luego se presiona tab, se puede ver 
+
+o al cargar el escenario o campana y esta trae configuraciones con overrides, se deben mantener los botones utilizables en la pantalla de configuracion de escaramuza para el host. el host debe poder clickear los botones de configuracion que el mapa trae como override.
+	o en base a esto corregir equipos fijos que aparece en el ui del lobby y dejarlo desbloqueado aunque se traiga con override en true.
+o las entidades de otro equipo se deben poder seleccionar, pero estas solo deben responder al jugador propietario.
+	o al clickear a una unidad de otro equipo, se debe poder marcar pero en vez de un halo verde, saldra un halo amarillo.
+	o esto se hara para poder visualizar las estadisticas de esas entidades en una vision que se hara de ui mas tarde (wip aun no se hace el tema de la ui de partida.)
+
+o entidades diferentes al equipo propio no se deben poder seleccionar todas con un doble click.
+o cuadro de estadisticas del lado izquierdo de la ui del juego esta en el lado superior izquiero, debe quedar abajo.
+	o se deben separar los cuadros uxml de oro y de entidades seleccionadas, separar archivos y la funcionalidad si la modularizacion queda mejor.
+		o agregar funcionalidad para que al mantener apretado control + click en un UI del juego, este pueda arrastrarse. esto para que se pueda modificar el como se ve el ui a gusto del jugador.
+			o si el objeto ui que esta arrastrando pasa alguno de los bordes, se debe mostrar la mitad del objeto ui que esta arrastrando el jugador en la pantalla. esto se hace para que no se pierdan los objetos ui si se arrastran mucho.
 
 
 

@@ -14,11 +14,13 @@ public static class GameContentRepository
     private const string ScenariosFolderName = "Scenarios";
     private const string CampaignsFolderName = "Campaigns";
     private const string EntitiesFolderName = "Entities";
+    private const string TerrainsFolderName = "Terrains";
 
     public static string RootPath => Path.Combine(Application.persistentDataPath, RootFolderName);
     public static string ScenariosPath => Path.Combine(RootPath, ScenariosFolderName);
     public static string CampaignsPath => Path.Combine(RootPath, CampaignsFolderName);
     public static string EntitiesPath => Path.Combine(RootPath, EntitiesFolderName);
+    public static string TerrainsPath => Path.Combine(RootPath, TerrainsFolderName);
 
     public static IReadOnlyList<GameContentEntry> LoadAllContent()
     {
@@ -69,8 +71,10 @@ public static class GameContentRepository
         Directory.CreateDirectory(ScenariosPath);
         Directory.CreateDirectory(CampaignsPath);
         Directory.CreateDirectory(EntitiesPath);
+        Directory.CreateDirectory(TerrainsPath);
         CopyBuiltInExamples();
         EntityDefinitionRepository.EnsureDefinitions();
+        TerrainDefinitionRepository.EnsureDefinitions();
         Debug.Log($"[GameContentRepository] Escenarios: {ScenariosPath}");
         Debug.Log($"[GameContentRepository] Campañas: {CampaignsPath}");
     }
@@ -81,6 +85,7 @@ public static class GameContentRepository
         CopyJsonFiles(Path.Combine(sourceRoot, ScenariosFolderName), ScenariosPath);
         CopyJsonFiles(Path.Combine(sourceRoot, CampaignsFolderName), CampaignsPath);
         CopyJsonFiles(Path.Combine(sourceRoot, EntitiesFolderName), EntitiesPath);
+        CopyJsonFiles(Path.Combine(sourceRoot, TerrainsFolderName), TerrainsPath);
     }
 
     private static void CopyJsonFiles(string sourceFolder, string targetFolder)

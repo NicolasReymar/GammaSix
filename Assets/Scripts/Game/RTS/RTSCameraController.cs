@@ -53,6 +53,7 @@ public sealed class RTSCameraController : MonoBehaviour
     private bool hasSavedRtsState;
     private bool returningToRts;
     private bool initialized;
+    private bool wasUiModalOpen;
 
     private const float FreeMoveSpeed = 18f;
     private const float KeyboardAcceleration = 8f;
@@ -255,6 +256,23 @@ public sealed class RTSCameraController : MonoBehaviour
             controlledCamera = Camera.main;
         if (controlledCamera == null)
             return;
+
+        if (GameUiModalService.BlocksGameplayInput)
+        {
+            if (!wasUiModalOpen)
+            {
+                wasUiModalOpen = true;
+                SetLockedCursorState(false);
+                ResetFreeMovement();
+            }
+            return;
+        }
+
+        if (wasUiModalOpen)
+        {
+            wasUiModalOpen = false;
+            ApplyThirdPersonCursorState();
+        }
 
         HandleAltDoublePress();
 
