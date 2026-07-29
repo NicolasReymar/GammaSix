@@ -4,9 +4,6 @@ GammaSixProyect
 
 
 
-
-
-
 --**Todo**--
 
 
@@ -14,16 +11,12 @@ GammaSixProyect
 
 @bugs
 - modif agregar zoom con la rueda del mouse, que sea un zoom fijo desde la perspectiva inicial hasta un 20% pero que el zoom tenga un porcentage de curvatura hacia el horizonte del mapa y abajo, asi no se perdera tanta perspectiva.
-- cuando entra otro jugador a la partida, todos los jugadores conectados listos pasan a no listo.
 ox no se ve el circulo verde bajo las unidades 
 	-se ve pero falta agregarle visibilidad.
 - alt mas alguna tecla, se escucha sonido de windows
-- agregar funcionalidad para mantener unidades seleccionadas utilizando ctrl + 1,  ctrl + 2 y ctrl + 3
+- en el modo de control en 3ra persona, con 
 
-
-- se ve cuadrado verde cuando se arrastran los UI
- - correjir haciendo que al clickear un objeto y este es UI no suceda esto.
-
+- modificar tamaño de arboles para que sean acordes a los elementos del mapa.
 - cuando se tiene un grupo de entidades seleccionado, no se deben poder seleccionar entidades de otro jugador o neutrales.
 	- cuando se agrupa un grupo de entidades del equipo del jugador entonces ya no se puede seleccionar una entidades enemiga, neutral o aliada (de otro jugador) para agrupar a la seleccion.
 	x las entidades neutrales, aliadas (del equipo de otro jugador) o enemigas no se deben mostrar en el hud de entidades seleccionadas agrupadas.
@@ -31,72 +24,25 @@ ox no se ve el circulo verde bajo las unidades
 			xo esto se debe corregir restringiendo el shift click izquiero en entidades diferentes a las del player cuando ya se tiene agrupada una seleccion, o corrige segun corresponda
 
 
-
-
 circulo verde es mas pequeno ahora
 
-- terreno 
-	- se debe hacer un terreno.
-		- este terreno sera un cuadrado verde, sera 1 x1 unidades cuadrado.
-		- la dea es hacer un terreno para poder utilizar en el juego. 
-			- el terreno debe estar creado y registrado en el juego y debe cargarse segun el archivo guardado.
-				- la idea de registrarlo es para poder hacer un catalogo de terrenos.
-				- el terreno en si debera contener por lo tanto, el id del terreno(por ejemplo praderas_primavera), una categoria y una sub categoria (las sub categorias para los terrenos seran opcional), agregar mas opciones segun sea correspondiente.
+xo terreno 
+	xo se debe hacer un terreno.
+		ox este terreno sera un cuadrado verde, sera 1 x1 unidades cuadrado.
+			x el terreno debe ser mas pequeño, se debe registrar 1 coordenada x 1 coordenada cuadrada como un bloque del terreno.
+		o la dea es hacer un terreno para poder utilizar en el juego. 
+			o el terreno debe estar creado y registrado en el juego y debe cargarse segun el archivo guardado.
+				o la idea de registrarlo es para poder hacer un catalogo de terrenos.
+				o1 el terreno en si debera contener por lo tanto, el id del terreno(por ejemplo praderas_primavera), una categoria y una sub categoria (las sub categorias para los terrenos seran opcional), agregar mas opciones segun sea correspondiente.
 			
-
-- objetos del terreno y ambiente
-	- se debe hacer un objeto de ambiente, en este caso un arbol.
-		- utilizar el archivo de /fbx para poder crear el arbol inicial.
-		- integrar con el arbol la colision.
-		- la idea es hacer un arbol para poder generarlo en el mapa.
-			- registrar el arbol en entidades.
-				- generar un tag atributo para las entidades que se llamara recurso.
-					- lo que hara recurso es que las unidades trabajadoras podran extraer recursos desde esta entidad.
-						- el tag recurso hara que la entidad posea lo siguiente:
-							- un nuevo bool "infinito"
-								- como dice el nombre del bool, sera para hacer la extraccion del recurso desde esta entidad infinita
-							- una referencia llamada algo asi como "on resources spent" 
-								- esta referencia se hara hacia otra entidad para cuando el objeto se queda sin recursos.
-								- cuando esta referencia posee un null, el recurso simplemente se destruira para eliminarse.
-							- un arreglo el recurso y la cantidad que se posee en la entidad.
-							- un integer tier_recurso, que sera el tier del recurso y el tier que se necesitara de trabajador para que este pueda interactuar con el recurso.
-							- Ya que aun no se ha hecho el sistema de inventario ni de armas, esto de abajo por el momento estara wip (lo que empieza con el o)
-								o un arreglo de herramientas para extraer el recurso.
-									o un arreglo que bloqueara el uso del recurso en base a la herramienta que posee el recurso para poder ser extraido. 
-										o la herramienta respondera a la arma que la entidad posea 
-									o para que esta funcionalidad esta funcionando ok, si el arreglo de herramientas esta vacio null, entonces se ignorara el arreglo de herramientas.
-							- se debe ver como se guardara el movimiento de la entidad recurso al momento de que la entidad trabajadora interactua con el objeto
-								
-	
-
-- generar el tag atributo para las entidades que se llamara trabajador
-	- el tag servira para poder hacer que la entidad trabajadora tenga interaccion con la entidad recurso.
-	- la entidad trabajadora con tag trabajador poseera lo siguiente:
-		- tiempo extraccion recurso
-		- bool repetir extraccion
-		- nombre recurso
-		- se debe ver como se guardara el movimiento de la entidad trabajadora al momento de interactuar con el objeto
-		- 
-	- accion de sacar recurso
-		- si tier recurso y el arreglo de herramientas estan activos, entonces se tienen que verificar ambos 
-		- si es posible sacar el recurso y la entidad esta en la distancia de interaccion, entonces se podra extraer el recurso.
-			- cuando se extrae el recurso
-				- 1 se va a esperar el tiempo de extraccion de recurso.
-				- 2 se va a extraer  
-			- pasado el tiempo de extraccion, si la entidad tiene el bool repetir extraccion false
-				- no se sigue extrayendo.
-			- si la entidad tiene el bool repetir extraccion en true
-				- se vuelve a comenzar la extraccion, repitiendo el tiempo extraccion recurso.
-	
-
-
-
-
-
-
-
-
-
+- visor de entidades
+	- que en el UI de visor de entidades en el juego se refresque periodicamente la entidad visualizada seleccionada, para que no quede estatico el visor.
+		
+-UI nueva en el juego.
+	- se necesita una UI para la barra de progreso de la unidad haciendo una interaccion.
+		- por ejemplo, si la entidad esta extrayendo madera, la entidad esta ocupada, eso pasa ahora. Lo que se requiere nuevo es que la entidad tenga una barra de trabajo cuando esta ocupada, trabajando, canalizando, etc.
+			- la barra UI debe estar abajo de la entidad, mirando hacia el jugador en todo momento.
+			- 
 
 
 
@@ -162,10 +108,17 @@ qa
 
 
 
+- agregar funcionalidad para mantener unidades seleccionadas utilizando ctrl + 1,  ctrl + 2 y ctrl + 3
 
 
 
 
+- agregar distancia de interaccion.
+	- las entidades deben tener una distancia para interactuar.
+	- la distancia para interactuar se calculara con un monto fijo mas la distanica desde el rigidbody.
+		- esto servira para que cuando la entidad tiene mejoras o peoras de rango de interaccion, entonces se vea afectada.
+	-  hacer que la interaccion de todas las entidades trabajen en base a esto. 
+	
 
 
 Sistema de items y de contenedores
@@ -438,6 +391,110 @@ o cuadro de estadisticas del lado izquierdo de la ui del juego esta en el lado s
 	o se deben separar los cuadros uxml de oro y de entidades seleccionadas, separar archivos y la funcionalidad si la modularizacion queda mejor.
 		o agregar funcionalidad para que al mantener apretado control + click en un UI del juego, este pueda arrastrarse. esto para que se pueda modificar el como se ve el ui a gusto del jugador.
 			o si el objeto ui que esta arrastrando pasa alguno de los bordes, se debe mostrar la mitad del objeto ui que esta arrastrando el jugador en la pantalla. esto se hace para que no se pierdan los objetos ui si se arrastran mucho.
+
+oo objetos del terreno y ambiente
+	o se debe hacer un objeto de ambiente, en este caso un arbol.
+		o utilizar el archivo de /fbx para poder crear el arbol inicial.
+		o integrar con el arbol la colision.
+		o la idea es hacer un arbol para poder generarlo en el mapa.
+			o registrar el arbol en entidades.
+				o generar un tag atributo para las entidades que se llamara recurso.
+					o lo que hara recurso es que las unidades trabajadoras podran extraer recursos desde esta entidad.
+						o el tag recurso hara que la entidad posea lo siguiente:
+							o un nuevo bool "infinito"
+								o como dice el nombre del bool, sera para hacer la extraccion del recurso desde esta entidad infinita
+							o una referencia llamada algo asi como "on resources spent" 
+								o esta referencia se hara hacia otra entidad para cuando el objeto se queda sin recursos.
+								o cuando esta referencia posee un null, el recurso simplemente se destruira para eliminarse.
+							o un arreglo el recurso y la cantidad que se posee en la entidad.
+							o un integer tier_recurso, que sera el tier del recurso y el tier que se necesitara de trabajador para que este pueda interactuar con el recurso.
+							oo Ya que aun no se ha hecho el sistema de inventario ni de armas, esto de abajo por el momento estara wip (lo que empieza con el o)
+								oo un arreglo de herramientas para extraer el recurso.
+									oo un arreglo que bloqueara el uso del recurso en base a la herramienta que posee el recurso para poder ser extraido. 
+										oo la herramienta respondera a la arma que la entidad posea 
+									oo para que esta funcionalidad esta funcionando ok, si el arreglo de herramientas esta vacio null, entonces se ignorara el arreglo de herramientas.
+							o se debe ver como se guardara el movimiento de la entidad recurso al momento de que la entidad trabajadora interactua con el objeto
+								
+o generar el tag atributo para las entidades que se llamara trabajador
+	o el tag servira para poder hacer que la entidad trabajadora tenga interaccion con la entidad recurso.
+	o la entidad trabajadora con tag trabajador poseera lo siguiente:
+		o tiempo extraccion recurso
+		o bool repetir extraccion
+		o nombre recurso
+		o se debe ver como se guardara el movimiento de la entidad trabajadora al momento de interactuar con el objeto
+ 
+	o accion de sacar recurso
+		o si tier recurso y el arreglo de herramientas estan activos, entonces se tienen que verificar ambos 
+		o si es posible sacar el recurso y la entidad esta en la distancia de interaccion, entonces se podra extraer el recurso.
+			o cuando se extrae el recurso
+				o 1 se va a esperar el tiempo de extraccion de recurso.
+				o 2 se va a extraer  
+			o pasado el tiempo de extraccion, si la entidad tiene el bool repetir extraccion false
+				o no se sigue extrayendo.
+			o si la entidad tiene el bool repetir extraccion en true
+				o se vuelve a comenzar la extraccion, repitiendo el tiempo extraccion recurso.
+	
+o agregar atributo no seleccionable.
+	o servira para que las unidades no se puedan seleccionar o no aparezca un borde de aura.
+	o como dice arriba, al estar como no seleccionable se debe ocultar su seleccion en un mapa normal.
+		o debe existir una forma de poder seleccionar las entidades no seleccionables en algun momento, asi que en las configuraciones de la partida guardada se creara una configuracion de override_not_selectable
+			o si esta en true, entonces el atributo not_selectable debe quedar en estado override, no se como se pued ehacer de la mejor manera ya que en un futuro es probable que funcione para mas entidades como todo.
+
+o menu de partida con escape.
+	o al presionar escape, se debe ver el menu de partida. este debe ser un uxml rectangular con las diferentes opciones que se tienen.
+	o entre las opciones estaran volver a la partida, ajustes, salir de la partida, entre otras que se agregaran a futuro.
+		o volver a la partida cierra el menu de partida.
+		o ajustes abrira el uxml de ajustes.
+			o en el menu ajustes se separaran por categoria, ajustes de video, ajustes de sonido y ajustes de interfaz.
+				o ajustes de video no tendra ajustes por el momento.
+				o ajustes de sonido no tendra ajustes por el momento.
+				o ajustes de interfaz tendran un boton de guardar coordenadas del sistema de guardado de UI en juego.
+	
+o Sistema de guardado de UI en juego
+	o hacer un sistema de guardado de las coordenadas de los objetos de la UI, para que la proxima vez iniciando el juego se carguen esas coordenadas.
+		o agregar un boton de "guardar coordenadas" 
+			o crear un uxml donde se almacenara el boton.
+			o el boton debe tener un margen de 25% por ambos lados del borde y decir "guardar coords UI"
+				o cuando el boton se presione se deben guardar las coordenadas de las UI que hay en el juego, las cuales se usaran despues para cargarlas nuevamente al iniciar el juego.
+				
+o cuando entra otro jugador a la partida, todos los jugadores conectados listos deben pasar a no listo.
+
+o boton cambiar color 
+	o si se clickea el boton del color a elegir nuevamente se cierra el panel
+	o hacer que los colores se agrupen en 2 filas ya que quedan muy alargados
+o boton cambiar de equipo
+	o si se cambia de equipo con la config de equipos fijos, no se debe traer y cambiar el color del player.
+	o si se clickea el boton del equipo a elegir nuevamente se cierra el panel
+	o hacer que equipos se agrupen en 2 filas ya que quedan alargados igualmente como el boton de color
+o al hacer doble click en una entidad con tag heroica, no se selecciona con un grupo de unidades del mismo tipo.
+	o como tampoco cuando se doble clickea un soldado para agrupar a todos los de la vista, el soldado heroico no se agrupara a ellos.
+	o debe ser dinamico como lo que hemos hecho
+
+o arboles no se ven correctamente
+	o no spawnean pero se generan en el entorno 
+
+o menu de partida con escape.
+	o al presionar escape, se debe ver el menu de partida. este debe ser un uxml rectangular con las diferentes opciones que se tienen.
+	o entre las opciones estaran volver a la partida, ajustes, salir de la partida, entre otras que se agregaran a futuro.
+		o volver a la partida cierra el menu de partida.
+		o ajustes abrira el uxml de ajustes.
+			o en el menu ajustes se separaran por categoria, ajustes de video, ajustes de sonido y ajustes de interfaz.
+				o ajustes de video no tendra ajustes por el momento.
+				o ajustes de sonido no tendra ajustes por el momento.
+				o ajustes de interfaz tendran un boton de guardar coordenadas del sistema de guardado de UI en juego.
+	
+o Sistema de guardado de UI en juego
+	o hacer un sistema de guardado de las coordenadas de los objetos de la UI, para que la proxima vez iniciando el juego se carguen esas coordenadas.
+		o agregar un boton de "guardar coordenadas" 
+			o crear un uxml donde se almacenara el boton.
+			o el boton debe tener un margen de 25% por ambos lados del borde y decir "guardar coords UI"
+				o cuando el boton se presione se deben guardar las coordenadas de las UI que hay en el juego, las cuales se usaran despues para cargarlas nuevamente al iniciar el juego.
+o se ve cuadrado verde cuando se arrastran los UI
+	o correjir haciendo que al clickear un objeto y este es UI no suceda esto.
+
+
+
+
 
 
 

@@ -1,30 +1,35 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
-    <Style src="project://database/Assets/Scripts/UI/Uxml/MainMenu/Shared/MainMenuTheme.uss?fileID=7433441132597879392&amp;guid=9e28c42f3b8f4ec993d64783ddb4d799&amp;type=3#MainMenuTheme"/>
+    <Style src="../Shared/MainMenuTheme.uss" />
     <ui:VisualElement name="main-menu-panel" class="gs-screen">
-        <ui:VisualElement class="gs-top-accent"/>
+        <ui:VisualElement class="gs-top-accent" />
         <ui:VisualElement class="gs-header">
             <ui:VisualElement class="gs-header-main">
-                <ui:Label text="MODOS DE JUEGO" class="gs-eyebrow"/>
-                <ui:Label text="Un jugador" class="gs-title"/>
+                <ui:Label text="MODOS DE JUEGO" class="gs-eyebrow" />
+                <ui:Label text="Un jugador" class="gs-title" />
+                <ui:Label text="Elige una historia guiada o configura una batalla independiente." class="gs-subtitle" />
             </ui:VisualElement>
             <ui:VisualElement class="gs-header-actions">
-                <ui:Button text="Volver" name="single-player-back-button" class="gs-button"/>
+                <ui:Button text="Volver" name="single-player-back-button" class="gs-button" />
             </ui:VisualElement>
         </ui:VisualElement>
+
         <ui:VisualElement class="gs-content gs-choice-grid">
             <ui:VisualElement class="gs-card gs-card-accent gs-choice-card">
                 <ui:VisualElement>
-                    <ui:Label text="01" class="gs-choice-number"/>
-                    <ui:Label text="Campaña" class="gs-card-title"/>
+                    <ui:Label text="01" class="gs-choice-number" />
+                    <ui:Label text="Campaña" class="gs-card-title" />
+                    <ui:Label text="Avanza por escenarios conectados, secuencias narrativas y objetivos persistentes." class="gs-card-description" />
                 </ui:VisualElement>
-                <ui:Button text="Abrir campañas" name="sp-campaign-button" class="gs-button gs-button-primary gs-button-large gs-button-wide"/>
+                <ui:Button text="Abrir campañas" name="sp-campaign-button" class="gs-button gs-button-primary gs-button-large gs-button-wide" />
             </ui:VisualElement>
+
             <ui:VisualElement class="gs-card gs-choice-card gs-choice-card-right">
                 <ui:VisualElement>
-                    <ui:Label text="02" class="gs-choice-number"/>
-                    <ui:Label text="Escaramuza" class="gs-card-title"/>
+                    <ui:Label text="02" class="gs-choice-number" />
+                    <ui:Label text="Escaramuza" class="gs-card-title" />
+                    <ui:Label text="Selecciona un escenario y comienza una partida local con sus reglas predefinidas." class="gs-card-description" />
                 </ui:VisualElement>
-                <ui:Button text="Abrir escaramuzas" name="sp-skirmish-button" class="gs-button gs-button-primary gs-button-large gs-button-wide"/>
+                <ui:Button text="Abrir escaramuzas" name="sp-skirmish-button" class="gs-button gs-button-primary gs-button-large gs-button-wide" />
             </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>

@@ -4,14 +4,21 @@ using UnityEngine.UIElements;
 /// <summary>
 /// Panel arrastrable del HUD. La restauración se repite durante varios frames
 /// hasta que UI Toolkit termina de aplicar UXML/USS y la geometría queda estable.
+/// Puede utilizar una superficie de arrastre específica para no interferir con
+/// controles interactivos como campos de texto o botones.
 /// </summary>
 public sealed class DraggableHudPanel
 {
     private const int MaxRestoreAttempts = 30;
+    private const string SharedStyleResourcePath = "UI/GameHud/GameHudShared";
+
+    private static StyleSheet sharedStyleSheet;
 
     private readonly VisualElement root;
     private readonly VisualElement panel;
+    private readonly VisualElement dragSurface;
     private readonly string preferenceKey;
+    private readonly bool allowDragWhileModalOpen;
 
     private bool dragging;
     private int pointerId = -1;
@@ -22,17 +29,27 @@ public sealed class DraggableHudPanel
     private bool editingUnlocked;
     private int restoreAttempts;
 
-    public DraggableHudPanel(VisualElement root, VisualElement panel, string preferenceKey)
+    public DraggableHudPanel(
+        VisualElement root,
+        VisualElement panel,
+        string preferenceKey,
+        VisualElement dragSurface = null,
+        bool allowDragWhileModalOpen = false)
     {
         this.root = root;
         this.panel = panel;
         this.preferenceKey = preferenceKey;
+        this.dragSurface = dragSurface ?? panel;
+        this.allowDragWhileModalOpen = allowDragWhileModalOpen;
         editingUnlocked = HudInteractionService.IsEditingUnlocked;
 
-        panel.RegisterCallback<PointerDownEvent>(OnPointerDown);
-        panel.RegisterCallback<PointerMoveEvent>(OnPointerMove);
-        panel.RegisterCallback<PointerUpEvent>(OnPointerUp);
-        panel.RegisterCallback<PointerCancelEvent>(OnPointerCancel);
+        EnsureSharedStyle(root);
+        panel.AddToClassList("hud-draggable-panel");
+
+        this.dragSurface.RegisterCallback<PointerDownEvent>(OnPointerDown);
+        this.dragSurface.RegisterCallback<PointerMoveEvent>(OnPointerMove);
+        this.dragSurface.RegisterCallback<PointerUpEvent>(OnPointerUp);
+        this.dragSurface.RegisterCallback<PointerCancelEvent>(OnPointerCancel);
         root.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
         panel.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
         HudInteractionService.EditingUnlockedChanged += SetEditingUnlocked;
@@ -47,10 +64,10 @@ public sealed class DraggableHudPanel
     public void Dispose()
     {
         EndDrag();
-        panel.UnregisterCallback<PointerDownEvent>(OnPointerDown);
-        panel.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
-        panel.UnregisterCallback<PointerUpEvent>(OnPointerUp);
-        panel.UnregisterCallback<PointerCancelEvent>(OnPointerCancel);
+        dragSurface.UnregisterCallback<PointerDownEvent>(OnPointerDown);
+        dragSurface.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
+        dragSurface.UnregisterCallback<PointerUpEvent>(OnPointerUp);
+        dragSurface.UnregisterCallback<PointerCancelEvent>(OnPointerCancel);
         root.UnregisterCallback<GeometryChangedEvent>(OnGeometryChanged);
         panel.UnregisterCallback<GeometryChangedEvent>(OnGeometryChanged);
         HudInteractionService.EditingUnlockedChanged -= SetEditingUnlocked;
@@ -81,20 +98,37 @@ public sealed class DraggableHudPanel
         return SetClampedPosition(defaultPosition);
     }
 
+    private static void EnsureSharedStyle(VisualElement targetRoot)
+    {
+        if (targetRoot == null)
+            return;
+
+        if (sharedStyleSheet == null)
+            sharedStyleSheet = Resources.Load<StyleSheet>(SharedStyleResourcePath);
+
+        if (sharedStyleSheet != null)
+            targetRoot.styleSheets.Add(sharedStyleSheet);
+    }
+
     private void OnModalStateChanged(bool isOpen)
     {
-        if (isOpen)
+        if (isOpen && !allowDragWhileModalOpen)
             EndDrag();
     }
 
     private void UpdateEditingVisualState()
     {
         panel.EnableInClassList("hud-panel-editing-unlocked", editingUnlocked);
+        if (dragSurface != panel)
+            dragSurface.EnableInClassList("hud-drag-surface-editing-unlocked", editingUnlocked);
     }
 
     private void OnPointerDown(PointerDownEvent evt)
     {
-        if (evt.button != 0 || !editingUnlocked || GameUiModalService.BlocksGameplayInput)
+        if (evt.button != 0 || !editingUnlocked)
+            return;
+
+        if (!allowDragWhileModalOpen && GameUiModalService.BlocksGameplayInput)
             return;
 
         if (!EnsureInitialized())
@@ -103,7 +137,7 @@ public sealed class DraggableHudPanel
         dragging = true;
         HudInteractionService.BeginDrag();
         pointerId = evt.pointerId;
-        panel.CapturePointer(pointerId);
+        dragSurface.CapturePointer(pointerId);
 
         Vector2 pointerInRoot = root.WorldToLocal(new Vector2(evt.position.x, evt.position.y));
         pointerOffset = pointerInRoot - CurrentPosition;
@@ -112,7 +146,7 @@ public sealed class DraggableHudPanel
 
     private void OnPointerMove(PointerMoveEvent evt)
     {
-        if (!dragging || evt.pointerId != pointerId || !panel.HasPointerCapture(pointerId))
+        if (!dragging || evt.pointerId != pointerId || !dragSurface.HasPointerCapture(pointerId))
             return;
 
         Vector2 pointerInRoot = root.WorldToLocal(new Vector2(evt.position.x, evt.position.y));
@@ -138,8 +172,8 @@ public sealed class DraggableHudPanel
     private void EndDrag()
     {
         bool wasDragging = dragging;
-        if (pointerId >= 0 && panel.HasPointerCapture(pointerId))
-            panel.ReleasePointer(pointerId);
+        if (pointerId >= 0 && dragSurface.HasPointerCapture(pointerId))
+            dragSurface.ReleasePointer(pointerId);
 
         dragging = false;
         pointerId = -1;

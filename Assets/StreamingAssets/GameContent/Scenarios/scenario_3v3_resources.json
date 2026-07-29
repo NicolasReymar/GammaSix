@@ -262,5 +262,66 @@
       "teamId": 2,
       "gold": 500
     }
+  ],
+  "gameModeId": "base:game-mode.normal",
+  "participantConfiguration": {
+    "maximumHumanPlayers": 2,
+    "maximumParticipants": 2,
+    "availableHeadlessProfiles": [
+      "base:headless.commander.normal"
+    ],
+    "requiredParticipants": []
+  },
+  "entityCatalog": {
+    "spawnableEntityIds": [],
+    "includeGameModeDefaults": true
+  },
+  "rules": [
+    {
+      "id": "rule.aura.humanoid.enter",
+      "enabled": true,
+      "eventType": "entity-entered-area",
+      "priority": 10,
+      "cooldown": 0.25,
+      "conditions": [
+        {
+          "type": "area-has-attribute",
+          "attribute": "trigger.aura"
+        },
+        {
+          "type": "entity-has-attribute",
+          "attribute": "unit.humanoid"
+        }
+      ],
+      "actions": [
+        {
+          "type": "show-message",
+          "message": "Una unidad humanoide entró en un área de aura."
+        }
+      ]
+    },
+    {
+      "id": "rule.aura.humanoid.exit",
+      "enabled": true,
+      "eventType": "entity-exited-area",
+      "priority": 10,
+      "cooldown": 0.25,
+      "conditions": [
+        {
+          "type": "area-has-attribute",
+          "attribute": "trigger.aura"
+        },
+        {
+          "type": "entity-has-attribute",
+          "attribute": "unit.humanoid"
+        }
+      ],
+      "actions": [
+        {
+          "type": "show-message",
+          "message": "Una unidad humanoide salió de un área de aura."
+        }
+      ]
+    }
   ]
 }

@@ -1,0 +1,42 @@
+{
+  "id": "area.prison-rescue",
+  "name": "Zona de prisión y rescate",
+  "description": "Área lógica reutilizable para mantener una entidad capturada y permitir canalizaciones de rescate.",
+  "kind": "environment",
+  "maxHealth": 1,
+  "moveSpeed": 0.0,
+  "solid": false,
+  "visual": "aura",
+  "scale": {
+    "x": 6.0,
+    "y": 0.04,
+    "z": 6.0
+  },
+  "attributes": [
+    "entity",
+    "entity.environment",
+    "entity.area",
+    "area.circular",
+    "area.trigger",
+    "trigger.prison",
+    "trigger.rescue",
+    "interaction.not_selectable",
+    "physics.not_solid"
+  ],
+  "area": {
+    "shape": "circle",
+    "radius": 3.0,
+    "relationship": "all",
+    "requiredAttributes": [
+      "unit.humanoid"
+    ],
+    "excludedAttributes": [
+      "entity.area"
+    ],
+    "emitEnter": true,
+    "emitStay": true,
+    "emitExit": true,
+    "stayInterval": 0.25,
+    "visible": true
+  }
+}

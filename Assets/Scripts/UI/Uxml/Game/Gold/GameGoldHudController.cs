@@ -33,6 +33,11 @@ public class GameGoldHudController : MonoBehaviour
         RefreshGold();
     }
 
+    private void Update()
+    {
+        RefreshGold();
+    }
+
     private void OnDestroy()
     {
         draggablePanel?.Dispose();
@@ -55,6 +60,18 @@ public class GameGoldHudController : MonoBehaviour
 
     private int ResolveLocalTeamGold()
     {
+        MatchRuntimeController controller = MatchRuntimeController.Instance;
+        AuthoritativeMatchRuntime runtime = controller?.Runtime;
+        if (runtime?.Participants != null && runtime.Teams != null &&
+            runtime.Participants.TryGet(controller.LocalParticipantId, out MatchParticipantRuntimeState participant) &&
+            runtime.Teams.TryGet(participant.TeamId, out MatchTeamRuntimeState team))
+        {
+            return Mathf.Max(0, team.Resources.Get("gold"));
+        }
+
+        // Los clientes remotos todavía reciben el valor inicial desde el contenido.
+        // La sincronización completa de estados de participante/equipo llegará con
+        // el HUD de participantes y objetivos.
         string scenarioId = MatchManager.Instance?.CurrentMatchConfig?.ScenarioId;
         if (string.IsNullOrWhiteSpace(scenarioId) && NetworkSessionManager.Instance != null)
             scenarioId = NetworkSessionManager.Instance.SelectedScenarioId;

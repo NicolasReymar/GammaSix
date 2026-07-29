@@ -12,6 +12,8 @@ public static class EntityDefinitionRepository
 
     public static string EntitiesPath => Path.Combine(Application.persistentDataPath, RootFolderName, EntitiesFolderName);
 
+    public static void ClearCache() => Cache.Clear();
+
     public static void EnsureDefinitions()
     {
         Directory.CreateDirectory(EntitiesPath);
@@ -22,7 +24,12 @@ public static class EntityDefinitionRepository
             {
                 string target = Path.Combine(EntitiesPath, Path.GetFileName(sourceFile));
                 if (!File.Exists(target))
+                {
                     File.Copy(sourceFile, target);
+                    continue;
+                }
+
+                TryMigrateBuiltInLifeDefinition(sourceFile, target);
             }
         }
         Cache.Clear();
@@ -34,25 +41,50 @@ public static class EntityDefinitionRepository
             return null;
 
         EnsureDefinitionsIfNeeded();
-        if (Cache.TryGetValue(entityId, out EntityDefinition cached))
+        ContentReference reference = ContentReference.Parse(entityId);
+        string cacheKey = reference.ToString();
+        if (Cache.TryGetValue(cacheKey, out EntityDefinition cached))
             return cached;
 
-        string exact = Path.Combine(EntitiesPath, $"{entityId}.json");
+        if (reference.IsQualified && !reference.IsBase)
+        {
+            if (!PackageContentResolver.TryFindContentFile(
+                    reference.ToString(),
+                    PackageContentResolver.EntitiesFolderName,
+                    out string packagedFile,
+                    out InstalledGameContentPackage package))
+            {
+                Debug.LogError($"[EntityDefinitionRepository] No existe la definición empaquetada '{entityId}'.");
+                return null;
+            }
+
+            EntityDefinition packaged = JsonUtility.FromJson<EntityDefinition>(File.ReadAllText(packagedFile));
+            Validate(packaged, packagedFile);
+            packaged.id = ContentReference.Qualify(package.PackageId, packaged.id);
+            ResolvePackagedEntityReferences(packaged, package.PackageId);
+            Cache[cacheKey] = packaged;
+            Cache[packaged.id] = packaged;
+            return packaged;
+        }
+
+        string legacyId = reference.IsBase ? reference.LocalId : reference.LocalId;
+        string exact = Path.Combine(EntitiesPath, $"{legacyId}.json");
         if (File.Exists(exact))
-            return Read(exact, entityId);
+            return Read(exact, cacheKey);
 
         foreach (string file in Directory.GetFiles(EntitiesPath, "*.json"))
         {
             EntityDefinition candidate = JsonUtility.FromJson<EntityDefinition>(File.ReadAllText(file));
-            if (candidate != null && string.Equals(candidate.id, entityId, StringComparison.OrdinalIgnoreCase))
+            if (candidate != null && string.Equals(candidate.id, legacyId, StringComparison.OrdinalIgnoreCase))
             {
                 Validate(candidate, file);
-                Cache[entityId] = candidate;
+                Cache[cacheKey] = candidate;
+                Cache[candidate.id] = candidate;
                 return candidate;
             }
         }
 
-        Debug.LogError($"[EntityDefinitionRepository] No existe la definición '{entityId}' en {EntitiesPath}.");
+        Debug.LogError($"[EntityDefinitionRepository] No existe la definición '{entityId}'.");
         return null;
     }
 
@@ -77,6 +109,26 @@ public static class EntityDefinitionRepository
             }
         }
 
+        foreach (InstalledGameContentPackage package in PackageContentResolver.GetInstalledPackages())
+        {
+            foreach (string file in PackageContentResolver.EnumerateContentFiles(package, PackageContentResolver.EntitiesFolderName))
+            {
+                try
+                {
+                    EntityDefinition definition = JsonUtility.FromJson<EntityDefinition>(File.ReadAllText(file));
+                    Validate(definition, file);
+                    definition.id = ContentReference.Qualify(package.PackageId, definition.id);
+                    ResolvePackagedEntityReferences(definition, package.PackageId);
+                    definitions.Add(definition);
+                    Cache[definition.id] = definition;
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogError($"[EntityDefinitionRepository] No se pudo cargar '{file}': {exception.Message}");
+                }
+            }
+        }
+
         return definitions
             .OrderBy(definition => definition.kind, StringComparer.OrdinalIgnoreCase)
             .ThenBy(definition => definition.name, StringComparer.OrdinalIgnoreCase)
@@ -86,15 +138,14 @@ public static class EntityDefinitionRepository
 
     public static bool Exists(string entityId)
     {
-        if (string.IsNullOrWhiteSpace(entityId))
-            return false;
-
-        return LoadAll().Any(definition => string.Equals(definition.id, entityId, StringComparison.OrdinalIgnoreCase));
+        return Load(entityId) != null;
     }
 
     public static void Save(EntityDefinition definition, string previousId = null)
     {
         EnsureDefinitionsIfNeeded();
+        if (ContentReference.Parse(definition?.id).IsQualified)
+            throw new InvalidOperationException("Las definiciones instaladas desde paquetes son de solo lectura.");
         ValidateId(definition?.id);
         Normalize(definition);
         Validate(definition, definition.id);
@@ -125,6 +176,8 @@ public static class EntityDefinitionRepository
             return false;
 
         EnsureDefinitionsIfNeeded();
+        if (ContentReference.Parse(entityId).IsQualified)
+            return false;
         string file = FindFile(entityId);
         if (string.IsNullOrEmpty(file))
             return false;
@@ -201,6 +254,71 @@ public static class EntityDefinitionRepository
         return null;
     }
 
+    private static void TryMigrateBuiltInLifeDefinition(
+        string sourceFile,
+        string targetFile)
+    {
+        try
+        {
+            EntityDefinition source =
+                JsonUtility.FromJson<EntityDefinition>(File.ReadAllText(sourceFile));
+            EntityDefinition target =
+                JsonUtility.FromJson<EntityDefinition>(File.ReadAllText(targetFile));
+
+            if (source?.life == null ||
+                string.IsNullOrWhiteSpace(source.life.deathOutcome) ||
+                target == null ||
+                !string.Equals(source.id, target.id, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            bool usesUnmodifiedLegacyDeathDefaults =
+                target.life == null ||
+                (string.IsNullOrWhiteSpace(target.life.deathOutcome) &&
+                 target.life.removeOnDeath &&
+                 Mathf.Approximately(target.life.deathRemovalDelay, 0.75f));
+
+            if (!usesUnmodifiedLegacyDeathDefaults)
+                return;
+
+            target.life = source.life;
+            File.WriteAllText(targetFile, JsonUtility.ToJson(target, true));
+            Debug.Log(
+                $"[EntityDefinitionRepository] Se migró la configuración de muerte " +
+                $"de la entidad base '{target.id}'.");
+        }
+        catch (Exception exception)
+        {
+            Debug.LogWarning(
+                $"[EntityDefinitionRepository] No se pudo migrar '{targetFile}': " +
+                exception.Message);
+        }
+    }
+
+    private static void ResolvePackagedEntityReferences(
+        EntityDefinition definition,
+        string packageId)
+    {
+        if (definition?.resource != null &&
+            !string.IsNullOrWhiteSpace(definition.resource.onResourcesSpentEntityId))
+        {
+            definition.resource.onResourcesSpentEntityId =
+                PackageContentResolver.ResolveEntityReference(
+                    packageId,
+                    definition.resource.onResourcesSpentEntityId);
+        }
+
+        if (definition?.life != null &&
+            !string.IsNullOrWhiteSpace(definition.life.deathReplacementEntityId))
+        {
+            definition.life.deathReplacementEntityId =
+                PackageContentResolver.ResolveEntityReference(
+                    packageId,
+                    definition.life.deathReplacementEntityId);
+        }
+    }
+
     private static void Normalize(EntityDefinition definition)
     {
         definition.id = definition.id?.Trim();
@@ -210,6 +328,16 @@ public static class EntityDefinitionRepository
         definition.entityType = string.IsNullOrWhiteSpace(definition.entityType) ? "none" : definition.entityType.Trim().ToLowerInvariant();
         definition.visual = string.IsNullOrWhiteSpace(definition.visual) ? "capsule" : definition.visual.Trim().ToLowerInvariant();
         definition.prefabResource = string.IsNullOrWhiteSpace(definition.prefabResource) ? null : definition.prefabResource.Trim();
+        if (definition.life != null)
+        {
+            definition.life.deathOutcome = string.IsNullOrWhiteSpace(definition.life.deathOutcome)
+                ? null
+                : definition.life.deathOutcome.Trim().ToLowerInvariant();
+            definition.life.deathReplacementEntityId =
+                string.IsNullOrWhiteSpace(definition.life.deathReplacementEntityId)
+                    ? null
+                    : definition.life.deathReplacementEntityId.Trim();
+        }
         definition.attributes ??= Array.Empty<string>();
         definition.attributes = definition.attributes
             .Where(attribute => !string.IsNullOrWhiteSpace(attribute))
@@ -248,6 +376,40 @@ public static class EntityDefinitionRepository
         if (string.Equals(definition.visual, "prefab", StringComparison.OrdinalIgnoreCase) &&
             string.IsNullOrWhiteSpace(definition.prefabResource))
             throw new InvalidDataException($"La entidad '{definition.id}' usa visual prefab, pero no declara prefabResource.");
+
+        if (definition.life != null)
+        {
+            EntityDeathOutcome outcome;
+            if (string.IsNullOrWhiteSpace(definition.life.deathOutcome))
+            {
+                outcome = definition.life.removeOnDeath
+                    ? EntityDeathOutcome.Despawn
+                    : EntityDeathOutcome.Remain;
+            }
+            else if (!Enum.TryParse(definition.life.deathOutcome, true, out outcome))
+            {
+                throw new InvalidDataException(
+                    $"La entidad '{definition.id}' declara deathOutcome inválido: " +
+                    $"'{definition.life.deathOutcome}'.");
+            }
+
+            float deathDelay = definition.life.deathOutcomeDelay >= 0f
+                ? definition.life.deathOutcomeDelay
+                : definition.life.deathRemovalDelay;
+            if (deathDelay < 0f)
+            {
+                throw new InvalidDataException(
+                    $"La entidad '{definition.id}' no puede declarar un retraso de muerte negativo.");
+            }
+
+            if (outcome == EntityDeathOutcome.Replace &&
+                string.IsNullOrWhiteSpace(definition.life.deathReplacementEntityId))
+            {
+                throw new InvalidDataException(
+                    $"La entidad '{definition.id}' usa deathOutcome='replace' " +
+                    "sin deathReplacementEntityId.");
+            }
+        }
 
         bool hasResourceAttribute = definition.attributes != null &&
                                     Array.Exists(definition.attributes, value =>

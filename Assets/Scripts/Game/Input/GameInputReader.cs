@@ -206,6 +206,31 @@ public static class GameInputReader
         }
     }
 
+    public static bool EnterPressedThisFrame
+    {
+        get
+        {
+#if ENABLE_INPUT_SYSTEM
+            return Keyboard.current != null &&
+                   (Keyboard.current.enterKey.wasPressedThisFrame || Keyboard.current.numpadEnterKey.wasPressedThisFrame);
+#else
+            return Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter);
+#endif
+        }
+    }
+
+    public static bool SlashPressedThisFrame
+    {
+        get
+        {
+#if ENABLE_INPUT_SYSTEM
+            return Keyboard.current != null && Keyboard.current.slashKey.wasPressedThisFrame;
+#else
+            return Input.GetKeyDown(KeyCode.Slash);
+#endif
+        }
+    }
+
     public static bool EscapePressedThisFrame
     {
         get

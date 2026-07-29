@@ -1,0 +1,46 @@
+{
+  "id": "building.captured-player-prop",
+  "name": "Representación de jugador capturado",
+  "description": "Edificio genérico de prueba. Su significado proviene únicamente de las reglas y atributos del escenario.",
+  "kind": "building",
+  "maxHealth": 300,
+  "moveSpeed": 0.0,
+  "solid": true,
+  "visual": "cube",
+  "scale": {
+    "x": 1.5,
+    "y": 2.0,
+    "z": 1.5
+  },
+  "attributes": [
+    "entity",
+    "entity.building",
+    "interaction.selectable",
+    "physics.solid",
+    "entity.area",
+    "area.circular",
+    "area.trigger",
+    "capture-test.captured-player-prop",
+    "capture-test.preserve-on-owner-destroy"
+  ],
+  "area": {
+    "shape": "circle",
+    "radius": 2.5,
+    "relationship": "ally",
+    "requiredAttributes": [
+      "unit.humanoid"
+    ],
+    "excludedAttributes": [
+      "entity.area"
+    ],
+    "emitEnter": true,
+    "emitStay": true,
+    "emitExit": true,
+    "stayInterval": 0.25,
+    "visible": true
+  },
+  "life": {
+    "deathOutcome": "remain",
+    "deathOutcomeDelay": 0.0
+  }
+}

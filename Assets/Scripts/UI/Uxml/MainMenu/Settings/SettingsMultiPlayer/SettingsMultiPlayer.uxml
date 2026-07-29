@@ -1,25 +1,28 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
-    <Style src="project://database/Assets/Scripts/UI/Uxml/MainMenu/Shared/MainMenuTheme.uss?fileID=7433441132597879392&amp;guid=9e28c42f3b8f4ec993d64783ddb4d799&amp;type=3#MainMenuTheme"/>
+    <Style src="../../Shared/MainMenuTheme.uss" />
     <ui:VisualElement name="main-menu-panel" class="gs-screen">
-        <ui:VisualElement class="gs-top-accent"/>
+        <ui:VisualElement class="gs-top-accent" />
         <ui:VisualElement class="gs-header">
             <ui:VisualElement class="gs-header-main">
-                <ui:Label text="AJUSTES" class="gs-eyebrow"/>
-                <ui:Label text="Identidad multijugador" class="gs-title"/>
+                <ui:Label text="AJUSTES" class="gs-eyebrow" />
+                <ui:Label text="Identidad multijugador" class="gs-title" />
+                <ui:Label text="Este nombre se utilizará tanto al crear una sala como al unirte a otra partida." class="gs-subtitle" />
             </ui:VisualElement>
             <ui:VisualElement class="gs-header-actions">
-                <ui:Button text="Volver" name="mp-menu-back-button" class="gs-button"/>
+                <ui:Button text="Volver" name="mp-menu-back-button" class="gs-button" />
             </ui:VisualElement>
         </ui:VisualElement>
+
         <ui:VisualElement class="gs-content" style="align-items: center; justify-content: center;">
             <ui:VisualElement class="gs-card gs-card-accent" style="width: 760px; max-width: 92%;">
-                <ui:Label text="Nombre visible" class="gs-card-title"/>
-                <ui:VisualElement class="gs-divider"/>
-                <ui:TextField label="Nombre del jugador" name="mp-setting-name-field" class="gs-field"/>
+                <ui:Label text="Nombre visible" class="gs-card-title" />
+                <ui:Label text="Utiliza un nombre breve y reconocible. Se guarda localmente en este equipo." class="gs-card-description" />
+                <ui:VisualElement class="gs-divider" />
+                <ui:TextField label="Nombre del jugador" name="mp-setting-name-field" class="gs-field" />
                 <ui:VisualElement class="gs-footer-actions">
-                    <ui:Button text="Guardar nombre" name="mp-change-name-button" class="gs-button gs-button-primary gs-button-large"/>
+                    <ui:Button text="Guardar nombre" name="mp-change-name-button" class="gs-button gs-button-primary gs-button-large" />
                 </ui:VisualElement>
-                <ui:Label text="" name="success-change-label" class="gs-status"/>
+                <ui:Label text="" name="success-change-label" class="gs-status" />
             </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>

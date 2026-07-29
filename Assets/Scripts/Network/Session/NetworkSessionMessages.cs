@@ -11,14 +11,14 @@ public sealed class PlayerRosterPayload
 [Serializable]
 public sealed class ColorRequestPayload
 {
-    public ulong TargetClientId;
+    public int TargetParticipantId;
     public int ColorId;
 }
 
 [Serializable]
 public sealed class TeamRequestPayload
 {
-    public ulong TargetClientId;
+    public int TargetParticipantId;
     public int TeamId;
 }
 
@@ -31,7 +31,10 @@ public sealed class LobbySettingsPayload
     public string SelectedContentId;
     public GameContentType SelectedContentType;
     public int ScenarioMaxPlayers;
+    public int ScenarioMaxParticipants;
     public int ScenarioMaxTeams;
+    public string GameModeId;
+    public List<HeadlessProfileDefinition> AvailableHeadlessProfiles;
     public List<ActiveSettingOverride> Overrides;
 }
 
@@ -41,4 +44,18 @@ public sealed class ScenarioSelectionPayload
     public string ContentId;
     public GameContentType ContentType;
     public string ScenarioId;
+    public string PackageId;
+    public string PackageVersion;
+    public string ContentHash;
+}
+
+[Serializable]
+public sealed class ContentCompatibilityPayload
+{
+    public string ScenarioId;
+    public string PackageId;
+    public string PackageVersion;
+    public string ContentHash;
+    public bool Compatible;
+    public string Status;
 }

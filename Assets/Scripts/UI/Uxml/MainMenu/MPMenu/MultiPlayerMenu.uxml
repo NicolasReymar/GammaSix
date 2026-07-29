@@ -1,37 +1,44 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
-    <Style src="project://database/Assets/Scripts/UI/Uxml/MainMenu/Shared/MainMenuTheme.uss?fileID=7433441132597879392&amp;guid=9e28c42f3b8f4ec993d64783ddb4d799&amp;type=3#MainMenuTheme"/>
+    <Style src="../Shared/MainMenuTheme.uss" />
     <ui:VisualElement name="main-menu-panel" class="gs-screen">
-        <ui:VisualElement class="gs-top-accent"/>
+        <ui:VisualElement class="gs-top-accent" />
         <ui:VisualElement class="gs-header">
             <ui:VisualElement class="gs-header-main">
-                <ui:Label text="MODOS DE JUEGO" class="gs-eyebrow"/>
-                <ui:Label text="Multijugador" class="gs-title"/>
+                <ui:Label text="MODOS DE JUEGO" class="gs-eyebrow" />
+                <ui:Label text="Multijugador" class="gs-title" />
+                <ui:Label text="Únete a una dirección conocida o crea una sala y selecciona su contenido." class="gs-subtitle" />
             </ui:VisualElement>
             <ui:VisualElement class="gs-header-actions">
-                <ui:Button text="Volver" name="mp-menu-back-button" class="gs-button"/>
+                <ui:Button text="Volver" name="mp-menu-back-button" class="gs-button" />
             </ui:VisualElement>
         </ui:VisualElement>
+
         <ui:VisualElement class="gs-content gs-choice-grid">
             <ui:VisualElement class="gs-card gs-card-accent gs-choice-card">
                 <ui:VisualElement>
-                    <ui:Label text="CONECTARSE" class="gs-eyebrow"/>
-                    <ui:Label text="Unirse a una partida" class="gs-card-title"/>
+                    <ui:Label text="CONECTARSE" class="gs-eyebrow" />
+                    <ui:Label text="Unirse a una partida" class="gs-card-title" />
+                    <ui:Label text="Ingresa la dirección y el puerto de una sesión multijugador existente." class="gs-card-description" />
                 </ui:VisualElement>
-                <ui:Button text="Unirse a una partida" name="mp-search-match-button" class="gs-button gs-button-primary gs-button-large gs-button-wide"/>
+                <ui:Button text="Configurar conexión" name="mp-search-match-button" class="gs-button gs-button-primary gs-button-large gs-button-wide" />
             </ui:VisualElement>
+
             <ui:VisualElement class="gs-card gs-choice-card">
                 <ui:VisualElement>
-                    <ui:Label text="ANFITRIÓN" class="gs-eyebrow"/>
-                    <ui:Label text="Crear una sesión" class="gs-card-title"/>
+                    <ui:Label text="ANFITRIÓN" class="gs-eyebrow" />
+                    <ui:Label text="Crear una sesión" class="gs-card-title" />
+                    <ui:Label text="Selecciona un escenario, abre la sala y organiza a los jugadores antes de comenzar." class="gs-card-description" />
                 </ui:VisualElement>
-                <ui:Button text="Crear sesión" name="mp-skirmish-button" class="gs-button gs-button-primary gs-button-large gs-button-wide"/>
+                <ui:Button text="Crear sesión" name="mp-skirmish-button" class="gs-button gs-button-primary gs-button-large gs-button-wide" />
             </ui:VisualElement>
+
             <ui:VisualElement class="gs-card gs-card-soft gs-choice-card gs-choice-card-right">
                 <ui:VisualElement>
-                    <ui:Label text="PERFIL" class="gs-eyebrow"/>
-                    <ui:Label text="Identidad multijugador" class="gs-card-title"/>
+                    <ui:Label text="PERFIL" class="gs-eyebrow" />
+                    <ui:Label text="Identidad multijugador" class="gs-card-title" />
+                    <ui:Label text="El nombre guardado se utiliza al crear una sala o conectarte como cliente." class="gs-card-description" />
                 </ui:VisualElement>
-                <ui:Button text="Cambiar nombre" name="mp-change-name-button" class="gs-button gs-button-large gs-button-wide"/>
+                <ui:Button text="Cambiar nombre" name="mp-change-name-button" class="gs-button gs-button-large gs-button-wide" />
             </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>

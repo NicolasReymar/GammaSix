@@ -10,6 +10,7 @@ public class NetworkEntityView : MonoBehaviour
     public string UnitName { get; private set; }
     public string UnitTypeId { get; private set; }
     public EntityAttributeSet Attributes { get; private set; } = new();
+    public int OwnerParticipantId { get; private set; }
     public ulong OwnerClientId { get; private set; }
     public int TeamId { get; private set; }
     public int ColorId { get; private set; }
@@ -21,6 +22,23 @@ public class NetworkEntityView : MonoBehaviour
     public string WorkerResourceName { get; private set; }
     public int WorkerCarriedAmount { get; private set; }
     public bool WorkerIsExtracting { get; private set; }
+    public int AreaOccupantCount { get; private set; }
+    public EntityLifeState LifeState { get; private set; } = EntityLifeState.Alive;
+    public EntityActivityState ActivityState { get; private set; } = EntityActivityState.Idle;
+    public bool InCombat { get; private set; }
+    public bool IsUnderAttack { get; private set; }
+    public string ActivityDetail { get; private set; }
+    public bool HasAttack { get; private set; }
+    public int AttackBaseDamage { get; private set; }
+    public float BaseAttackSpeed { get; private set; }
+    public float AttackSpeedMultiplier { get; private set; } = 1f;
+    public float AttackTime { get; private set; }
+    public float RecoveryTime { get; private set; }
+    public float AttackRange { get; private set; }
+    public string AttackDelivery { get; private set; }
+    public string AttackDamageType { get; private set; }
+    public int AttackTargetEntityId { get; private set; } = -1;
+    public EntityAttackPhase AttackPhase { get; private set; }
     public float SelectionRadius => Mathf.Max(transform.lossyScale.x, transform.lossyScale.z) * 0.75f;
 
     private Renderer unitRenderer;
@@ -32,13 +50,14 @@ public class NetworkEntityView : MonoBehaviour
     private bool isSelected;
     private Coroutine interactionPulseRoutine;
 
-    public void Initialize(int unitId, string entityDefinitionId, string unitName, string unitTypeId, ulong ownerClientId, int teamId, int colorId, string[] attributes)
+    public void Initialize(int unitId, string entityDefinitionId, string unitName, string unitTypeId, int ownerParticipantId, ulong ownerClientId, int teamId, int colorId, string[] attributes)
     {
         UnitId = unitId;
         EntityDefinitionId = entityDefinitionId;
         UnitName = string.IsNullOrWhiteSpace(unitName) ? entityDefinitionId : unitName;
         UnitTypeId = unitTypeId;
         Attributes = EntityAttributeResolver.Resolve(attributes);
+        OwnerParticipantId = ownerParticipantId;
         OwnerClientId = ownerClientId;
         TeamId = teamId;
         ColorId = colorId;
@@ -47,7 +66,7 @@ public class NetworkEntityView : MonoBehaviour
         tintByTeam = definition == null ||
                      !string.Equals(definition.kind, EntityKinds.Environment, StringComparison.OrdinalIgnoreCase);
         unitRenderer = GetComponentInChildren<Renderer>();
-        if (unitRenderer != null && tintByTeam && !HasAttribute(EntityAttributeIds.AuraTrigger))
+        if (unitRenderer != null && tintByTeam && !HasAttribute(EntityAttributeIds.AuraTrigger) && !HasAttribute(EntityAttributeIds.EntityArea))
             unitRenderer.material.color = PlayerColorPalette.GetColor(colorId);
 
         CreateSelectionHalo();
@@ -192,6 +211,7 @@ public class NetworkEntityView : MonoBehaviour
             isSelected = false;
             ApplySelectionVisual(false, GetDefaultHaloColor());
         }
+        OwnerParticipantId = state.OwnerParticipantId;
         OwnerClientId = state.OwnerClientId;
         TeamId = state.TeamId;
         ColorId = state.ColorId;
@@ -203,7 +223,33 @@ public class NetworkEntityView : MonoBehaviour
         WorkerResourceName = state.WorkerResourceName;
         WorkerCarriedAmount = state.WorkerCarriedAmount;
         WorkerIsExtracting = state.WorkerIsExtracting;
-        if (unitRenderer != null && tintByTeam && !HasAttribute(EntityAttributeIds.AuraTrigger))
+        AreaOccupantCount = state.AreaOccupantCount;
+        Enum.TryParse(state.LifeState, true, out EntityLifeState parsedLifeState);
+        LifeState = parsedLifeState;
+        if (isSelected && !IsSelectableForCurrentMatch())
+        {
+            isSelected = false;
+            ApplySelectionVisual(false, GetDefaultHaloColor());
+        }
+        Enum.TryParse(state.ActivityState, true, out EntityActivityState parsedActivityState);
+        ActivityState = parsedActivityState;
+        InCombat = state.InCombat;
+        IsUnderAttack = state.IsUnderAttack;
+        ActivityDetail = state.ActivityDetail;
+        HasAttack = state.HasAttack;
+        AttackBaseDamage = state.AttackBaseDamage;
+        BaseAttackSpeed = state.BaseAttackSpeed;
+        AttackSpeedMultiplier = state.AttackSpeedMultiplier;
+        AttackTime = state.AttackTime;
+        RecoveryTime = state.RecoveryTime;
+        AttackRange = state.AttackRange;
+        AttackDelivery = state.AttackDelivery;
+        AttackDamageType = state.AttackDamageType;
+        AttackTargetEntityId = state.AttackTargetEntityId;
+        Enum.TryParse(state.AttackPhase, true, out EntityAttackPhase parsedAttackPhase);
+        AttackPhase = parsedAttackPhase;
+        GetComponent<AreaEntityVisual>()?.SetOccupantCount(AreaOccupantCount);
+        if (unitRenderer != null && tintByTeam && !HasAttribute(EntityAttributeIds.AuraTrigger) && !HasAttribute(EntityAttributeIds.EntityArea))
             unitRenderer.material.color = PlayerColorPalette.GetColor(ColorId);
         targetPosition = new Vector3(state.X, state.Y, state.Z);
 
@@ -225,7 +271,8 @@ public class NetworkEntityView : MonoBehaviour
 
     public bool IsSelectableForCurrentMatch()
     {
-        return HasAttribute(EntityAttributeIds.Selectable) &&
+        return LifeState != EntityLifeState.Dead &&
+               HasAttribute(EntityAttributeIds.Selectable) &&
                !IsNotSelectableForCurrentMatch();
     }
 

@@ -235,3 +235,25 @@ Con `override_not_selectable: true`, las entidades conservan el atributo, pero p
 - El clic derecho sobre una entidad no seleccionable se transforma en movimiento al centro.
 - Solo puede atravesarse cuando la entidad también es efectivamente no sólida.
 - La colisión temporal por orden fue eliminada; la física depende únicamente de atributos y overrides.
+
+
+## Estado de fases del runtime extensible
+
+```text
+Fase 1  Participantes humanos/Headless y lobby                 completada
+Fase 2  Runtime autoritativo y Command Bus                    completada
+Fase 3  Paquetes .gsixpackage                                 completada
+Fase 4  Spawn/despawn dinámico y catálogo por modo            completada
+Fase 5  Estado de partida, áreas y reglas declarativas        completada
+Fase 6  Vida, daño, estado y combate melee dinámico           fase actual
+Fase 7  Captura y rescate declarativos                        siguiente
+Fase 8  Wave Mode                                             pendiente
+Fase 9  Framework de controladores Headless                   pendiente
+Fase 10 Navegación e IA individual                            pendiente
+Fase 11 Construcción y economía                               pendiente
+Fase 12 Comandante Kodo                                       pendiente
+Fase 13 Bot normal de escaramuza                              pendiente
+Fase 14 Paquete Kodo Tag jugable                              pendiente
+```
+
+La fase 6 separa estado de vida, actividad, indicadores de combate, ciclo de ataque y forma de entrega del impacto. El primer delivery operativo es `melee`; los proyectiles se agregarán como otra entrega sin reemplazar el Command Bus ni el ciclo windup/recovery.

@@ -27,6 +27,9 @@ public partial class MainMenuController
         new(EntityAttributeIds.Controllable, "Controlable"),
         new(EntityAttributeIds.Own, "Propiedad del equipo"),
         new(EntityAttributeIds.AuraTrigger, "Activa aura"),
+        new(EntityAttributeIds.EntityArea, "Entidad de área"),
+        new(EntityAttributeIds.AreaAura, "Comportamiento aura"),
+        new(EntityAttributeIds.AreaTrigger, "Emite triggers"),
         new(EntityAttributeIds.ThirdPersonCamera, "Cámara en tercera persona")
     };
 
@@ -779,7 +782,8 @@ public partial class MainMenuController
             groundOffset = entityCreatorGroundOffsetField.value,
             attributes = attributes.OrderBy(attribute => attribute, StringComparer.OrdinalIgnoreCase).ToArray(),
             resource = resource,
-            worker = worker
+            worker = worker,
+            area = entityCreatorSelection?.area
         };
 
         return definition;

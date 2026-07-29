@@ -16,6 +16,26 @@
     "entity.building",
     "interaction.selectable",
     "trigger.aura",
-    "physics.not_solid"
-  ]
+    "physics.not_solid",
+    "entity.area",
+    "area.circular",
+    "area.aura",
+    "area.trigger"
+  ],
+  "area": {
+    "shape": "circle",
+    "radius": 1.0,
+    "relationship": "all",
+    "requiredAttributes": [
+      "unit.humanoid"
+    ],
+    "excludedAttributes": [
+      "entity.area"
+    ],
+    "emitEnter": true,
+    "emitStay": false,
+    "emitExit": true,
+    "stayInterval": 1.0,
+    "visible": true
+  }
 }

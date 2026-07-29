@@ -9,4 +9,8 @@ public sealed class GameContentEntry
     public GameContentType ContentType;
     public string FilePath;
     public string FirstScenarioId;
+    public bool IsPackaged;
+    public string PackageId;
+    public string PackageVersion;
+    public string ContentHash;
 }

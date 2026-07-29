@@ -149,6 +149,19 @@ public class SelectedEntityHudController : MonoBehaviour
             workerInfo.AddToClassList("selected-entity-empty");
             attributesList.Add(workerInfo);
         }
+
+        if (entity.HasAttack)
+        {
+            float effectiveSpeed = Mathf.Max(0.05f, entity.BaseAttackSpeed * entity.AttackSpeedMultiplier);
+            float effectiveAttackTime = entity.AttackTime / effectiveSpeed;
+            float effectiveRecoveryTime = entity.RecoveryTime / effectiveSpeed;
+            Label attackInfo = new(
+                $"Ataque {entity.AttackDelivery}/{entity.AttackDamageType} · Daño {entity.AttackBaseDamage} · " +
+                $"Velocidad {effectiveSpeed:0.##}x · Alcance {entity.AttackRange:0.##} · " +
+                $"Preparación {effectiveAttackTime:0.##}s · Recuperación {effectiveRecoveryTime:0.##}s");
+            attackInfo.AddToClassList("selected-entity-empty");
+            attributesList.Add(attackInfo);
+        }
     }
 
     private void RefreshEntitySummary(NetworkEntityView entity)
@@ -157,6 +170,40 @@ public class SelectedEntityHudController : MonoBehaviour
             return;
 
         string team = entity.TeamId == 0 ? "Neutral" : $"Equipo {entity.TeamId}";
-        entitySummaryLabel.text = $"{team} · Vida {entity.Health}/{entity.MaxHealth} · ID {entity.EntityDefinitionId}";
+        string activity = GetActivityLabel(entity.ActivityState);
+        string combat = entity.InCombat ? " · En combate" : string.Empty;
+        string underAttack = entity.IsUnderAttack ? " · Bajo ataque" : string.Empty;
+        string life = entity.LifeState == EntityLifeState.Alive
+            ? string.Empty
+            : $" · {entity.LifeState}";
+        string phase = entity.AttackPhase != EntityAttackPhase.None
+            ? $" · {GetAttackPhaseLabel(entity.AttackPhase)}"
+            : string.Empty;
+        entitySummaryLabel.text =
+            $"{team} · Vida {entity.Health}/{entity.MaxHealth} · {activity}{phase}{combat}{underAttack}{life} · ID {entity.EntityDefinitionId}";
+    }
+
+    private static string GetActivityLabel(EntityActivityState state)
+    {
+        return state switch
+        {
+            EntityActivityState.Moving => "Moviéndose",
+            EntityActivityState.Performing => "Realizando actividad",
+            EntityActivityState.Attacking => "Atacando",
+            EntityActivityState.Recovering => "Recuperándose",
+            EntityActivityState.Dead => "Muerta",
+            _ => "Inactiva"
+        };
+    }
+
+    private static string GetAttackPhaseLabel(EntityAttackPhase phase)
+    {
+        return phase switch
+        {
+            EntityAttackPhase.Approaching => "Acercándose al objetivo",
+            EntityAttackPhase.Windup => "Preparando ataque",
+            EntityAttackPhase.Recovery => "Recuperación de ataque",
+            _ => string.Empty
+        };
     }
 }

@@ -4,148 +4,136 @@ using System.Linq;
 using UnityEngine;
 
 /// <summary>
-/// Convierte colocaciones de escenario en estados runtime autoritativos.
-/// No conoce mensajes de red ni vistas de Unity.
+/// Convierte colocaciones del escenario en solicitudes del ciclo de vida común.
+/// Las oleadas y reglas futuras utilizarán la misma ruta de spawn.
 /// </summary>
 public static class ScenarioEntitySpawner
 {
     private const string DefaultHumanoidId = "unit.humanoid.default";
 
     public static bool TryPopulate(
-        IDictionary<int, EntityRuntimeState> target,
+        EntityLifecycleService lifecycle,
         ScenarioDefinition scenario,
-        IReadOnlyList<NetworkPlayerInfo> players)
+        IReadOnlyList<MatchParticipantRuntimeState> participants)
     {
-        if (target == null)
-            throw new ArgumentNullException(nameof(target));
+        if (lifecycle == null)
+            throw new ArgumentNullException(nameof(lifecycle));
         if (scenario?.entities == null || scenario.entities.Length == 0)
             return false;
 
-        Dictionary<int, List<NetworkPlayerInfo>> playersByTeam = players
-            .GroupBy(player => player.TeamId)
+        Dictionary<int, List<MatchParticipantRuntimeState>> participantsByTeam = participants
+            .GroupBy(participant => participant.TeamId)
             .ToDictionary(
                 group => group.Key,
-                group => group.OrderBy(player => player.ClientId).ToList());
+                group => group.OrderBy(participant => participant.SlotIndex)
+                    .ThenBy(participant => participant.ParticipantId)
+                    .ToList());
 
-        int runtimeId = 1;
+        int initialCount = lifecycle.EntityCount;
+        int placementIndex = 0;
         foreach (ScenarioEntityPlacement placement in scenario.entities)
         {
             if (placement == null || string.IsNullOrWhiteSpace(placement.entityId))
                 continue;
 
-            EntityDefinition definition = EntityDefinitionRepository.Load(placement.entityId);
-            if (definition == null)
+            if (!TryResolveOwner(
+                    placement,
+                    participantsByTeam,
+                    out int ownerParticipantId,
+                    out int colorId))
+            {
                 continue;
-
-            if (!TryResolveOwner(placement, playersByTeam, out ulong ownerClientId, out int colorId))
-                continue;
+            }
 
             Vector3 spawnPosition = placement.position != null
                 ? placement.position.ToVector3()
-                : GetSpawnPosition(runtimeId - 1, scenario.entities.Length);
-            spawnPosition.y = GetEntityGroundY(definition, spawnPosition.y);
+                : GetSpawnPosition(placementIndex, scenario.entities.Length);
 
-            EntityRuntimeState entity = CreateRuntimeState(
-                runtimeId,
-                definition,
-                placement.attributes,
-                ownerClientId,
-                placement.teamId,
-                colorId,
-                spawnPosition);
+            EntitySpawnRequest request = new()
+            {
+                EntityDefinitionId = placement.entityId,
+                ScenarioInstanceId = placement.id,
+                InstanceAttributes = placement.attributes,
+                OwnerParticipantId = ownerParticipantId,
+                TeamId = placement.teamId,
+                ColorId = colorId,
+                Position = spawnPosition,
+                Reason = EntityLifecycleReason.ScenarioInitialization
+            };
 
-            target.Add(entity.UnitId, entity);
-            runtimeId++;
+            if (lifecycle.QueueSpawn(request, out string rejection))
+            {
+                placementIndex++;
+            }
+            else
+            {
+                Debug.LogWarning($"[ScenarioEntitySpawner] No se pudo encolar '{placement.id}': {rejection}");
+            }
         }
 
-        return target.Count > 0;
+        lifecycle.FlushPending();
+        return lifecycle.EntityCount > initialCount;
     }
 
     public static void CreateFallback(
-        IDictionary<int, EntityRuntimeState> target,
-        IReadOnlyList<NetworkPlayerInfo> players)
+        EntityLifecycleService lifecycle,
+        IReadOnlyList<MatchParticipantRuntimeState> participants)
     {
-        EntityDefinition definition = EntityDefinitionRepository.Load(DefaultHumanoidId);
-        if (definition == null)
-            return;
+        if (lifecycle == null)
+            throw new ArgumentNullException(nameof(lifecycle));
 
         int index = 0;
-        foreach (NetworkPlayerInfo player in players.OrderBy(item => item.TeamId).ThenBy(item => item.ClientId))
+        foreach (MatchParticipantRuntimeState participant in participants
+                     .OrderBy(item => item.SlotIndex)
+                     .ThenBy(item => item.ParticipantId))
         {
-            Vector3 spawnPosition = GetSpawnPosition(index, players.Count);
-            EntityRuntimeState entity = CreateRuntimeState(
-                index + 1,
-                definition,
-                null,
-                player.ClientId,
-                player.TeamId,
-                player.ColorId,
-                spawnPosition);
+            EntitySpawnRequest request = new()
+            {
+                EntityDefinitionId = DefaultHumanoidId,
+                ScenarioInstanceId = $"fallback.{participant.ParticipantId}",
+                OwnerParticipantId = participant.ParticipantId,
+                TeamId = participant.TeamId,
+                ColorId = participant.ColorId,
+                Position = GetSpawnPosition(index, participants.Count),
+                Reason = EntityLifecycleReason.ScenarioInitialization
+            };
 
-            target.Add(entity.UnitId, entity);
+            if (!lifecycle.QueueSpawn(request, out string rejection))
+                Debug.LogWarning($"[ScenarioEntitySpawner] Fallback rechazado: {rejection}");
             index++;
         }
+
+        lifecycle.FlushPending();
     }
 
     private static bool TryResolveOwner(
         ScenarioEntityPlacement placement,
-        IReadOnlyDictionary<int, List<NetworkPlayerInfo>> playersByTeam,
-        out ulong ownerClientId,
+        IReadOnlyDictionary<int, List<MatchParticipantRuntimeState>> participantsByTeam,
+        out int ownerParticipantId,
         out int colorId)
     {
-        ownerClientId = ulong.MaxValue;
+        ownerParticipantId = -1;
         colorId = PlayerColorPalette.Neutral;
 
         if (placement.teamId == 0)
             return true;
 
-        if (!playersByTeam.TryGetValue(placement.teamId, out List<NetworkPlayerInfo> teamPlayers) ||
-            teamPlayers.Count == 0)
+        if (!participantsByTeam.TryGetValue(
+                placement.teamId,
+                out List<MatchParticipantRuntimeState> teamParticipants) ||
+            teamParticipants.Count == 0)
         {
             Debug.LogWarning($"[ScenarioEntitySpawner] La instancia '{placement.id}' pertenece al equipo " +
-                             $"{placement.teamId}, pero ese equipo no tiene jugadores conectados.");
+                             $"{placement.teamId}, pero ese equipo no tiene participantes asignados.");
             return false;
         }
 
         int requestedSlot = Mathf.Max(1, placement.ownerTeamSlot);
-        int ownerIndex = Mathf.Clamp(requestedSlot - 1, 0, teamPlayers.Count - 1);
-        NetworkPlayerInfo owner = teamPlayers[ownerIndex];
-        ownerClientId = owner.ClientId;
+        int ownerIndex = Mathf.Clamp(requestedSlot - 1, 0, teamParticipants.Count - 1);
+        MatchParticipantRuntimeState owner = teamParticipants[ownerIndex];
+        ownerParticipantId = owner.ParticipantId;
         colorId = owner.ColorId;
         return true;
-    }
-
-    private static EntityRuntimeState CreateRuntimeState(
-        int runtimeId,
-        EntityDefinition definition,
-        IEnumerable<string> instanceAttributes,
-        ulong ownerClientId,
-        int teamId,
-        int colorId,
-        Vector3 position)
-    {
-        return EntityRuntimeFactory.Create(
-            runtimeId,
-            definition,
-            instanceAttributes,
-            ownerClientId,
-            teamId,
-            colorId,
-            position);
-    }
-
-    private static float GetEntityGroundY(EntityDefinition definition, float requestedY)
-    {
-        if (requestedY > 0f)
-            return requestedY;
-
-        if (definition.groundOffset >= 0f)
-            return definition.groundOffset;
-
-        Vector3 scale = definition.GetScale(new Vector3(0.8f, 1f, 0.8f));
-        return string.Equals(definition.kind, EntityKinds.Unit, StringComparison.OrdinalIgnoreCase)
-            ? 0.5f
-            : scale.y * 0.5f;
     }
 
     private static Vector3 GetSpawnPosition(int index, int entityCount)

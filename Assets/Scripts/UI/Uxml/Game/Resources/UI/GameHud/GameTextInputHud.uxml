@@ -1,0 +1,21 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="GameTextInputHud.uss" />
+    <ui:VisualElement name="game-text-root" class="game-text-root" picking-mode="Ignore">
+        <ui:VisualElement name="game-text-panel" class="game-text-panel" picking-mode="Position">
+            <ui:VisualElement name="game-text-drag-handle" class="game-text-header" picking-mode="Position">
+                <ui:VisualElement class="game-text-title-row">
+                    <ui:Label text="CHAT / COMANDOS" class="game-text-title" />
+                    <ui:Label text="PARTIDA" class="game-text-channel" />
+                </ui:VisualElement>
+                <ui:Label name="game-text-status" text="" class="game-text-status" />
+            </ui:VisualElement>
+            <ui:ScrollView name="game-text-history" class="game-text-history" mode="Vertical" />
+            <ui:VisualElement class="game-text-input-row">
+                <ui:Label text="Mensaje" class="game-text-input-label" />
+                <ui:TextField name="game-text-input" class="game-text-input" max-length="512" />
+                <ui:Button name="game-text-send-button" text="Enviar" class="game-text-send-button" />
+            </ui:VisualElement>
+            <ui:Label text="Enter envía y cierra · Esc cancela · / abre comandos · ↑↓ recupera texto anterior" class="game-text-hint" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

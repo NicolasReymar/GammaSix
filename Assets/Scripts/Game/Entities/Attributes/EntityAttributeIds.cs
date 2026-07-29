@@ -6,6 +6,7 @@ public static class EntityAttributeIds
     public const string Humanoid = "unit.humanoid";
     public const string Beast = "unit.beast";
     public const string Heroic = "unit.heroic";
+    public const string Melee = "melee";
 
     public const string GroundMovement = "movement.ground";
     public const string Selectable = "interaction.selectable";
@@ -15,9 +16,17 @@ public static class EntityAttributeIds
     public const string Solid = "physics.solid";
     public const string NotSolid = "physics.not_solid";
     public const string AuraTrigger = "trigger.aura";
+    public const string EntityArea = "entity.area";
+    public const string AreaCircular = "area.circular";
+    public const string AreaRectangle = "area.rectangle";
+    public const string AreaAura = "area.aura";
+    public const string AreaTrigger = "area.trigger";
     public const string Resource = "entity.resource";
     public const string Worker = "unit.worker";
     public const string Environment = "entity.environment";
+    public const string Corpse = "entity.corpse";
+    public const string StatusCaptured = "status.captured";
+    public const string PlayerAnchor = "role.player-anchor";
 
     public const string ThirdPersonCamera = "camera.third-person";
 }

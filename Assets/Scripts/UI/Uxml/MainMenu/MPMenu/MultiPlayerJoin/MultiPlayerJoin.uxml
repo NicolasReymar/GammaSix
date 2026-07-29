@@ -1,27 +1,30 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
-    <Style src="project://database/Assets/Scripts/UI/Uxml/MainMenu/Shared/MainMenuTheme.uss?fileID=7433441132597879392&amp;guid=9e28c42f3b8f4ec993d64783ddb4d799&amp;type=3#MainMenuTheme"/>
+    <Style src="../../Shared/MainMenuTheme.uss" />
     <ui:VisualElement name="main-menu-panel" class="gs-screen">
-        <ui:VisualElement class="gs-top-accent"/>
+        <ui:VisualElement class="gs-top-accent" />
         <ui:VisualElement class="gs-header">
             <ui:VisualElement class="gs-header-main">
-                <ui:Label text="MULTIJUGADOR" class="gs-eyebrow"/>
-                <ui:Label text="Unirse a una partida" class="gs-title"/>
+                <ui:Label text="MULTIJUGADOR" class="gs-eyebrow" />
+                <ui:Label text="Unirse a una partida" class="gs-title" />
+                <ui:Label text="Configura los datos del servidor. Tu nombre se toma desde los ajustes multijugador." class="gs-subtitle" />
             </ui:VisualElement>
             <ui:VisualElement class="gs-header-actions">
-                <ui:Button text="Volver" name="mp-join-menu-back-button" class="gs-button"/>
+                <ui:Button text="Volver" name="mp-join-menu-back-button" class="gs-button" />
             </ui:VisualElement>
         </ui:VisualElement>
+
         <ui:VisualElement class="gs-content" style="align-items: center; justify-content: center;">
             <ui:VisualElement class="gs-card gs-card-accent" style="width: 720px; max-width: 92%;">
-                <ui:Label text="Datos de conexión" class="gs-card-title"/>
-                <ui:VisualElement class="gs-divider"/>
-                <ui:TextField label="Nombre del jugador" name="mp-player-name-field" class="gs-field"/>
-                <ui:TextField label="Dirección del servidor" name="mp-address-field" class="gs-field"/>
-                <ui:IntegerField label="Puerto" name="mp-port-field" class="gs-field"/>
+                <ui:Label text="Datos de conexión" class="gs-card-title" />
+                <ui:Label text="Usa la IP local o pública del anfitrión y el mismo puerto configurado al crear la sesión." class="gs-card-description" />
+                <ui:VisualElement class="gs-divider" />
+                <ui:TextField label="Nombre del jugador" name="mp-player-name-field" class="gs-field" />
+                <ui:TextField label="Dirección del servidor" name="mp-address-field" class="gs-field" />
+                <ui:IntegerField label="Puerto" name="mp-port-field" class="gs-field" />
                 <ui:VisualElement class="gs-footer-actions">
-                    <ui:Button text="Conectarse" name="mp-join-button" class="gs-button gs-button-primary gs-button-large"/>
+                    <ui:Button text="Conectarse" name="mp-join-button" class="gs-button gs-button-primary gs-button-large" />
                 </ui:VisualElement>
-                <ui:Label text="Esperando datos de conexión." name="mp-network-status-label" class="gs-status"/>
+                <ui:Label text="Esperando datos de conexión." name="mp-network-status-label" class="gs-status" />
             </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>

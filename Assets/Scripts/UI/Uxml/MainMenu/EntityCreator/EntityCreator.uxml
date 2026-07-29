@@ -1,160 +1,174 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
-    <Style src="project://database/Assets/Scripts/UI/Uxml/MainMenu/Shared/MainMenuTheme.uss?fileID=7433441132597879392&amp;guid=9e28c42f3b8f4ec993d64783ddb4d799&amp;type=3#MainMenuTheme"/>
-    <Style src="project://database/Assets/Scripts/UI/Uxml/MainMenu/EntityCreator/EntityCreator.uss?fileID=7433441132597879392&amp;guid=22cd1503493d4eea8f9e4e0e9ce7df96&amp;type=3#EntityCreator"/>
+    <Style src="../Shared/MainMenuTheme.uss" />
+    <Style src="EntityCreator.uss" />
     <ui:VisualElement name="entity-creator-screen" class="gs-screen entity-creator-screen">
-        <ui:VisualElement class="gs-top-accent"/>
+        <ui:VisualElement class="gs-top-accent" />
         <ui:VisualElement class="gs-header entity-creator-header">
             <ui:VisualElement class="gs-header-main">
-                <ui:Label text="HERRAMIENTAS DE CONTENIDO" class="gs-eyebrow"/>
-                <ui:Label text="Creador de entidades" class="gs-title"/>
+                <ui:Label text="HERRAMIENTAS DE CONTENIDO" class="gs-eyebrow" />
+                <ui:Label text="Creador de entidades" class="gs-title" />
+                <ui:Label text="Crea unidades, bestias, edificios, recursos y elementos del entorno desde sus definiciones de datos." class="gs-subtitle" />
             </ui:VisualElement>
             <ui:VisualElement class="gs-header-actions">
-                <ui:Button text="Recargar" name="entity-editor-reload-button" class="gs-button"/>
-                <ui:Button text="Volver" name="entity-editor-back-button" class="gs-button"/>
+                <ui:Button text="Recargar" name="entity-editor-reload-button" class="gs-button" />
+                <ui:Button text="Volver" name="entity-editor-back-button" class="gs-button" />
             </ui:VisualElement>
         </ui:VisualElement>
+
         <ui:VisualElement class="entity-creator-toolbar">
-            <ui:Button text="Nueva entidad" name="entity-editor-new-button" class="gs-button gs-button-primary"/>
-            <ui:Button text="Duplicar" name="entity-editor-duplicate-button" class="gs-button"/>
-            <ui:Button text="Eliminar" name="entity-editor-delete-button" class="gs-button gs-button-danger"/>
-            <ui:VisualElement class="gs-spacer"/>
-            <ui:Label text="Selecciona una entidad" name="entity-editor-selection-label" class="entity-selection-label"/>
+            <ui:Button text="Nueva entidad" name="entity-editor-new-button" class="gs-button gs-button-primary" />
+            <ui:Button text="Duplicar" name="entity-editor-duplicate-button" class="gs-button" />
+            <ui:Button text="Eliminar" name="entity-editor-delete-button" class="gs-button gs-button-danger" />
+            <ui:VisualElement class="gs-spacer" />
+            <ui:Label text="Selecciona una entidad" name="entity-editor-selection-label" class="entity-selection-label" />
         </ui:VisualElement>
+
         <ui:VisualElement class="entity-creator-body">
             <ui:VisualElement name="entity-editor-list-panel" class="entity-panel entity-list-panel">
                 <ui:VisualElement class="entity-list-header">
                     <ui:VisualElement class="entity-list-heading">
-                        <ui:Label text="ENTIDADES" class="entity-panel-eyebrow"/>
-                        <ui:Label text="Biblioteca" name="entity-editor-list-title" class="entity-panel-title entity-list-title"/>
+                        <ui:Label text="ENTIDADES" class="entity-panel-eyebrow" />
+                        <ui:Label text="Biblioteca" name="entity-editor-list-title" class="entity-panel-title entity-list-title" />
                     </ui:VisualElement>
-                    <ui:Button text="‹" name="entity-editor-list-toggle-button" tooltip="Contraer panel de entidades" class="entity-list-toggle-button"/>
+                    <ui:Button text="‹" name="entity-editor-list-toggle-button" tooltip="Contraer panel de entidades" class="entity-list-toggle-button" />
                 </ui:VisualElement>
                 <ui:VisualElement name="entity-editor-list-content" class="entity-list-content">
-                    <ui:Label text="Buscar por nombre o ID" class="entity-list-filter-label"/>
-                    <ui:TextField name="entity-editor-search-field" class="entity-field entity-list-filter-field"/>
-                    <ui:Label text="Filtrar categoría" class="entity-list-filter-label"/>
-                    <ui:DropdownField name="entity-editor-filter-kind" class="entity-field entity-list-filter-field"/>
-                    <ui:Label text="0 entidades" name="entity-editor-count-label" class="entity-muted-label entity-list-count-label"/>
-                    <ui:ScrollView name="entity-editor-list" class="entity-list-scroll"/>
+                    <ui:Label text="Buscar por nombre o ID" class="entity-list-filter-label" />
+                    <ui:TextField name="entity-editor-search-field" class="entity-field entity-list-filter-field" />
+                    <ui:Label text="Filtrar categoría" class="entity-list-filter-label" />
+                    <ui:DropdownField name="entity-editor-filter-kind" class="entity-field entity-list-filter-field" />
+                    <ui:Label text="0 entidades" name="entity-editor-count-label" class="entity-muted-label entity-list-count-label" />
+                    <ui:ScrollView name="entity-editor-list" class="entity-list-scroll" />
                 </ui:VisualElement>
             </ui:VisualElement>
+
             <ui:VisualElement class="entity-panel entity-form-panel">
                 <ui:ScrollView name="entity-editor-form-scroll" class="entity-form-scroll">
                     <ui:VisualElement class="entity-section">
-                        <ui:Label text="IDENTIDAD" class="entity-section-eyebrow"/>
-                        <ui:Label text="Identidad y clasificación" class="entity-section-title"/>
-                        <ui:TextField label="ID" name="entity-editor-id-field" class="entity-field"/>
-                        <ui:TextField label="Nombre visible" name="entity-editor-name-field" class="entity-field"/>
-                        <ui:TextField label="Descripción" name="entity-editor-description-field" multiline="true" class="entity-field entity-multiline"/>
+                        <ui:Label text="IDENTIDAD" class="entity-section-eyebrow" />
+                        <ui:Label text="Identidad y clasificación" class="entity-section-title" />
+                        <ui:TextField label="ID" name="entity-editor-id-field" class="entity-field" />
+                        <ui:TextField label="Nombre visible" name="entity-editor-name-field" class="entity-field" />
+                        <ui:TextField label="Descripción" name="entity-editor-description-field" multiline="true" class="entity-field entity-multiline" />
                         <ui:VisualElement class="entity-row">
-                            <ui:DropdownField label="Categoría" name="entity-editor-kind-field" class="entity-field entity-half"/>
-                            <ui:DropdownField label="Tipo" name="entity-editor-type-field" class="entity-field entity-half"/>
+                            <ui:DropdownField label="Categoría" name="entity-editor-kind-field" class="entity-field entity-half" />
+                            <ui:DropdownField label="Tipo" name="entity-editor-type-field" class="entity-field entity-half" />
                         </ui:VisualElement>
-                        <ui:TextField label="Tipo personalizado" name="entity-editor-custom-type-field" class="entity-field"/>
+                        <ui:TextField label="Tipo personalizado" name="entity-editor-custom-type-field" class="entity-field" />
                     </ui:VisualElement>
+
                     <ui:VisualElement class="entity-section">
-                        <ui:Label text="COMPORTAMIENTO BASE" class="entity-section-eyebrow"/>
-                        <ui:Label text="Estadísticas y física" class="entity-section-title"/>
+                        <ui:Label text="COMPORTAMIENTO BASE" class="entity-section-eyebrow" />
+                        <ui:Label text="Estadísticas y física" class="entity-section-title" />
                         <ui:VisualElement class="entity-row">
-                            <ui:IntegerField label="Vida máxima" name="entity-editor-max-health-field" class="entity-field entity-half"/>
-                            <ui:FloatField label="Velocidad" name="entity-editor-move-speed-field" class="entity-field entity-half"/>
+                            <ui:IntegerField label="Vida máxima" name="entity-editor-max-health-field" class="entity-field entity-half" />
+                            <ui:FloatField label="Velocidad" name="entity-editor-move-speed-field" class="entity-field entity-half" />
                         </ui:VisualElement>
-                        <ui:Toggle label="Entidad sólida" name="entity-editor-solid-toggle" class="entity-toggle"/>
+                        <ui:Toggle label="Entidad sólida" name="entity-editor-solid-toggle" class="entity-toggle" />
                     </ui:VisualElement>
+
                     <ui:VisualElement class="entity-section">
-                        <ui:Label text="PRESENTACIÓN" class="entity-section-eyebrow"/>
-                        <ui:Label text="Representación visual" class="entity-section-title"/>
-                        <ui:DropdownField label="Visual" name="entity-editor-visual-field" class="entity-field"/>
-                        <ui:TextField label="Recurso del prefab" name="entity-editor-prefab-field" class="entity-field"/>
-                        <ui:Label text="Ejemplo: EntityVisuals/TreeOne" class="entity-help-label"/>
+                        <ui:Label text="PRESENTACIÓN" class="entity-section-eyebrow" />
+                        <ui:Label text="Representación visual" class="entity-section-title" />
+                        <ui:DropdownField label="Visual" name="entity-editor-visual-field" class="entity-field" />
+                        <ui:TextField label="Recurso del prefab" name="entity-editor-prefab-field" class="entity-field" />
+                        <ui:Label text="Ejemplo: EntityVisuals/TreeOne" class="entity-help-label" />
+
                         <ui:VisualElement class="entity-vector-group">
                             <ui:VisualElement class="entity-vector-heading">
-                                <ui:Label text="Escala" class="entity-field-group-label"/>
-                                <ui:Label text="Multiplicador del modelo" class="entity-vector-help"/>
+                                <ui:Label text="Escala" class="entity-field-group-label" />
+                                <ui:Label text="Multiplicador del modelo" class="entity-vector-help" />
                             </ui:VisualElement>
                             <ui:VisualElement class="entity-vector-row">
-                                <ui:FloatField label="X" name="entity-editor-scale-x" class="entity-vector-field"/>
-                                <ui:FloatField label="Y" name="entity-editor-scale-y" class="entity-vector-field"/>
-                                <ui:FloatField label="Z" name="entity-editor-scale-z" class="entity-vector-field"/>
+                                <ui:FloatField label="X" name="entity-editor-scale-x" class="entity-vector-field" />
+                                <ui:FloatField label="Y" name="entity-editor-scale-y" class="entity-vector-field" />
+                                <ui:FloatField label="Z" name="entity-editor-scale-z" class="entity-vector-field" />
                             </ui:VisualElement>
                         </ui:VisualElement>
+
                         <ui:VisualElement class="entity-vector-group">
                             <ui:VisualElement class="entity-vector-heading">
-                                <ui:Label text="Tamaño visual" class="entity-field-group-label"/>
-                                <ui:Label text="Opcional · 0 conserva el tamaño automático" class="entity-vector-help"/>
+                                <ui:Label text="Tamaño visual" class="entity-field-group-label" />
+                                <ui:Label text="Opcional · 0 conserva el tamaño automático" class="entity-vector-help" />
                             </ui:VisualElement>
                             <ui:VisualElement class="entity-vector-row">
-                                <ui:FloatField label="X" name="entity-editor-visual-size-x" class="entity-vector-field"/>
-                                <ui:FloatField label="Y" name="entity-editor-visual-size-y" class="entity-vector-field"/>
-                                <ui:FloatField label="Z" name="entity-editor-visual-size-z" class="entity-vector-field"/>
+                                <ui:FloatField label="X" name="entity-editor-visual-size-x" class="entity-vector-field" />
+                                <ui:FloatField label="Y" name="entity-editor-visual-size-y" class="entity-vector-field" />
+                                <ui:FloatField label="Z" name="entity-editor-visual-size-z" class="entity-vector-field" />
                             </ui:VisualElement>
                         </ui:VisualElement>
+
                         <ui:VisualElement class="entity-vector-group">
                             <ui:VisualElement class="entity-vector-heading">
-                                <ui:Label text="Tamaño de colisión" class="entity-field-group-label"/>
-                                <ui:Label text="Opcional · separado del tamaño visual" class="entity-vector-help"/>
+                                <ui:Label text="Tamaño de colisión" class="entity-field-group-label" />
+                                <ui:Label text="Opcional · separado del tamaño visual" class="entity-vector-help" />
                             </ui:VisualElement>
                             <ui:VisualElement class="entity-vector-row">
-                                <ui:FloatField label="X" name="entity-editor-collision-x" class="entity-vector-field"/>
-                                <ui:FloatField label="Y" name="entity-editor-collision-y" class="entity-vector-field"/>
-                                <ui:FloatField label="Z" name="entity-editor-collision-z" class="entity-vector-field"/>
+                                <ui:FloatField label="X" name="entity-editor-collision-x" class="entity-vector-field" />
+                                <ui:FloatField label="Y" name="entity-editor-collision-y" class="entity-vector-field" />
+                                <ui:FloatField label="Z" name="entity-editor-collision-z" class="entity-vector-field" />
                             </ui:VisualElement>
                         </ui:VisualElement>
-                        <ui:FloatField label="Desplazamiento del suelo" name="entity-editor-ground-offset-field" class="entity-field"/>
+
+                        <ui:FloatField label="Desplazamiento del suelo" name="entity-editor-ground-offset-field" class="entity-field" />
                     </ui:VisualElement>
+
                     <ui:VisualElement class="entity-section">
-                        <ui:Label text="CAPACIDADES" class="entity-section-eyebrow"/>
-                        <ui:Label text="Atributos de la entidad" class="entity-section-title"/>
-                        <ui:Label text="Las etiquetas base de categoría, tipo y física se calculan automáticamente." class="entity-help-label"/>
-                        <ui:VisualElement name="entity-editor-known-attributes" class="entity-attributes-grid"/>
-                        <ui:TextField label="Atributos personalizados" name="entity-editor-custom-attributes-field" multiline="true" class="entity-field entity-multiline"/>
-                        <ui:Label text="Escribe uno por línea o sepáralos con comas." class="entity-help-label"/>
+                        <ui:Label text="CAPACIDADES" class="entity-section-eyebrow" />
+                        <ui:Label text="Atributos de la entidad" class="entity-section-title" />
+                        <ui:Label text="Las etiquetas base de categoría, tipo y física se calculan automáticamente." class="entity-help-label" />
+                        <ui:VisualElement name="entity-editor-known-attributes" class="entity-attributes-grid" />
+                        <ui:TextField label="Atributos personalizados" name="entity-editor-custom-attributes-field" multiline="true" class="entity-field entity-multiline" />
+                        <ui:Label text="Escribe uno por línea o sepáralos con comas." class="entity-help-label" />
                     </ui:VisualElement>
+
                     <ui:VisualElement class="entity-section">
-                        <ui:Label text="COMPONENTES" class="entity-section-eyebrow"/>
-                        <ui:Label text="Componentes especiales" class="entity-section-title"/>
-                        <ui:Toggle label="Es un recurso extraíble" name="entity-editor-resource-toggle" class="entity-toggle"/>
+                        <ui:Label text="COMPONENTES" class="entity-section-eyebrow" />
+                        <ui:Label text="Componentes especiales" class="entity-section-title" />
+                        <ui:Toggle label="Es un recurso extraíble" name="entity-editor-resource-toggle" class="entity-toggle" />
                         <ui:VisualElement name="entity-editor-resource-panel" class="entity-subpanel">
-                            <ui:Toggle label="Recurso infinito" name="entity-editor-resource-infinite" class="entity-toggle"/>
-                            <ui:TextField label="Recursos y cantidades" name="entity-editor-resource-lines" multiline="true" class="entity-field entity-multiline"/>
-                            <ui:Label text="Formato: wood=100, una entrada por línea." class="entity-help-label"/>
+                            <ui:Toggle label="Recurso infinito" name="entity-editor-resource-infinite" class="entity-toggle" />
+                            <ui:TextField label="Recursos y cantidades" name="entity-editor-resource-lines" multiline="true" class="entity-field entity-multiline" />
+                            <ui:Label text="Formato: wood=100, una entrada por línea." class="entity-help-label" />
                             <ui:VisualElement class="entity-row">
-                                <ui:IntegerField label="Nivel" name="entity-editor-resource-tier" class="entity-field entity-half"/>
-                                <ui:IntegerField label="Cantidad por extracción" name="entity-editor-resource-amount" class="entity-field entity-half"/>
+                                <ui:IntegerField label="Nivel" name="entity-editor-resource-tier" class="entity-field entity-half" />
+                                <ui:IntegerField label="Cantidad por extracción" name="entity-editor-resource-amount" class="entity-field entity-half" />
                             </ui:VisualElement>
-                            <ui:FloatField label="Rango de interacción" name="entity-editor-resource-range" class="entity-field"/>
-                            <ui:TextField label="Entidad al agotarse" name="entity-editor-resource-spent-entity" class="entity-field"/>
-                            <ui:TextField label="Herramientas permitidas" name="entity-editor-resource-tools" multiline="true" class="entity-field entity-multiline-small"/>
+                            <ui:FloatField label="Rango de interacción" name="entity-editor-resource-range" class="entity-field" />
+                            <ui:TextField label="Entidad al agotarse" name="entity-editor-resource-spent-entity" class="entity-field" />
+                            <ui:TextField label="Herramientas permitidas" name="entity-editor-resource-tools" multiline="true" class="entity-field entity-multiline-small" />
                         </ui:VisualElement>
-                        <ui:Toggle label="Es un trabajador" name="entity-editor-worker-toggle" class="entity-toggle entity-component-toggle"/>
+
+                        <ui:Toggle label="Es un trabajador" name="entity-editor-worker-toggle" class="entity-toggle entity-component-toggle" />
                         <ui:VisualElement name="entity-editor-worker-panel" class="entity-subpanel">
-                            <ui:TextField label="Recurso principal" name="entity-editor-worker-resource-name" class="entity-field"/>
+                            <ui:TextField label="Recurso principal" name="entity-editor-worker-resource-name" class="entity-field" />
                             <ui:VisualElement class="entity-row">
-                                <ui:FloatField label="Tiempo de extracción" name="entity-editor-worker-time" class="entity-field entity-half"/>
-                                <ui:IntegerField label="Nivel" name="entity-editor-worker-tier" class="entity-field entity-half"/>
+                                <ui:FloatField label="Tiempo de extracción" name="entity-editor-worker-time" class="entity-field entity-half" />
+                                <ui:IntegerField label="Nivel" name="entity-editor-worker-tier" class="entity-field entity-half" />
                             </ui:VisualElement>
-                            <ui:FloatField label="Rango de interacción" name="entity-editor-worker-range" class="entity-field"/>
-                            <ui:Toggle label="Repetir extracción" name="entity-editor-worker-repeat" class="entity-toggle"/>
-                            <ui:TextField label="Herramientas" name="entity-editor-worker-tools" multiline="true" class="entity-field entity-multiline-small"/>
+                            <ui:FloatField label="Rango de interacción" name="entity-editor-worker-range" class="entity-field" />
+                            <ui:Toggle label="Repetir extracción" name="entity-editor-worker-repeat" class="entity-toggle" />
+                            <ui:TextField label="Herramientas" name="entity-editor-worker-tools" multiline="true" class="entity-field entity-multiline-small" />
                         </ui:VisualElement>
                     </ui:VisualElement>
                 </ui:ScrollView>
             </ui:VisualElement>
+
             <ui:ScrollView class="entity-panel entity-preview-panel">
-                <ui:Label text="VISTA PREVIA" class="entity-panel-eyebrow"/>
-                <ui:Label text="Definición generada" class="entity-panel-title"/>
+                <ui:Label text="VISTA PREVIA" class="entity-panel-eyebrow" />
+                <ui:Label text="Definición generada" class="entity-panel-title" />
                 <ui:VisualElement class="entity-preview-card">
-                    <ui:Label text="Nueva entidad" name="entity-editor-preview-name" class="entity-preview-name"/>
-                    <ui:Label text="unit · humanoid" name="entity-editor-preview-classification" class="entity-preview-classification"/>
-                    <ui:Label text="Configura los campos para generar la definición." name="entity-editor-preview-description" class="entity-preview-description"/>
+                    <ui:Label text="Nueva entidad" name="entity-editor-preview-name" class="entity-preview-name" />
+                    <ui:Label text="unit · humanoid" name="entity-editor-preview-classification" class="entity-preview-classification" />
+                    <ui:Label text="Configura los campos para generar la definición." name="entity-editor-preview-description" class="entity-preview-description" />
                 </ui:VisualElement>
-                <ui:Label text="JSON" class="entity-section-title"/>
-                <ui:TextField name="entity-editor-json-preview" multiline="true" class="entity-json-preview"/>
+                <ui:Label text="JSON" class="entity-section-title" />
+                <ui:TextField name="entity-editor-json-preview" multiline="true" class="entity-json-preview" />
                 <ui:VisualElement class="entity-preview-actions">
-                    <ui:Button text="Guardar entidad" name="entity-editor-save-button" class="gs-button gs-button-primary entity-save-button"/>
-                    <ui:Button text="Probar" name="entity-editor-test-button" class="gs-button"/>
+                    <ui:Button text="Guardar entidad" name="entity-editor-save-button" class="gs-button gs-button-primary entity-save-button" />
+                    <ui:Button text="Probar" name="entity-editor-test-button" class="gs-button" />
                 </ui:VisualElement>
-                <ui:Label text="" name="entity-editor-status-label" class="entity-status-label"/>
+                <ui:Label text="" name="entity-editor-status-label" class="entity-status-label" />
             </ui:ScrollView>
         </ui:VisualElement>
     </ui:VisualElement>

@@ -31,8 +31,11 @@ public partial class MainMenuController
 
             foreach (GameContentEntry item in group)
             {
-                Button contentButton = new() { text = item.DisplayName };
-                contentButton.tooltip = item.Description;
+                string sourceSuffix = item.IsPackaged ? $"  [Paquete {item.PackageVersion}]" : string.Empty;
+                Button contentButton = new() { text = item.DisplayName + sourceSuffix };
+                contentButton.tooltip = item.IsPackaged
+                    ? $"{item.Description}\nPaquete: {item.PackageId}\nHash: {item.ContentHash}"
+                    : item.Description;
                 contentButton.clicked += () =>
                 {
                     pendingSelectedScenarioId = item.ContentId;
@@ -123,6 +126,11 @@ public partial class MainMenuController
         panel.Add(new Label($"Máximo de jugadores: {Mathf.Clamp(scenario.maxPlayers, 1, 8)}"));
         panel.Add(new Label($"Máximo de equipos: {Mathf.Clamp(scenario.maxTeams, 1, 4)}"));
         panel.Add(new Label($"Equipos fijos: {(scenario.fixedTeams ? "Sí" : "No")}"));
+        if (!string.IsNullOrWhiteSpace(scenario.sourcePackageId))
+        {
+            panel.Add(new Label($"Paquete: {scenario.sourcePackageId} {scenario.sourcePackageVersion}"));
+            panel.Add(new Label($"Hash: {scenario.sourceContentHash}"));
+        }
 
         if (scenario.settingOverrides == null || scenario.settingOverrides.Length == 0)
         {

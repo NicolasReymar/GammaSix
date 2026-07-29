@@ -1,38 +1,45 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
-    <Style src="project://database/Assets/Scripts/UI/Uxml/MainMenu/Shared/MainMenuTheme.uss?fileID=7433441132597879392&amp;guid=9e28c42f3b8f4ec993d64783ddb4d799&amp;type=3#MainMenuTheme"/>
+    <Style src="../Shared/MainMenuTheme.uss" />
     <ui:VisualElement name="main-menu-panel" class="gs-screen">
-        <ui:VisualElement class="gs-top-accent"/>
+        <ui:VisualElement class="gs-top-accent" />
         <ui:VisualElement class="gs-header">
             <ui:VisualElement class="gs-header-main">
-                <ui:Label text="ESTRATEGIA · ROL · MULTIJUGADOR" class="gs-eyebrow"/>
-                <ui:Label text="GAMMA SIX" class="gs-title gs-title-large"/>
+                <ui:Label text="ESTRATEGIA · ROL · MULTIJUGADOR" class="gs-eyebrow" />
+                <ui:Label text="GAMMA SIX" class="gs-title gs-title-large" />
+                <ui:Label text="Construye tu ejército, domina el mapa y define el destino de cada campaña." class="gs-subtitle" />
             </ui:VisualElement>
             <ui:VisualElement class="gs-header-actions">
-                <ui:Button text="Salir del juego" name="main-menu-quit-button" class="gs-button gs-button-danger"/>
+                <ui:Button text="Salir del juego" name="main-menu-quit-button" class="gs-button gs-button-danger" />
             </ui:VisualElement>
         </ui:VisualElement>
+
         <ui:VisualElement class="gs-content gs-choice-grid">
             <ui:VisualElement class="gs-card gs-card-accent gs-choice-card">
                 <ui:VisualElement>
-                    <ui:Label text="JUGAR" class="gs-eyebrow"/>
-                    <ui:Label text="Comienza una partida" class="gs-card-title"/>
-                    <ui:VisualElement class="gs-divider"/>
+                    <ui:Label text="JUGAR" class="gs-eyebrow" />
+                    <ui:Label text="Comienza una partida" class="gs-card-title" />
+                    <ui:Label text="Juega campañas y escaramuzas en solitario o crea una sala para hasta ocho jugadores." class="gs-card-description" />
+                    <ui:VisualElement class="gs-divider" />
                 </ui:VisualElement>
                 <ui:VisualElement class="gs-action-stack">
-                    <ui:Button text="Un jugador" name="single-player-button" class="gs-button gs-button-primary"/>
-                    <ui:Button text="Multijugador" name="multi-player-button" class="gs-button"/>
+                    <ui:Button text="Un jugador" name="single-player-button" class="gs-button gs-button-primary" />
+                    <ui:Button text="Multijugador" name="multi-player-button" class="gs-button" />
                 </ui:VisualElement>
+                <ui:Label text="Las configuraciones del escenario siempre tienen prioridad sobre los valores generales de la sala." class="gs-small-note" />
             </ui:VisualElement>
+
             <ui:VisualElement class="gs-card gs-choice-card gs-choice-card-right">
                 <ui:VisualElement>
-                    <ui:Label text="SISTEMA" class="gs-eyebrow"/>
-                    <ui:Label text="Herramientas y ajustes" class="gs-card-title"/>
-                    <ui:VisualElement class="gs-divider"/>
+                    <ui:Label text="SISTEMA" class="gs-eyebrow" />
+                    <ui:Label text="Herramientas y ajustes" class="gs-card-title" />
+                    <ui:Label text="Administra el contenido del juego y configura la experiencia visual desde un mismo lugar." class="gs-card-description" />
+                    <ui:VisualElement class="gs-divider" />
                 </ui:VisualElement>
                 <ui:VisualElement class="gs-action-stack">
-                    <ui:Button text="Creador de entidades" name="entity-creator-button" class="gs-button gs-button-primary"/>
-                    <ui:Button text="Ajustes" name="settings-button" class="gs-button"/>
+                    <ui:Button text="Creador de entidades" name="entity-creator-button" class="gs-button gs-button-primary" />
+                    <ui:Button text="Ajustes" name="settings-button" class="gs-button" />
                 </ui:VisualElement>
+                <ui:Label text="El creador trabaja directamente con las definiciones de datos utilizadas por las partidas." class="gs-small-note" />
             </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>

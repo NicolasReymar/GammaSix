@@ -17,7 +17,8 @@ public enum ContextualEntityAction
 {
     None,
     Follow,
-    ExtractResource
+    ExtractResource,
+    Attack
 }
 
 /// <summary>
@@ -26,12 +27,6 @@ public enum ContextualEntityAction
 /// </summary>
 public static class EntityInteractionRules
 {
-    /// <summary>
-    /// Un objetivo con interaction.not_selectable activo se comporta como parte
-    /// del terreno para las órdenes: no puede recibir seguimiento, extracción ni
-    /// otras interacciones contextuales. El override de partida sigue siendo
-    /// respetado porque la evaluación se realiza sobre el atributo efectivo.
-    /// </summary>
     public static bool BlocksContextualInteraction(EntityAttributeSet targetAttributes)
     {
         return EntityAttributeOverrideService.IsEffectivelyBlocked(
@@ -40,12 +35,12 @@ public static class EntityInteractionRules
     }
 
     public static EntityRelation GetRelation(
-        ulong localClientId,
+        int localParticipantId,
         int sourceUnitId,
-        ulong sourceOwnerClientId,
+        int sourceOwnerParticipantId,
         int sourceTeamId,
         int targetUnitId,
-        ulong targetOwnerClientId,
+        int targetOwnerParticipantId,
         int targetTeamId)
     {
         if (sourceUnitId == targetUnitId)
@@ -54,7 +49,7 @@ public static class EntityInteractionRules
         if (targetTeamId == 0)
             return EntityRelation.Neutral;
 
-        if (targetOwnerClientId == localClientId)
+        if (targetOwnerParticipantId == localParticipantId)
             return EntityRelation.Owned;
 
         if (sourceTeamId != 0 && sourceTeamId == targetTeamId)
@@ -66,27 +61,34 @@ public static class EntityInteractionRules
     public static ContextualEntityAction Resolve(
         NetworkEntityView source,
         NetworkEntityView target,
-        ulong localClientId)
+        int localParticipantId)
     {
         if (source == null || target == null)
             return ContextualEntityAction.None;
 
-        if (source.OwnerClientId != localClientId ||
+        if (source.OwnerParticipantId != localParticipantId ||
+            source.LifeState != EntityLifeState.Alive ||
+            target.LifeState == EntityLifeState.Dead ||
             !source.HasAttribute(EntityAttributeIds.Controllable) ||
             BlocksContextualInteraction(target.Attributes))
+        {
             return ContextualEntityAction.None;
+        }
 
         EntityRelation relation = GetRelation(
-            localClientId,
+            localParticipantId,
             source.UnitId,
-            source.OwnerClientId,
+            source.OwnerParticipantId,
             source.TeamId,
             target.UnitId,
-            target.OwnerClientId,
+            target.OwnerParticipantId,
             target.TeamId);
 
-        if (relation == EntityRelation.Self || relation == EntityRelation.Enemy)
+        if (relation == EntityRelation.Self)
             return ContextualEntityAction.None;
+
+        if (relation == EntityRelation.Enemy)
+            return source.HasAttack ? ContextualEntityAction.Attack : ContextualEntityAction.None;
 
         if (target.HasAttribute(EntityAttributeIds.Resource))
         {
@@ -103,16 +105,25 @@ public static class EntityInteractionRules
             : ContextualEntityAction.None;
     }
 
-    public static bool CanFollow(EntityRuntimeState source, EntityRuntimeState target, ulong senderClientId)
+    public static bool CanFollow(
+        EntityRuntimeState source,
+        EntityRuntimeState target,
+        int issuerParticipantId)
     {
         if (source == null || target == null || source.UnitId == target.UnitId)
             return false;
 
-        if (source.OwnerClientId != senderClientId ||
+        if (source.Life == null || !source.Life.CanAct ||
+            target.Life == null || target.Life.State == EntityLifeState.Dead)
+            return false;
+
+        if (source.OwnerParticipantId != issuerParticipantId ||
             source.Attributes == null ||
             !source.Attributes.Has(EntityAttributeIds.Controllable) ||
             BlocksContextualInteraction(target.Attributes))
+        {
             return false;
+        }
 
         bool targetCanBeFollowed = target.Attributes != null &&
             (target.Attributes.Has(EntityAttributeIds.Unit) ||
@@ -122,12 +133,12 @@ public static class EntityInteractionRules
             return false;
 
         EntityRelation relation = GetRelation(
-            senderClientId,
+            issuerParticipantId,
             source.UnitId,
-            source.OwnerClientId,
+            source.OwnerParticipantId,
             source.TeamId,
             target.UnitId,
-            target.OwnerClientId,
+            target.OwnerParticipantId,
             target.TeamId);
 
         return relation == EntityRelation.Owned ||

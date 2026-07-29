@@ -25,7 +25,9 @@ public class GameSceneController : MonoBehaviour
         GameManager.Instance?.SetState(GameState.Playing);
         LoadMatch(MatchManager.Instance.CurrentMatchConfig);
         EnsureScenarioTerrain(MatchManager.Instance.CurrentMatchConfig.ScenarioId);
-        EnsureNetworkEntityCoordinator();
+        EnsureMatchRuntime(MatchManager.Instance.CurrentMatchConfig);
+        EnsureEntityCoordinator();
+        EnsureMatchTextChannel();
         EnsureGameHud();
     }
 
@@ -43,6 +45,15 @@ public class GameSceneController : MonoBehaviour
         controller.Initialize(scenarioId);
     }
 
+    private void EnsureMatchTextChannel()
+    {
+        if (MatchTextChannelController.Instance != null)
+            return;
+
+        GameObject channelObject = new("Match Text Channel");
+        channelObject.AddComponent<MatchTextChannelController>();
+    }
+
     private void EnsureGameHud()
     {
         if (GameHudController.Instance != null)
@@ -52,15 +63,27 @@ public class GameSceneController : MonoBehaviour
         hudObject.AddComponent<GameHudController>();
     }
 
-    private void EnsureNetworkEntityCoordinator()
+    private void EnsureMatchRuntime(MatchConfig matchConfig)
     {
-        bool networkMatchActive = NetworkSessionManager.Instance != null &&
-                                  NetworkSessionManager.Instance.IsConnectedClient;
+        MatchRuntimeController controller = MatchRuntimeController.Instance;
+        if (controller == null)
+        {
+            GameObject runtimeObject = new("Match Runtime");
+            controller = runtimeObject.AddComponent<MatchRuntimeController>();
+        }
 
-        if (!networkMatchActive || NetworkEntityCoordinator.Instance != null)
+        if (!controller.IsInitialized)
+            controller.Initialize(matchConfig);
+    }
+
+    private void EnsureEntityCoordinator()
+    {
+        if (NetworkEntityCoordinator.Instance != null)
             return;
 
-        GameObject unitSystemObject = new("Network Entity Coordinator");
+        // El coordinador conserva input, selección, vistas y adaptación de red.
+        // En un jugador utiliza el mismo runtime autoritativo de forma local.
+        GameObject unitSystemObject = new("Entity Coordinator");
         unitSystemObject.AddComponent<NetworkEntityCoordinator>();
     }
 

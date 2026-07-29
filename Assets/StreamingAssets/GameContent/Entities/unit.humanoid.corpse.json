@@ -1,0 +1,33 @@
+{
+  "id": "unit.humanoid.corpse",
+  "name": "Cadáver humanoide",
+  "description": "Restos persistentes producidos por la muerte de una unidad humanoide.",
+  "kind": "environment",
+  "entityType": "corpse",
+  "maxHealth": 1,
+  "moveSpeed": 0.0,
+  "solid": false,
+  "visual": "capsule",
+  "scale": {
+    "x": 0.9,
+    "y": 0.22,
+    "z": 0.45
+  },
+  "collisionSize": {
+    "x": 0.9,
+    "y": 0.22,
+    "z": 0.45
+  },
+  "groundOffset": 0.11,
+  "attributes": [
+    "entity",
+    "entity.environment",
+    "entity.corpse",
+    "interaction.not_selectable",
+    "physics.not_solid"
+  ],
+  "life": {
+    "deathOutcome": "remain",
+    "deathOutcomeDelay": 0.0
+  }
+}

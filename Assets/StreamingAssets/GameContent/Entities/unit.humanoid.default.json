@@ -6,7 +6,11 @@
   "moveSpeed": 4.0,
   "solid": true,
   "visual": "capsule",
-  "scale": { "x": 0.8, "y": 1.0, "z": 0.8 },
+  "scale": {
+    "x": 0.8,
+    "y": 1.0,
+    "z": 0.8
+  },
   "attributes": [
     "entity",
     "entity.unit",
@@ -14,6 +18,23 @@
     "movement.ground",
     "interaction.selectable",
     "interaction.controllable",
-    "physics.solid"
-  ]
+    "physics.solid",
+    "melee"
+  ],
+  "attack": {
+    "delivery": "melee",
+    "damageType": "physical",
+    "baseDamage": 12,
+    "baseAttackSpeed": 1.0,
+    "attackTime": 0.35,
+    "recoveryTime": 0.65,
+    "attackRange": 0.55,
+    "chaseTarget": true
+  },
+  "life": {
+    "deathOutcome": "replace",
+    "deathOutcomeDelay": 0.75,
+    "deathReplacementEntityId": "unit.humanoid.corpse",
+    "deathReplacementInheritsOwner": true
+  }
 }

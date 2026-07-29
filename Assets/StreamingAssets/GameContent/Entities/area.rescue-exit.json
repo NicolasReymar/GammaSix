@@ -1,0 +1,41 @@
+{
+  "id": "area.rescue-exit",
+  "name": "Salida de rescate",
+  "description": "Destino lógico al que puede trasladarse una entidad al completar un rescate.",
+  "kind": "environment",
+  "maxHealth": 1,
+  "moveSpeed": 0.0,
+  "solid": false,
+  "visual": "aura",
+  "scale": {
+    "x": 2.5,
+    "y": 0.04,
+    "z": 2.5
+  },
+  "attributes": [
+    "entity",
+    "entity.environment",
+    "entity.area",
+    "area.circular",
+    "area.trigger",
+    "trigger.rescue-exit",
+    "interaction.not_selectable",
+    "physics.not_solid"
+  ],
+  "area": {
+    "shape": "circle",
+    "radius": 1.25,
+    "relationship": "all",
+    "requiredAttributes": [
+      "unit.humanoid"
+    ],
+    "excludedAttributes": [
+      "entity.area"
+    ],
+    "emitEnter": true,
+    "emitStay": false,
+    "emitExit": true,
+    "stayInterval": 1.0,
+    "visible": true
+  }
+}

@@ -1,0 +1,302 @@
+{
+  "contentType": "scenario",
+  "id": "scenario_capture_rescue_test",
+  "name": "Acciones declarativas - Prueba",
+  "description": "Escenario técnico donde la muerte de una unidad marcada activa reglas guardadas: destruye entidades del propietario, crea un edificio prop y permite una canalización que genera una unidad nueva.",
+  "maxTeams": 2,
+  "maxPlayers": 4,
+  "fixedTeams": false,
+  "gameModeId": "base:game-mode.normal",
+  "participantConfiguration": {
+    "maximumHumanPlayers": 4,
+    "maximumParticipants": 4
+  },
+  "worldSize": {
+    "width": 48,
+    "height": 48
+  },
+  "terrain": {
+    "defaultTerrainId": "praderas_primavera",
+    "tiles": []
+  },
+  "entityCatalog": {
+    "includeGameModeDefaults": true,
+    "spawnableEntityIds": [
+      "building.captured-player-prop"
+    ]
+  },
+  "spawnPoints": [
+    {
+      "teamId": 1,
+      "position": {
+        "x": -14,
+        "y": 0,
+        "z": -8
+      }
+    },
+    {
+      "teamId": 2,
+      "position": {
+        "x": 14,
+        "y": 0,
+        "z": 8
+      }
+    }
+  ],
+  "entities": [
+    {
+      "id": "team1_anchor",
+      "entityId": "unit.humanoid.default",
+      "teamId": 1,
+      "ownerTeamSlot": 1,
+      "position": {
+        "x": -12,
+        "y": 0.5,
+        "z": -6
+      },
+      "attributes": [
+        "unit.heroic",
+        "capture-test.anchor"
+      ]
+    },
+    {
+      "id": "team1_rescuer",
+      "entityId": "unit.humanoid.default",
+      "teamId": 1,
+      "ownerTeamSlot": 2,
+      "position": {
+        "x": -10,
+        "y": 0.5,
+        "z": -6
+      }
+    },
+    {
+      "id": "team1_building",
+      "entityId": "building.mercenary",
+      "teamId": 1,
+      "ownerTeamSlot": 1,
+      "position": {
+        "x": -15,
+        "y": 2.0,
+        "z": -9
+      }
+    },
+    {
+      "id": "team2_anchor",
+      "entityId": "unit.humanoid.default",
+      "teamId": 2,
+      "ownerTeamSlot": 1,
+      "position": {
+        "x": 12,
+        "y": 0.5,
+        "z": 6
+      },
+      "attributes": [
+        "unit.heroic",
+        "capture-test.anchor"
+      ]
+    },
+    {
+      "id": "team2_rescuer",
+      "entityId": "unit.humanoid.default",
+      "teamId": 2,
+      "ownerTeamSlot": 2,
+      "position": {
+        "x": 10,
+        "y": 0.5,
+        "z": 6
+      }
+    },
+    {
+      "id": "team2_building",
+      "entityId": "building.mercenary",
+      "teamId": 2,
+      "ownerTeamSlot": 1,
+      "position": {
+        "x": 15,
+        "y": 2.0,
+        "z": 9
+      }
+    },
+    {
+      "id": "team1_prison",
+      "entityId": "area.prison-rescue",
+      "teamId": 1,
+      "ownerTeamSlot": 1,
+      "position": {
+        "x": -2,
+        "y": 0.04,
+        "z": 0
+      }
+    },
+    {
+      "id": "team2_prison",
+      "entityId": "area.prison-rescue",
+      "teamId": 2,
+      "ownerTeamSlot": 1,
+      "position": {
+        "x": 2,
+        "y": 0.04,
+        "z": 0
+      }
+    },
+    {
+      "id": "team1_rescue_exit",
+      "entityId": "area.rescue-exit",
+      "teamId": 1,
+      "ownerTeamSlot": 1,
+      "position": {
+        "x": -10,
+        "y": 0.04,
+        "z": 0
+      }
+    },
+    {
+      "id": "team2_rescue_exit",
+      "entityId": "area.rescue-exit",
+      "teamId": 2,
+      "ownerTeamSlot": 1,
+      "position": {
+        "x": 10,
+        "y": 0.04,
+        "z": 0
+      }
+    }
+  ],
+  "rules": [
+    {
+      "id": "map-mode-on-anchor-death",
+      "eventType": "entity-died",
+      "priority": 100,
+      "conditions": [
+        {
+          "type": "entity-has-attribute",
+          "attribute": "unit.heroic"
+        },
+        {
+          "type": "entity-has-attribute",
+          "attribute": "capture-test.anchor"
+        }
+      ],
+      "actions": [
+        {
+          "type": "set-participant-control-enabled",
+          "participantSelector": "event-entity-owner",
+          "controlEnabled": false,
+          "reason": "map-rule-anchor-died"
+        },
+        {
+          "type": "add-participant-attribute",
+          "participantSelector": "event-entity-owner",
+          "attribute": "capture-test.captured",
+          "reason": "map-rule-anchor-died"
+        },
+        {
+          "type": "set-participant-variable",
+          "participantSelector": "event-entity-owner",
+          "variableName": "capture-test.original-unit-definition",
+          "valueSource": "event-entity-definition",
+          "reason": "remember-dead-unit"
+        },
+        {
+          "type": "destroy-participant-entities",
+          "participantSelector": "event-entity-owner",
+          "preserveAttribute": "capture-test.preserve-on-owner-destroy",
+          "reason": "map-rule-owner-destruction"
+        },
+        {
+          "type": "spawn-entity",
+          "entityId": "building.captured-player-prop",
+          "participantSelector": "event-entity-owner",
+          "areaAttribute": "trigger.prison",
+          "reason": "map-rule-create-captured-prop"
+        },
+        {
+          "type": "show-message",
+          "message": "La regla del escenario creó la representación del jugador fuera de combate."
+        }
+      ]
+    },
+    {
+      "id": "start-map-channel-at-prop",
+      "eventType": "entity-stayed-in-area",
+      "priority": 50,
+      "conditions": [
+        {
+          "type": "area-has-attribute",
+          "attribute": "capture-test.captured-player-prop"
+        },
+        {
+          "type": "entity-life-state-is",
+          "state": "Alive"
+        },
+        {
+          "type": "participant-has-attribute",
+          "participantSelector": "event-area-owner",
+          "attribute": "capture-test.captured"
+        }
+      ],
+      "actions": [
+        {
+          "type": "start-channel",
+          "channelId": "capture-test.return-player",
+          "duration": 3.0,
+          "participantSelector": "event-area-owner",
+          "requiredParticipantAttribute": "capture-test.captured",
+          "reason": "map-channel"
+        }
+      ]
+    },
+    {
+      "id": "complete-map-channel",
+      "eventType": "channel-completed",
+      "priority": 40,
+      "conditions": [
+        {
+          "type": "channel-id-is",
+          "value": "capture-test.return-player"
+        },
+        {
+          "type": "participant-has-attribute",
+          "participantSelector": "event-participant",
+          "attribute": "capture-test.captured"
+        }
+      ],
+      "actions": [
+        {
+          "type": "despawn-participant-entities",
+          "participantSelector": "event-participant",
+          "entityAttribute": "capture-test.captured-player-prop",
+          "reason": "map-rule-remove-prop"
+        },
+        {
+          "type": "set-participant-control-enabled",
+          "participantSelector": "event-participant",
+          "controlEnabled": true,
+          "reason": "map-rule-return-player"
+        },
+        {
+          "type": "remove-participant-attribute",
+          "participantSelector": "event-participant",
+          "attribute": "capture-test.captured",
+          "reason": "map-rule-return-player"
+        },
+        {
+          "type": "spawn-entity",
+          "entityIdVariable": "capture-test.original-unit-definition",
+          "participantSelector": "event-participant",
+          "areaAttribute": "trigger.rescue-exit",
+          "reason": "map-rule-create-new-unit"
+        },
+        {
+          "type": "show-message",
+          "message": "La canalización del escenario terminó y se creó una unidad nueva."
+        }
+      ]
+    }
+  ],
+  "missions": [],
+  "teamResources": [],
+  "participantResources": [],
+  "settingOverrides": []
+}

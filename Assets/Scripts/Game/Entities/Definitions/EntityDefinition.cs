@@ -28,6 +28,9 @@ public class EntityDefinition
     public string[] attributes;
     public ResourceEntityDefinition resource;
     public WorkerEntityDefinition worker;
+    public EntityAreaDefinition area;
+    public EntityAttackDefinition attack;
+    public EntityLifeDefinition life;
 
     public Vector3 GetScale(Vector3 fallback)
     {

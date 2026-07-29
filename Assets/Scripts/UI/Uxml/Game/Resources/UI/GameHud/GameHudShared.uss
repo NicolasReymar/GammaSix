@@ -1,0 +1,19 @@
+/*
+ * Estilos compartidos por todos los paneles arrastrables del HUD.
+ * DraggableHudPanel agrega estas clases en tiempo de ejecución, evitando
+ * repetir el borde de edición en cada módulo UXML/USS.
+ */
+.hud-draggable-panel.hud-panel-editing-unlocked {
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-color: rgb(255, 216, 74);
+    border-right-color: rgb(255, 216, 74);
+    border-top-color: rgb(255, 216, 74);
+    border-bottom-color: rgb(255, 216, 74);
+}
+
+.hud-drag-surface-editing-unlocked {
+    background-color: rgba(255, 216, 74, 0.055);
+}

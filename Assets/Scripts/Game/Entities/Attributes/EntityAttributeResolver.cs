@@ -7,7 +7,16 @@ public static class EntityAttributeResolver
 {
     private static readonly Dictionary<string, string[]> Dependencies = new()
     {
-        [EntityAttributeIds.Heroic] = new[] { EntityAttributeIds.ThirdPersonCamera }
+        [EntityAttributeIds.Heroic] = new[] { EntityAttributeIds.ThirdPersonCamera },
+        [EntityAttributeIds.AuraTrigger] = new[]
+        {
+            EntityAttributeIds.EntityArea,
+            EntityAttributeIds.AreaCircular,
+            EntityAttributeIds.AreaAura,
+            EntityAttributeIds.AreaTrigger
+        },
+        [EntityAttributeIds.AreaAura] = new[] { EntityAttributeIds.EntityArea },
+        [EntityAttributeIds.AreaTrigger] = new[] { EntityAttributeIds.EntityArea }
     };
 
     public static EntityAttributeSet Resolve(IEnumerable<string> definitionAttributes)

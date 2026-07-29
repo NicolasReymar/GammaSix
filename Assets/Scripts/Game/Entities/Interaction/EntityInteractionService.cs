@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -10,17 +9,23 @@ using UnityEngine;
 public static class EntityInteractionService
 {
     public static bool TryAssignFollow(
-        IDictionary<int, EntityRuntimeState> entities,
-        ulong senderClientId,
+        EntityWorld world,
+        int issuerParticipantId,
         EntityInteractionCommand command,
         out string rejectionReason)
     {
         rejectionReason = null;
-        if (command == null ||
-            !entities.TryGetValue(command.SourceUnitId, out EntityRuntimeState source) ||
-            !entities.TryGetValue(command.TargetUnitId, out EntityRuntimeState target))
+        if (world == null || command == null ||
+            !world.TryGet(command.SourceUnitId, out EntityRuntimeState source) ||
+            !world.TryGet(command.TargetUnitId, out EntityRuntimeState target))
         {
             rejectionReason = "Entidad de origen o destino inexistente.";
+            return false;
+        }
+
+        if (source.Life == null || !source.Life.CanAct)
+        {
+            rejectionReason = "La entidad de origen no puede actuar en su estado actual.";
             return false;
         }
 
@@ -30,9 +35,9 @@ public static class EntityInteractionService
             return false;
         }
 
-        if (source.OwnerClientId != senderClientId)
+        if (source.OwnerParticipantId != issuerParticipantId)
         {
-            rejectionReason = $"Cliente {senderClientId} intentó ordenar una entidad ajena ({source.UnitId}).";
+            rejectionReason = $"El participante {issuerParticipantId} intentó ordenar una entidad ajena ({source.UnitId}).";
             return false;
         }
 
@@ -42,13 +47,14 @@ public static class EntityInteractionService
             return false;
         }
 
-        if (!EntityInteractionRules.CanFollow(source, target, senderClientId))
+        if (!EntityInteractionRules.CanFollow(source, target, issuerParticipantId))
         {
             rejectionReason = "La relación o los atributos de las entidades no permiten seguimiento.";
             return false;
         }
 
         source.InteractionTargetUnitId = target.UnitId;
+        source.Attack?.ClearTargetPreservingRecovery();
         source.Destination = target.Position;
         if (source.Worker != null)
         {
@@ -59,14 +65,24 @@ public static class EntityInteractionService
         return true;
     }
 
-    public static void Update(IDictionary<int, EntityRuntimeState> entities)
+    public static void Update(EntityWorld world)
     {
-        foreach (EntityRuntimeState source in entities.Values)
+        if (world == null)
+            return;
+
+        foreach (EntityRuntimeState source in world.Values)
         {
+            if (source.Life == null || !source.Life.CanAct)
+            {
+                Clear(source);
+                source.Destination = source.Position;
+                continue;
+            }
+
             if (source.InteractionTargetUnitId < 0)
                 continue;
 
-            if (!entities.TryGetValue(source.InteractionTargetUnitId, out EntityRuntimeState target) ||
+            if (!world.TryGet(source.InteractionTargetUnitId, out EntityRuntimeState target) ||
                 EntityInteractionRules.BlocksContextualInteraction(target.Attributes))
             {
                 Clear(source);

@@ -1,9 +1,8 @@
 using UnityEngine;
 
 /// <summary>
-/// Centraliza la representación visual de la relación entre el jugador local
-/// y una entidad objetivo. Se usa tanto para selección como para confirmar
-/// órdenes contextuales.
+/// Centraliza la representación visual de la relación entre el participante local
+/// y una entidad objetivo. Se usa tanto para selección como para confirmar órdenes.
 /// </summary>
 public static class EntityRelationshipVisuals
 {
@@ -16,15 +15,15 @@ public static class EntityRelationshipVisuals
         if (target == null)
             return EntityRelation.Neutral;
 
-        NetworkSessionManager session = NetworkSessionManager.Instance;
-        NetworkPlayerInfo localPlayer = session?.GetLocalPlayer();
-        ulong localClientId = localPlayer?.ClientId ?? ulong.MaxValue;
-        int localTeamId = localPlayer?.TeamId ?? -1;
+        int localParticipantId = MatchRuntimeController.Instance?.LocalParticipantId ??
+                                 NetworkSessionManager.Instance?.GetLocalPlayer()?.ParticipantId ?? -1;
+        int localTeamId = NetworkSessionManager.Instance?.GetLocalPlayer()?.TeamId ??
+                          ResolveOfflineTeam(localParticipantId);
 
         if (target.TeamId == 0)
             return EntityRelation.Neutral;
 
-        if (target.OwnerClientId == localClientId)
+        if (target.OwnerParticipantId == localParticipantId)
             return EntityRelation.Owned;
 
         if (localTeamId > 0 && target.TeamId == localTeamId)
@@ -49,5 +48,14 @@ public static class EntityRelationshipVisuals
             EntityRelation.Enemy => Enemy,
             _ => Neutral
         };
+    }
+
+    private static int ResolveOfflineTeam(int participantId)
+    {
+        AuthoritativeMatchRuntime runtime = MatchRuntimeController.Instance?.Runtime;
+        return runtime?.Participants != null &&
+               runtime.Participants.TryGet(participantId, out MatchParticipantRuntimeState participant)
+            ? participant.TeamId
+            : -1;
     }
 }

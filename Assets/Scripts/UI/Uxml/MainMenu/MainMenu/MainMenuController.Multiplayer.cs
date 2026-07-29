@@ -118,6 +118,7 @@ public partial class MainMenuController
         });
         RegisterButton(root, "mp-ready-button", () => NetworkSessionManager.Instance?.ToggleLocalReady());
         RegisterButton(root, "mp-menu-start-button", StartMultiplayerMatch);
+        RegisterButton(root, "mp-headless-button", ToggleHeadlessPanel);
 
         Toggle fixedColorsToggle = root.Q<Toggle>("mp-fixed-colors-toggle");
         if (fixedColorsToggle != null)
@@ -145,7 +146,7 @@ public partial class MainMenuController
             fixedTeamsToggle.RegisterValueChangedCallback(evt =>
             {
                 NetworkSessionManager session = NetworkSessionManager.Instance;
-                if (session == null || !session.IsHost || session.FixedTeamsForcedByScenario)
+                if (session == null || !session.IsHost)
                     return;
 
                 ActiveSettingOverride activeOverride = session.ActiveOverrides.FirstOrDefault(item =>
@@ -159,6 +160,7 @@ public partial class MainMenuController
 
         RefreshContentOverrides();
         RefreshMultiplayerPlayers();
+        RefreshHeadlessPanel();
         RefreshNetworkControls();
     }
 
@@ -172,30 +174,39 @@ public partial class MainMenuController
 
     private void RefreshMultiplayerPlayers()
     {
-        if (uiDocument == null) return;
+        if (uiDocument == null)
+            return;
+
         VisualElement root = uiDocument.rootVisualElement;
         VisualElement list = root.Q<VisualElement>("mp-player-list");
-        if (list == null) return;
+        if (list == null)
+            return;
 
         list.Clear();
         NetworkSessionManager session = NetworkSessionManager.Instance;
-        if (session == null) return;
+        if (session == null)
+            return;
 
-        IReadOnlyList<NetworkPlayerInfo> players = session.Players;
-        int slotCount = Mathf.Clamp(session.SelectedScenarioMaxPlayers, 1, 8);
-        ulong localClientId = session.GetLocalPlayer()?.ClientId ?? ulong.MaxValue;
+        IReadOnlyList<NetworkPlayerInfo> participants = session.Players;
+        int slotCount = Mathf.Clamp(session.SelectedScenarioMaxParticipants, 1, 16);
+        int localParticipantId = session.GetLocalPlayer()?.ParticipantId ?? -1;
 
-        for (int slot = 0; slot < slotCount; slot++)
+        for (int slotIndex = 0; slotIndex < slotCount; slotIndex++)
         {
-            NetworkPlayerInfo player = slot < players.Count ? players[slot] : null;
-            VisualElement row = CreatePlayerSlotRow(slot + 1, player, session, localClientId);
+            NetworkPlayerInfo participant = participants.FirstOrDefault(item => item.SlotIndex == slotIndex);
+            VisualElement row = CreatePlayerSlotRow(slotIndex + 1, participant, session, localParticipantId);
             list.Add(row);
         }
 
+        RefreshHeadlessPanel();
         RefreshNetworkControls();
     }
 
-    private VisualElement CreatePlayerSlotRow(int slotNumber, NetworkPlayerInfo player, NetworkSessionManager session, ulong localClientId)
+    private VisualElement CreatePlayerSlotRow(
+        int slotNumber,
+        NetworkPlayerInfo participant,
+        NetworkSessionManager session,
+        int localParticipantId)
     {
         VisualElement row = new();
         row.style.flexDirection = FlexDirection.Row;
@@ -207,15 +218,22 @@ public partial class MainMenuController
         row.style.paddingRight = 14;
         row.style.paddingTop = 10;
         row.style.paddingBottom = 10;
-        row.style.backgroundColor = player == null ? new Color(1f, 1f, 1f, 0.035f) : new Color(1f, 1f, 1f, 0.075f);
+        row.style.backgroundColor = participant == null
+            ? new Color(1f, 1f, 1f, 0.035f)
+            : participant.IsHeadless
+                ? new Color(0.18f, 0.55f, 0.42f, 0.16f)
+                : new Color(1f, 1f, 1f, 0.075f);
         row.style.borderLeftWidth = 1;
         row.style.borderRightWidth = 1;
         row.style.borderTopWidth = 1;
         row.style.borderBottomWidth = 1;
-        row.style.borderLeftColor = new Color(0.35f, 0.55f, 0.46f, 0.28f);
-        row.style.borderRightColor = new Color(0.35f, 0.55f, 0.46f, 0.28f);
-        row.style.borderTopColor = new Color(0.35f, 0.55f, 0.46f, 0.28f);
-        row.style.borderBottomColor = new Color(0.35f, 0.55f, 0.46f, 0.28f);
+        Color borderColor = participant != null && participant.IsHeadless
+            ? new Color(0.25f, 0.90f, 0.64f, 0.42f)
+            : new Color(0.35f, 0.55f, 0.46f, 0.28f);
+        row.style.borderLeftColor = borderColor;
+        row.style.borderRightColor = borderColor;
+        row.style.borderTopColor = borderColor;
+        row.style.borderBottomColor = borderColor;
         row.style.borderTopLeftRadius = 10;
         row.style.borderTopRightRadius = 10;
         row.style.borderBottomLeftRadius = 10;
@@ -227,7 +245,7 @@ public partial class MainMenuController
         slotLabel.style.color = new Color(0.62f, 0.75f, 0.69f, 1f);
         row.Add(slotLabel);
 
-        if (player == null)
+        if (participant == null)
         {
             Label empty = new("Casilla vacía");
             empty.style.flexGrow = 1;
@@ -240,42 +258,207 @@ public partial class MainMenuController
 
         VisualElement identity = new();
         identity.style.flexGrow = 1;
-        identity.style.minWidth = 150;
-        Label name = new(player.PlayerName + (player.ClientId == localClientId ? " (Tú)" : string.Empty));
+        identity.style.minWidth = 170;
+        string localSuffix = participant.IsHuman && participant.ParticipantId == localParticipantId
+            ? " (Tú)"
+            : string.Empty;
+        Label name = new(participant.PlayerName + localSuffix);
         name.style.fontSize = 17;
         name.style.unityFontStyleAndWeight = FontStyle.Bold;
         name.style.color = new Color(0.94f, 0.98f, 0.96f, 1f);
         identity.Add(name);
-        Label ready = new(player.IsReady ? "LISTO" : "NO LISTO");
-        ready.style.fontSize = 12;
-        ready.style.color = player.IsReady ? new Color(0.32f, 0.90f, 0.55f) : new Color(1f, 0.43f, 0.43f);
-        identity.Add(ready);
+
+        string statusText;
+        Color statusColor;
+        if (participant.IsHeadless)
+        {
+            string source = string.Equals(participant.ControllerSourceId, "base", StringComparison.OrdinalIgnoreCase)
+                ? "BASE"
+                : "ESCENARIO";
+            statusText = participant.ParticipantLocked
+                ? $"HEADLESS · {source} · OBLIGATORIO"
+                : $"HEADLESS · {source}";
+            statusColor = new Color(0.34f, 0.93f, 0.66f);
+        }
+        else
+        {
+            statusText = participant.IsReady ? "LISTO" : "NO LISTO";
+            statusColor = participant.IsReady
+                ? new Color(0.32f, 0.90f, 0.55f)
+                : new Color(1f, 0.43f, 0.43f);
+        }
+
+        Label status = new(statusText);
+        status.style.fontSize = 12;
+        status.style.color = statusColor;
+        identity.Add(status);
         row.Add(identity);
 
-        bool canEditOwn = player.ClientId == localClientId && !player.IsReady;
+        bool canEditOwn = participant.IsHuman &&
+                          participant.ParticipantId == localParticipantId &&
+                          !participant.IsReady;
         bool canHostEdit = session.IsHost;
 
-        Button teamButton = new() { text = $"Equipo {player.TeamId}" };
+        Button teamButton = new() { text = $"Equipo {participant.TeamId}" };
         teamButton.AddToClassList("gs-button");
         teamButton.style.width = 112;
         teamButton.style.height = 38;
         teamButton.style.marginRight = 8;
-        teamButton.SetEnabled(!session.FixedTeams && (canHostEdit || canEditOwn));
-        teamButton.tooltip = session.FixedTeams ? "Los equipos están fijados por la configuración de la partida." : string.Empty;
-        teamButton.clicked += () => ShowTeamPicker(teamButton, player);
+        bool canEditTeam = !session.FixedTeams &&
+                           !participant.TeamLocked &&
+                           (canHostEdit || canEditOwn);
+        teamButton.SetEnabled(canEditTeam);
+        teamButton.tooltip = participant.TeamLocked
+            ? "El equipo está bloqueado por el escenario."
+            : session.FixedTeams
+                ? "Los equipos están fijados por la configuración de la partida."
+                : string.Empty;
+        teamButton.clicked += () => ShowTeamPicker(teamButton, participant);
         row.Add(teamButton);
 
-        Button colorButton = new() { text = PlayerColorPalette.GetName(player.ColorId) };
+        Button colorButton = new() { text = PlayerColorPalette.GetName(participant.ColorId) };
         colorButton.AddToClassList("gs-button");
         colorButton.style.width = 118;
         colorButton.style.height = 38;
-        colorButton.style.backgroundColor = PlayerColorPalette.GetColor(player.ColorId);
+        colorButton.style.marginRight = participant.IsHeadless && canHostEdit && !participant.ParticipantLocked ? 8 : 0;
+        colorButton.style.backgroundColor = PlayerColorPalette.GetColor(participant.ColorId);
         colorButton.style.color = Color.white;
-        bool canEditColor = canHostEdit || (canEditOwn && !session.FixedColors);
+        bool canEditColor = !participant.ColorLocked &&
+                            (canHostEdit || (canEditOwn && !session.FixedColors));
         colorButton.SetEnabled(canEditColor);
-        colorButton.clicked += () => ShowColorPicker(colorButton, player);
+        colorButton.tooltip = participant.ColorLocked ? "El color está bloqueado por el escenario." : string.Empty;
+        colorButton.clicked += () => ShowColorPicker(colorButton, participant);
         row.Add(colorButton);
+
+        if (participant.IsHeadless && canHostEdit && !participant.ParticipantLocked)
+        {
+            Button removeButton = new() { text = "Quitar" };
+            removeButton.AddToClassList("gs-button");
+            removeButton.style.height = 38;
+            removeButton.style.minWidth = 82;
+            removeButton.clicked += () => session.RemoveHeadlessParticipant(participant.ParticipantId);
+            row.Add(removeButton);
+        }
+
         return row;
+    }
+
+    private void ToggleHeadlessPanel()
+    {
+        if (uiDocument == null)
+            return;
+
+        VisualElement panel = uiDocument.rootVisualElement.Q<VisualElement>("mp-headless-panel");
+        if (panel == null)
+            return;
+
+        panel.style.display = panel.resolvedStyle.display == DisplayStyle.None
+            ? DisplayStyle.Flex
+            : DisplayStyle.None;
+        RefreshHeadlessPanel();
+    }
+
+    private void RefreshHeadlessPanel()
+    {
+        if (uiDocument == null)
+            return;
+
+        VisualElement root = uiDocument.rootVisualElement;
+        VisualElement panel = root.Q<VisualElement>("mp-headless-panel");
+        Button headlessButton = root.Q<Button>("mp-headless-button");
+        NetworkSessionManager session = NetworkSessionManager.Instance;
+        if (panel == null || session == null)
+            return;
+
+        if (headlessButton != null)
+            headlessButton.text = $"Headless ({session.HeadlessParticipantCount})";
+
+        DisplayStyle previousDisplay = panel.resolvedStyle.display;
+        panel.Clear();
+        panel.style.display = previousDisplay;
+
+        Label title = new("Participantes headless disponibles");
+        title.style.fontSize = 16;
+        title.style.unityFontStyleAndWeight = FontStyle.Bold;
+        title.style.color = Color.white;
+        title.style.marginBottom = 4;
+        panel.Add(title);
+
+        Label description = new("El host puede ocupar una casilla vacía con un controlador compatible con el modo activo.");
+        description.style.fontSize = 12;
+        description.style.color = new Color(0.68f, 0.78f, 0.73f);
+        description.style.marginBottom = 10;
+        panel.Add(description);
+
+        IReadOnlyList<HeadlessProfileDefinition> profiles = session.AvailableHeadlessProfiles;
+        if (profiles == null || profiles.Count == 0)
+        {
+            Label empty = new("Este contenido no registra perfiles headless compatibles.");
+            empty.style.color = new Color(0.72f, 0.75f, 0.74f);
+            panel.Add(empty);
+            return;
+        }
+
+        foreach (HeadlessProfileDefinition profile in profiles)
+        {
+            VisualElement profileRow = new();
+            profileRow.style.flexDirection = FlexDirection.Row;
+            profileRow.style.flexWrap = Wrap.Wrap;
+            profileRow.style.alignItems = Align.Center;
+            profileRow.style.paddingTop = 8;
+            profileRow.style.paddingBottom = 8;
+            profileRow.style.borderTopWidth = 1;
+            profileRow.style.borderTopColor = new Color(1f, 1f, 1f, 0.08f);
+
+            VisualElement profileText = new();
+            profileText.style.flexGrow = 1;
+            profileText.style.minWidth = 230;
+            Label profileName = new(profile.DisplayName);
+            profileName.style.unityFontStyleAndWeight = FontStyle.Bold;
+            profileName.style.color = Color.white;
+            profileText.Add(profileName);
+
+            int currentInstances = session.Players.Count(item =>
+                item.IsHeadless &&
+                string.Equals(item.ControllerProfileId, profile.Id, StringComparison.OrdinalIgnoreCase));
+            Label metadata = new($"{profile.SourceLabel} · {currentInstances}/{Mathf.Max(1, profile.MaximumInstances)}");
+            metadata.style.fontSize = 11;
+            metadata.style.color = new Color(0.34f, 0.93f, 0.66f);
+            profileText.Add(metadata);
+
+            Label profileDescription = new(profile.Description);
+            profileDescription.style.fontSize = 12;
+            profileDescription.style.color = new Color(0.68f, 0.78f, 0.73f);
+            profileText.Add(profileDescription);
+
+            if (!profile.RuntimeImplemented)
+            {
+                Label pending = new("Matchmaking listo · controlador de gameplay pendiente");
+                pending.style.fontSize = 11;
+                pending.style.color = new Color(1f, 0.72f, 0.32f);
+                profileText.Add(pending);
+            }
+
+            profileRow.Add(profileText);
+
+            Button addButton = new() { text = "Agregar" };
+            addButton.AddToClassList("gs-button");
+            addButton.style.minWidth = 96;
+            addButton.style.height = 38;
+            bool reachedMaximum = currentInstances >= Mathf.Max(1, profile.MaximumInstances);
+            bool canAdd = session.IsHost && session.HasFreeLobbySlot() && !reachedMaximum;
+            addButton.SetEnabled(canAdd);
+            addButton.text = reachedMaximum ? "Máximo" : "Agregar";
+            addButton.tooltip = !session.IsHost
+                ? "Solo el host puede agregar participantes headless."
+                : !session.HasFreeLobbySlot()
+                    ? "No quedan casillas disponibles."
+                    : string.Empty;
+            string selectedProfileId = profile.Id;
+            addButton.clicked += () => session.AddHeadlessParticipant(selectedProfileId);
+            profileRow.Add(addButton);
+            panel.Add(profileRow);
+        }
     }
 
     private void ShowTeamPicker(VisualElement anchor, NetworkPlayerInfo player)
@@ -283,32 +466,58 @@ public partial class MainMenuController
         NetworkSessionManager session = NetworkSessionManager.Instance;
         if (session == null) return;
 
-        bool canEdit = !session.FixedTeams && (session.IsHost || (session.GetLocalPlayer()?.ClientId == player.ClientId && !player.IsReady));
+        bool canEdit = !session.FixedTeams && !player.TeamLocked && (session.IsHost || (session.GetLocalPlayer()?.ParticipantId == player.ParticipantId && player.IsHuman && !player.IsReady));
         if (!canEdit) return;
 
         VisualElement root = uiDocument.rootVisualElement;
-        root.Q<VisualElement>("mp-team-popup")?.RemoveFromHierarchy();
-        VisualElement popup = CreatePopupNearAnchor(root, anchor, "mp-team-popup", 220, 220);
+        VisualElement existing = root.Q<VisualElement>("mp-team-popup");
+        if (existing != null)
+        {
+            bool sameAnchor = ReferenceEquals(existing.userData, anchor);
+            existing.RemoveFromHierarchy();
+            if (sameAnchor)
+                return;
+        }
+
+        root.Q<VisualElement>("mp-color-popup")?.RemoveFromHierarchy();
+
+        int maxTeams = Mathf.Clamp(session.SelectedScenarioMaxTeams, 1, 4);
+        const float optionWidth = 104f;
+        const float optionGap = 6f;
+        int columns = Mathf.CeilToInt(maxTeams / 2f);
+        float popupWidth = Mathf.Max(220f, columns * (optionWidth + optionGap) + 24f);
+
+        VisualElement popup = CreatePopupNearAnchor(root, anchor, "mp-team-popup", popupWidth, 180);
+        popup.userData = anchor;
+
         Label title = new($"Equipo de {player.PlayerName}");
         title.style.unityFontStyleAndWeight = FontStyle.Bold;
         title.style.color = Color.white;
         title.style.marginBottom = 8;
         popup.Add(title);
 
-        int maxTeams = Mathf.Clamp(session.SelectedScenarioMaxTeams, 1, 4);
+        VisualElement grid = new();
+        grid.style.flexDirection = FlexDirection.Row;
+        grid.style.flexWrap = Wrap.Wrap;
+        grid.style.width = columns * (optionWidth + optionGap);
+        popup.Add(grid);
+
         for (int teamId = 1; teamId <= maxTeams; teamId++)
         {
             int selectedTeam = teamId;
             Button option = new() { text = $"Equipo {teamId}" };
+            option.style.width = optionWidth;
             option.style.height = 38;
+            option.style.marginRight = optionGap;
             option.style.marginBottom = 6;
             option.clicked += () =>
             {
-                session.RequestTeamChange(player.ClientId, selectedTeam);
+                session.RequestTeamChange(player.ParticipantId, selectedTeam);
                 popup.RemoveFromHierarchy();
             };
-            popup.Add(option);
+            grid.Add(option);
         }
+
         root.Add(popup);
     }
 
@@ -318,17 +527,32 @@ public partial class MainMenuController
         if (session == null)
             return;
 
-        bool canEdit = session.IsHost || (session.GetLocalPlayer()?.ClientId == player.ClientId && !session.FixedColors && !player.IsReady);
+        bool canEdit = !player.ColorLocked && (session.IsHost || (session.GetLocalPlayer()?.ParticipantId == player.ParticipantId && player.IsHuman && !session.FixedColors && !player.IsReady));
         if (!canEdit)
             return;
 
         VisualElement root = uiDocument.rootVisualElement;
-        root.Q<VisualElement>("mp-color-popup")?.RemoveFromHierarchy();
+        VisualElement existing = root.Q<VisualElement>("mp-color-popup");
+        if (existing != null)
+        {
+            bool sameAnchor = ReferenceEquals(existing.userData, anchor);
+            existing.RemoveFromHierarchy();
+            if (sameAnchor)
+                return;
+        }
+
+        root.Q<VisualElement>("mp-team-popup")?.RemoveFromHierarchy();
+
+        const float optionWidth = 96f;
+        const float optionGap = 6f;
+        int columns = Mathf.CeilToInt(PlayerColorPalette.Count / 2f);
+        float popupWidth = columns * (optionWidth + optionGap) + 24f;
 
         VisualElement popup = new() { name = "mp-color-popup" };
+        popup.userData = anchor;
         popup.style.position = Position.Absolute;
-        popup.style.width = 272;
-        popup.style.maxWidth = 272;
+        popup.style.width = popupWidth;
+        popup.style.maxWidth = popupWidth;
         popup.style.paddingLeft = 12;
         popup.style.paddingRight = 12;
         popup.style.paddingTop = 12;
@@ -340,8 +564,8 @@ public partial class MainMenuController
         popup.style.borderBottomRightRadius = 10;
 
         Rect anchorRect = anchor.worldBound;
-        float popupLeft = Mathf.Clamp(anchorRect.xMax - 272f, 12f, Mathf.Max(12f, root.resolvedStyle.width - 284f));
-        float popupTop = Mathf.Clamp(anchorRect.yMax + 8f, 12f, Mathf.Max(12f, root.resolvedStyle.height - 260f));
+        float popupLeft = Mathf.Clamp(anchorRect.xMax - popupWidth, 12f, Mathf.Max(12f, root.resolvedStyle.width - popupWidth - 12f));
+        float popupTop = Mathf.Clamp(anchorRect.yMax + 8f, 12f, Mathf.Max(12f, root.resolvedStyle.height - 180f));
         popup.style.left = popupLeft;
         popup.style.top = popupTop;
 
@@ -351,25 +575,19 @@ public partial class MainMenuController
         title.style.color = Color.white;
         popup.Add(title);
 
-        Label subtitle = new("Selecciona un color disponible para este jugador.");
-        subtitle.style.fontSize = 12;
-        subtitle.style.whiteSpace = WhiteSpace.Normal;
-        subtitle.style.color = new Color(1f, 1f, 1f, 0.72f);
-        subtitle.style.marginBottom = 10;
-        popup.Add(subtitle);
-
         VisualElement grid = new();
         grid.style.flexDirection = FlexDirection.Row;
         grid.style.flexWrap = Wrap.Wrap;
+        grid.style.width = columns * (optionWidth + optionGap);
         popup.Add(grid);
 
         for (int colorId = 0; colorId < PlayerColorPalette.Count; colorId++)
         {
             int selectedColorId = colorId;
             Button option = new() { text = PlayerColorPalette.GetName(colorId) };
-            option.style.width = 118;
+            option.style.width = optionWidth;
             option.style.height = 38;
-            option.style.marginRight = 6;
+            option.style.marginRight = optionGap;
             option.style.marginBottom = 6;
             option.style.backgroundColor = PlayerColorPalette.GetColor(colorId);
             option.style.color = Color.white;
@@ -378,20 +596,16 @@ public partial class MainMenuController
             option.style.borderTopRightRadius = 8;
             option.style.borderBottomLeftRadius = 8;
             option.style.borderBottomRightRadius = 8;
-            bool occupiedByAnother = session.Players != null && session.Players.Any(p => p.ColorId == selectedColorId && p.ClientId != player.ClientId);
+            bool occupiedByAnother = session.Players != null && session.Players.Any(p => p.ColorId == selectedColorId && p.ParticipantId != player.ParticipantId);
             option.SetEnabled(session.IsHost || !occupiedByAnother);
             option.clicked += () =>
             {
-                session.RequestColorChange(player.ClientId, selectedColorId);
+                session.RequestColorChange(player.ParticipantId, selectedColorId);
                 popup.RemoveFromHierarchy();
             };
             grid.Add(option);
         }
 
-        Button close = new() { text = "Cerrar" };
-        close.style.marginTop = 8;
-        close.clicked += popup.RemoveFromHierarchy;
-        popup.Add(close);
         root.Add(popup);
     }
 
@@ -416,10 +630,12 @@ public partial class MainMenuController
 
         bool isHost = session.IsHost;
         bool allReady = session.AllPlayersReady;
+        bool contentCompatible = session.AllRemoteClientsContentCompatible;
+        bool canStart = allReady && contentCompatible;
 
         if (startButton != null)
         {
-            startButton.SetEnabled(isHost && allReady);
+            startButton.SetEnabled(isHost && canStart);
             startButton.style.display = isHost ? DisplayStyle.Flex : DisplayStyle.None;
         }
         if (readyButton != null)
@@ -434,26 +650,41 @@ public partial class MainMenuController
             fixedColorsToggle.SetValueWithoutNotify(session.FixedColors);
             fixedColorsToggle.SetEnabled(isHost);
             fixedColorsToggle.tooltip = overridden
-                ? "Valor precargado por el contenido. Al modificarlo, el host cancela ese override."
-                : string.Empty;
+                ? "Valor inicial precargado por el contenido. La selección del host tiene prioridad."
+                : "La configuración elegida por el host se aplicará sobre la del mapa.";
         }
         if (fixedTeamsToggle != null)
         {
             bool overridden = session.ActiveOverrides.Any(item => item.Enabled && string.Equals(item.Key, "fixedTeams", StringComparison.OrdinalIgnoreCase));
             fixedTeamsToggle.SetValueWithoutNotify(session.FixedTeams);
-            fixedTeamsToggle.SetEnabled(isHost && !session.FixedTeamsForcedByScenario);
-            fixedTeamsToggle.tooltip = session.FixedTeamsForcedByScenario
-                ? "Los equipos están bloqueados por el atributo fixedTeams del escenario."
-                : overridden
-                    ? "Valor precargado por el contenido. Al modificarlo, el host cancela ese override."
-                    : string.Empty;
+            fixedTeamsToggle.SetEnabled(isHost);
+            fixedTeamsToggle.tooltip = overridden
+                ? "Valor inicial precargado por el contenido. La selección del host tiene prioridad."
+                : "La configuración elegida por el host se aplicará sobre la del mapa.";
         }
         if (contentLabel != null)
-            contentLabel.text = $"{(session.SelectedContentType == GameContentType.Campaign ? "Campaña" : "Escenario")}: {session.SelectedContentId}";
+        {
+            string modeName = string.Equals(session.SelectedGameModeId, HeadlessProfileCatalog.NormalGameModeId, StringComparison.OrdinalIgnoreCase)
+                ? "Normal"
+                : session.SelectedGameModeId;
+            string packageLine = string.IsNullOrWhiteSpace(session.SelectedPackageId)
+                ? string.Empty
+                : $"\nPaquete: {session.SelectedPackageId} {session.SelectedPackageVersion}";
+            contentLabel.text = $"{(session.SelectedContentType == GameContentType.Campaign ? "Campaña" : "Escenario")}: {session.SelectedContentId}\nModo: {modeName}{packageLine}";
+            contentLabel.tooltip = string.IsNullOrWhiteSpace(session.SelectedContentHash)
+                ? string.Empty
+                : $"Hash del contenido: {session.SelectedContentHash}";
+        }
         if (allReadyLight != null)
-            allReadyLight.style.backgroundColor = allReady ? new Color(0.12f, 0.75f, 0.25f) : new Color(0.85f, 0.12f, 0.12f);
+            allReadyLight.style.backgroundColor = canStart ? new Color(0.12f, 0.75f, 0.25f) : new Color(0.85f, 0.12f, 0.12f);
         if (allReadyLabel != null)
-            allReadyLabel.text = allReady ? "Todos listos" : "Faltan jugadores por confirmar";
+        {
+            allReadyLabel.text = !contentCompatible
+                ? "Hay jugadores con contenido ausente o incompatible"
+                : allReady
+                    ? "Todos los jugadores humanos listos"
+                    : "Faltan jugadores humanos por confirmar";
+        }
 
         RefreshContentOverrides();
     }

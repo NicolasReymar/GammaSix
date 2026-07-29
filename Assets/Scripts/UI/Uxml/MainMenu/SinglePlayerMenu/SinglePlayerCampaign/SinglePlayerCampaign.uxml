@@ -1,33 +1,38 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
-    <Style src="project://database/Assets/Scripts/UI/Uxml/MainMenu/Shared/MainMenuTheme.uss?fileID=7433441132597879392&amp;guid=9e28c42f3b8f4ec993d64783ddb4d799&amp;type=3#MainMenuTheme"/>
+    <Style src="../../Shared/MainMenuTheme.uss" />
     <ui:VisualElement name="main-menu-panel" class="gs-screen">
-        <ui:VisualElement class="gs-top-accent"/>
+        <ui:VisualElement class="gs-top-accent" />
         <ui:VisualElement class="gs-header">
             <ui:VisualElement class="gs-header-main">
-                <ui:Label text="UN JUGADOR" class="gs-eyebrow"/>
-                <ui:Label text="Campañas" class="gs-title"/>
+                <ui:Label text="UN JUGADOR" class="gs-eyebrow" />
+                <ui:Label text="Campañas" class="gs-title" />
+                <ui:Label text="Selecciona una campaña para revisar sus escenarios y comenzar la historia." class="gs-subtitle" />
             </ui:VisualElement>
             <ui:VisualElement class="gs-header-actions">
-                <ui:Button text="Volver" name="sp-campaign-back-button" class="gs-button"/>
+                <ui:Button text="Volver" name="sp-campaign-back-button" class="gs-button" />
             </ui:VisualElement>
         </ui:VisualElement>
+
         <ui:VisualElement class="gs-content gs-two-column">
             <ui:VisualElement class="gs-card gs-column-main">
-                <ui:Label text="Biblioteca de campañas" class="gs-card-title"/>
-                <ui:VisualElement class="gs-divider"/>
-                <ui:Foldout text="Campañas disponibles" name="sp-map-browser-panel" class="gs-foldout"/>
+                <ui:Label text="Biblioteca de campañas" class="gs-card-title" />
+                <ui:Label text="Las campañas disponibles aparecerán aquí junto con su progreso y descripción." class="gs-card-description" />
+                <ui:VisualElement class="gs-divider" />
+                <ui:Foldout text="Campañas disponibles" name="sp-map-browser-panel" class="gs-foldout" />
                 <ui:VisualElement class="gs-footer-actions">
-                    <ui:Button text="Seleccionar campaña" name="sp-campaign-select-button" class="gs-button gs-button-primary"/>
+                    <ui:Button text="Seleccionar campaña" name="sp-campaign-select-button" class="gs-button gs-button-primary" />
                 </ui:VisualElement>
             </ui:VisualElement>
+
             <ui:VisualElement class="gs-card gs-card-accent gs-column-side">
-                <ui:Label text="Campaña seleccionada" class="gs-eyebrow"/>
-                <ui:Label text="Sin campaña confirmada" class="gs-card-title"/>
-                <ui:VisualElement class="gs-divider"/>
-                <ui:Label text="Estado" class="gs-section-title"/>
-                <ui:Label text="Funcionalidad en preparación" class="gs-chip"/>
-                <ui:VisualElement class="gs-spacer"/>
-                <ui:Button text="Iniciar campaña" name="sp-campaign-start-button" class="gs-button gs-button-primary gs-button-large gs-button-wide"/>
+                <ui:Label text="Campaña seleccionada" class="gs-eyebrow" />
+                <ui:Label text="Sin campaña confirmada" class="gs-card-title" />
+                <ui:Label text="La carga de campañas y el progreso narrativo se conectarán en una etapa posterior." class="gs-card-description" />
+                <ui:VisualElement class="gs-divider" />
+                <ui:Label text="Estado" class="gs-section-title" />
+                <ui:Label text="Funcionalidad en preparación" class="gs-chip" />
+                <ui:VisualElement class="gs-spacer" />
+                <ui:Button text="Iniciar campaña" name="sp-campaign-start-button" class="gs-button gs-button-primary gs-button-large gs-button-wide" />
             </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>

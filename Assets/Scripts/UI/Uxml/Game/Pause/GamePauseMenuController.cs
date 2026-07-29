@@ -68,6 +68,11 @@ public sealed class GamePauseMenuController : MonoBehaviour
         switch (currentPage)
         {
             case MenuPage.Closed:
+                // Escape primero debe cerrar interfaces como chat/consola.
+                // El frame de protección de GameUiModalService evita que el
+                // mismo Escape atraviese esa interfaz y abra también la pausa.
+                if (GameUiModalService.BlocksGameplayInput)
+                    return;
                 ShowMatchMenu();
                 break;
             case MenuPage.Match:

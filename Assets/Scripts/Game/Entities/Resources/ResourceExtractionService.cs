@@ -11,23 +11,29 @@ using UnityEngine;
 public static class ResourceExtractionService
 {
     public static bool TryAssignExtraction(
-        IDictionary<int, EntityRuntimeState> entities,
-        ulong senderClientId,
+        EntityWorld world,
+        int issuerParticipantId,
         ResourceInteractionCommand command,
         out string rejectionReason)
     {
         rejectionReason = null;
-        if (command == null ||
-            !entities.TryGetValue(command.WorkerUnitId, out EntityRuntimeState worker) ||
-            !entities.TryGetValue(command.ResourceUnitId, out EntityRuntimeState resource))
+        if (world == null || command == null ||
+            !world.TryGet(command.WorkerUnitId, out EntityRuntimeState worker) ||
+            !world.TryGet(command.ResourceUnitId, out EntityRuntimeState resource))
         {
             rejectionReason = "Trabajador o recurso inexistente.";
             return false;
         }
 
-        if (worker.OwnerClientId != senderClientId)
+        if (worker.Life == null || !worker.Life.CanAct)
         {
-            rejectionReason = $"Cliente {senderClientId} intentó usar un trabajador ajeno ({worker.UnitId}).";
+            rejectionReason = "El trabajador no puede actuar en su estado actual.";
+            return false;
+        }
+
+        if (worker.OwnerParticipantId != issuerParticipantId)
+        {
+            rejectionReason = $"El participante {issuerParticipantId} intentó usar un trabajador ajeno ({worker.UnitId}).";
             return false;
         }
 
@@ -53,6 +59,7 @@ public static class ResourceExtractionService
             return false;
 
         worker.InteractionTargetUnitId = -1;
+        worker.Attack?.ClearTargetPreservingRecovery();
         worker.Worker.TargetResourceUnitId = resource.UnitId;
         worker.Worker.ExtractionTimer = 0f;
         worker.Worker.IsExtracting = false;
@@ -60,17 +67,33 @@ public static class ResourceExtractionService
         return true;
     }
 
-    public static void Update(IDictionary<int, EntityRuntimeState> entities, float deltaTime)
+    public static void Update(EntityWorld world, float deltaTime)
     {
+        Update(world, null, deltaTime);
+    }
+
+    public static void Update(EntityWorld world, EntityLifecycleService lifecycle, float deltaTime)
+    {
+        if (world == null)
+            return;
+
         List<int> spentResources = new();
 
-        foreach (EntityRuntimeState worker in entities.Values.ToList())
+        foreach (EntityRuntimeState worker in world.SnapshotValues())
         {
             WorkerRuntimeState workerState = worker.Worker;
+            if (worker.Life == null || !worker.Life.CanAct)
+            {
+                if (workerState != null)
+                    ClearJob(workerState);
+                worker.Destination = worker.Position;
+                continue;
+            }
+
             if (workerState == null || workerState.TargetResourceUnitId < 0)
                 continue;
 
-            if (!entities.TryGetValue(workerState.TargetResourceUnitId, out EntityRuntimeState resource) ||
+            if (!world.TryGet(workerState.TargetResourceUnitId, out EntityRuntimeState resource) ||
                 resource.Resource == null)
             {
                 ClearJob(workerState);
@@ -139,7 +162,7 @@ public static class ResourceExtractionService
         }
 
         foreach (int resourceId in spentResources.Distinct())
-            ResolveSpentResource(entities, resourceId);
+            ResolveSpentResource(world, lifecycle, resourceId);
     }
 
     private static bool CanExtract(
@@ -210,13 +233,13 @@ public static class ResourceExtractionService
         return true;
     }
 
-    private static void ResolveSpentResource(IDictionary<int, EntityRuntimeState> entities, int resourceId)
+    private static void ResolveSpentResource(EntityWorld world, EntityLifecycleService lifecycle, int resourceId)
     {
-        if (!entities.TryGetValue(resourceId, out EntityRuntimeState resource) || resource.Resource == null)
+        if (!world.TryGet(resourceId, out EntityRuntimeState resource) || resource.Resource == null)
             return;
 
         string replacementId = resource.Resource.OnResourcesSpentEntityId;
-        foreach (EntityRuntimeState worker in entities.Values)
+        foreach (EntityRuntimeState worker in world.Values)
         {
             if (worker.Worker != null && worker.Worker.TargetResourceUnitId == resourceId)
                 ClearJob(worker.Worker);
@@ -224,16 +247,22 @@ public static class ResourceExtractionService
 
         if (string.IsNullOrWhiteSpace(replacementId))
         {
-            entities.Remove(resourceId);
-            Debug.Log($"[ResourceExtractionService] Recurso {resourceId} agotado y eliminado.");
+            if (lifecycle != null)
+                lifecycle.QueueDespawn(resourceId, EntityLifecycleReason.ResourceDepleted, out _);
+            else
+                world.Remove(resourceId);
+            Debug.Log($"[ResourceExtractionService] Recurso {resourceId} agotado y encolado para eliminación.");
             return;
         }
 
         EntityDefinition replacement = EntityDefinitionRepository.Load(replacementId);
         if (replacement == null)
         {
-            entities.Remove(resourceId);
-            Debug.LogWarning($"[ResourceExtractionService] No existe el reemplazo '{replacementId}'. Se eliminó el recurso.");
+            if (lifecycle != null)
+                lifecycle.QueueDespawn(resourceId, EntityLifecycleReason.ResourceDepleted, out _);
+            else
+                world.Remove(resourceId);
+            Debug.LogWarning($"[ResourceExtractionService] No existe el reemplazo '{replacementId}'. Se encoló la eliminación del recurso.");
             return;
         }
 

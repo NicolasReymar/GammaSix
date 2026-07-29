@@ -3,22 +3,24 @@ using System.Collections.Generic;
 using System.Linq;
 using Unity.Collections;
 using Unity.Netcode;
-using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 
 public partial class NetworkSessionManager
 {
     public void ToggleLocalReady()
     {
-        if (!IsConnectedClient) return;
+        if (!IsConnectedClient)
+            return;
 
         NetworkPlayerInfo local = GetLocalPlayer();
-        bool nextReady = local == null || !local.IsReady;
+        if (local == null || !local.IsHuman)
+            return;
+
+        bool nextReady = !local.IsReady;
 
         if (IsHost)
         {
-            if (local != null)
-                UpsertPlayer(local.ClientId, local.PlayerName, local.TeamId, local.ColorId, nextReady);
+            local.IsReady = nextReady;
             BroadcastRoster();
             return;
         }
@@ -28,16 +30,17 @@ public partial class NetworkSessionManager
         Manager.CustomMessagingManager.SendNamedMessage(ReadyMessage, NetworkManager.ServerClientId, writer);
     }
 
-    public bool RequestColorChange(ulong targetClientId, int colorId)
+    public bool RequestColorChange(int targetParticipantId, int colorId)
     {
         colorId = PlayerColorPalette.Normalize(colorId);
         NetworkPlayerInfo local = GetLocalPlayer();
-        if (local == null)
+        NetworkPlayerInfo target = GetParticipant(targetParticipantId);
+        if (local == null || target == null)
             return false;
 
-        if (!IsHost && targetClientId != local.ClientId)
+        if (!IsHost && target.ParticipantId != local.ParticipantId)
         {
-            SetStatus("Solo el host puede cambiar el color de otro jugador.");
+            SetStatus("Solo el host puede cambiar el color de otro participante.");
             return false;
         }
 
@@ -48,34 +51,38 @@ public partial class NetworkSessionManager
         }
 
         if (IsHost)
-            return ApplyColorChange(targetClientId, colorId, Manager.LocalClientId);
+            return ApplyColorChange(targetParticipantId, colorId, Manager.LocalClientId);
 
-        ColorRequestPayload request = new() { TargetClientId = targetClientId, ColorId = colorId };
-        string json = JsonUtility.ToJson(request);
-        FixedString512Bytes payload = json;
+        ColorRequestPayload request = new()
+        {
+            TargetParticipantId = targetParticipantId,
+            ColorId = colorId
+        };
+        FixedString512Bytes payload = JsonUtility.ToJson(request);
         using FastBufferWriter writer = new(FastBufferWriter.GetWriteSize(payload), Allocator.Temp);
         writer.WriteValueSafe(payload);
         Manager.CustomMessagingManager.SendNamedMessage(ColorRequestMessage, NetworkManager.ServerClientId, writer);
         return true;
     }
 
-    public bool RequestTeamChange(ulong targetClientId, int teamId)
+    public bool RequestTeamChange(int targetParticipantId, int teamId)
     {
         NetworkPlayerInfo local = GetLocalPlayer();
-        if (local == null)
+        NetworkPlayerInfo target = GetParticipant(targetParticipantId);
+        if (local == null || target == null)
             return false;
 
         teamId = Mathf.Clamp(teamId, 1, Mathf.Max(1, SelectedScenarioMaxTeams));
 
-        if (FixedTeams)
+        if (FixedTeams || target.TeamLocked)
         {
             SetStatus("Los equipos están fijados por la configuración de la partida.");
             return false;
         }
 
-        if (!IsHost && targetClientId != local.ClientId)
+        if (!IsHost && target.ParticipantId != local.ParticipantId)
         {
-            SetStatus("Solo el host puede cambiar el equipo de otro jugador.");
+            SetStatus("Solo el host puede cambiar el equipo de otro participante.");
             return false;
         }
 
@@ -86,13 +93,101 @@ public partial class NetworkSessionManager
         }
 
         if (IsHost)
-            return ApplyTeamChange(targetClientId, teamId, Manager.LocalClientId);
+            return ApplyTeamChange(targetParticipantId, teamId, Manager.LocalClientId);
 
-        TeamRequestPayload request = new() { TargetClientId = targetClientId, TeamId = teamId };
+        TeamRequestPayload request = new()
+        {
+            TargetParticipantId = targetParticipantId,
+            TeamId = teamId
+        };
         FixedString512Bytes payload = JsonUtility.ToJson(request);
         using FastBufferWriter writer = new(FastBufferWriter.GetWriteSize(payload), Allocator.Temp);
         writer.WriteValueSafe(payload);
         Manager.CustomMessagingManager.SendNamedMessage(TeamRequestMessage, NetworkManager.ServerClientId, writer);
+        return true;
+    }
+
+    public bool AddHeadlessParticipant(string profileId)
+    {
+        if (!IsHost)
+        {
+            SetStatus("Solo el host puede agregar participantes headless.");
+            return false;
+        }
+
+        HeadlessProfileDefinition profile = availableHeadlessProfiles.FirstOrDefault(item =>
+            string.Equals(item.Id, profileId, StringComparison.OrdinalIgnoreCase));
+        if (profile == null)
+        {
+            SetStatus("El perfil headless no está disponible para el modo de juego activo.");
+            return false;
+        }
+
+        int currentInstances = players.Count(item => item.IsHeadless &&
+            string.Equals(item.ControllerProfileId, profile.Id, StringComparison.OrdinalIgnoreCase));
+        if (currentInstances >= Mathf.Max(1, profile.MaximumInstances))
+        {
+            SetStatus($"Ya se alcanzó el máximo de instancias para {profile.DisplayName}.");
+            return false;
+        }
+
+        int slotIndex = FindFirstFreeSlotIndex(0, SelectedScenarioMaxParticipants);
+        if (slotIndex < 0)
+        {
+            SetStatus("No quedan casillas disponibles para agregar un headless.");
+            return false;
+        }
+
+        ResetHumanReadiness();
+        int participantId = AllocateParticipantId();
+        int teamId = GetNextTeamId();
+        int colorId = GetInitialColorForTeam(teamId);
+        NetworkPlayerInfo headless = NetworkPlayerInfo.CreateHeadless(
+            participantId,
+            GetDefaultSlotId(slotIndex),
+            slotIndex,
+            profile.DisplayName,
+            teamId,
+            colorId,
+            profile.Id,
+            profile.SourceId,
+            participantLocked: false,
+            teamLocked: false,
+            colorLocked: false);
+
+        players.Add(headless);
+        SortParticipants();
+        BroadcastRoster();
+
+        string runtimeNote = profile.RuntimeImplemented
+            ? string.Empty
+            : " La inteligencia de gameplay se conectará en la siguiente etapa; esta actualización deja listo el participante y el matchmaking.";
+        SetStatus($"Headless agregado: {profile.DisplayName}.{runtimeNote}");
+        return true;
+    }
+
+    public bool RemoveHeadlessParticipant(int participantId)
+    {
+        if (!IsHost)
+        {
+            SetStatus("Solo el host puede quitar participantes headless.");
+            return false;
+        }
+
+        NetworkPlayerInfo participant = GetParticipant(participantId);
+        if (participant == null || !participant.IsHeadless)
+            return false;
+
+        if (participant.ParticipantLocked)
+        {
+            SetStatus("Este participante headless es obligatorio para el escenario.");
+            return false;
+        }
+
+        players.Remove(participant);
+        ResetHumanReadiness();
+        BroadcastRoster();
+        SetStatus($"Headless eliminado: {participant.PlayerName}.");
         return true;
     }
 
@@ -107,12 +202,7 @@ public partial class NetworkSessionManager
         ActiveSettingOverride activeOverride = activeOverrides.FirstOrDefault(item =>
             item.Enabled && string.Equals(item.Key, "fixedColors", StringComparison.OrdinalIgnoreCase));
         if (activeOverride != null)
-        {
-            SetStatus("Colores fijos está controlado por un override del contenido. Desactiva el override para modificarlo.");
-            ApplyEnabledOverrides();
-            BroadcastLobbySettings();
-            return false;
-        }
+            activeOverride.Enabled = false;
 
         FixedColors = fixedColors;
         BroadcastLobbySettings();
@@ -129,24 +219,12 @@ public partial class NetworkSessionManager
             return false;
         }
 
-        if (FixedTeamsForcedByScenario)
-        {
-            SetStatus("Los equipos están fijados por el escenario seleccionado.");
-            ApplyEnabledOverrides();
-            BroadcastLobbySettings();
-            return false;
-        }
-
         ActiveSettingOverride activeOverride = activeOverrides.FirstOrDefault(item =>
             item.Enabled && string.Equals(item.Key, "fixedTeams", StringComparison.OrdinalIgnoreCase));
         if (activeOverride != null)
-        {
-            SetStatus("Equipos fijos está controlado por un override del contenido. Desactiva el override para modificarlo.");
-            ApplyEnabledOverrides();
-            BroadcastLobbySettings();
-            return false;
-        }
+            activeOverride.Enabled = false;
 
+        FixedTeamsForcedByScenario = false;
         hostFixedTeamsSetting = fixedTeams;
         FixedTeams = fixedTeams;
         BroadcastLobbySettings();
@@ -157,52 +235,58 @@ public partial class NetworkSessionManager
 
     private void HandleReadyMessage(ulong senderClientId, FastBufferReader reader)
     {
-        if (!IsHost) return;
+        if (!IsHost)
+            return;
 
         reader.ReadValueSafe(out bool isReady);
-        NetworkPlayerInfo current = players.FirstOrDefault(p => p.ClientId == senderClientId);
-        if (current == null) return;
+        NetworkPlayerInfo current = players.FirstOrDefault(p => p.IsHuman && p.ClientId == senderClientId);
+        if (current == null)
+            return;
 
-        UpsertPlayer(senderClientId, current.PlayerName, current.TeamId, current.ColorId, isReady);
+        current.IsReady = isReady;
         BroadcastRoster();
     }
 
     private void HandleColorRequestMessage(ulong senderClientId, FastBufferReader reader)
     {
-        if (!IsHost) return;
+        if (!IsHost)
+            return;
 
         reader.ReadValueSafe(out FixedString512Bytes payload);
         ColorRequestPayload request = JsonUtility.FromJson<ColorRequestPayload>(payload.ToString());
-        ApplyColorChange(request.TargetClientId, request.ColorId, senderClientId);
+        if (request != null)
+            ApplyColorChange(request.TargetParticipantId, request.ColorId, senderClientId);
     }
 
     private void HandleTeamRequestMessage(ulong senderClientId, FastBufferReader reader)
     {
-        if (!IsHost) return;
+        if (!IsHost)
+            return;
 
         reader.ReadValueSafe(out FixedString512Bytes payload);
         TeamRequestPayload request = JsonUtility.FromJson<TeamRequestPayload>(payload.ToString());
-        ApplyTeamChange(request.TargetClientId, request.TeamId, senderClientId);
+        if (request != null)
+            ApplyTeamChange(request.TargetParticipantId, request.TeamId, senderClientId);
     }
 
-    private bool ApplyTeamChange(ulong targetClientId, int requestedTeamId, ulong requesterClientId)
+    private bool ApplyTeamChange(int targetParticipantId, int requestedTeamId, ulong requesterClientId)
     {
-        NetworkPlayerInfo requester = players.FirstOrDefault(p => p.ClientId == requesterClientId);
-        NetworkPlayerInfo target = players.FirstOrDefault(p => p.ClientId == targetClientId);
+        NetworkPlayerInfo requester = players.FirstOrDefault(p => p.IsHuman && p.ClientId == requesterClientId);
+        NetworkPlayerInfo target = GetParticipant(targetParticipantId);
         if (requester == null || target == null)
             return false;
 
         bool requesterIsHost = requesterClientId == Manager.LocalClientId;
 
-        if (FixedTeams)
+        if (FixedTeams || target.TeamLocked)
         {
             SetStatus("Los equipos están fijados por la configuración de la partida.");
             return false;
         }
 
-        if (!requesterIsHost && targetClientId != requesterClientId)
+        if (!requesterIsHost && target.ParticipantId != requester.ParticipantId)
         {
-            SetStatus("Un jugador no puede cambiar el equipo de otro jugador.");
+            SetStatus("Un jugador no puede cambiar el equipo de otro participante.");
             return false;
         }
 
@@ -217,37 +301,31 @@ public partial class NetworkSessionManager
             return true;
 
         target.TeamId = requestedTeamId;
-        target.IsReady = false;
-
-        if (FixedColors)
-        {
-            int configuredColor = GetConfiguredTeamColorId(requestedTeamId);
-            if (configuredColor >= 0)
-                target.ColorId = configuredColor;
-        }
+        if (target.IsHuman)
+            target.IsReady = false;
 
         BroadcastRoster();
         SetStatus($"Equipo de {target.PlayerName}: Equipo {target.TeamId}.");
         return true;
     }
 
-    private bool ApplyColorChange(ulong targetClientId, int requestedColorId, ulong requesterClientId)
+    private bool ApplyColorChange(int targetParticipantId, int requestedColorId, ulong requesterClientId)
     {
-        NetworkPlayerInfo requester = players.FirstOrDefault(p => p.ClientId == requesterClientId);
-        NetworkPlayerInfo target = players.FirstOrDefault(p => p.ClientId == targetClientId);
+        NetworkPlayerInfo requester = players.FirstOrDefault(p => p.IsHuman && p.ClientId == requesterClientId);
+        NetworkPlayerInfo target = GetParticipant(targetParticipantId);
         if (requester == null || target == null)
             return false;
 
         bool requesterIsHost = requesterClientId == Manager.LocalClientId;
-        if (!requesterIsHost && targetClientId != requesterClientId)
+        if (!requesterIsHost && target.ParticipantId != requester.ParticipantId)
         {
-            SetStatus("Un jugador no puede cambiar el color de otro jugador.");
+            SetStatus("Un jugador no puede cambiar el color de otro participante.");
             return false;
         }
 
-        if (!requesterIsHost && FixedColors)
+        if (target.ColorLocked || (!requesterIsHost && FixedColors))
         {
-            SetStatus("Los colores están fijados por el host.");
+            SetStatus("El color está fijado por la configuración de la partida.");
             return false;
         }
 
@@ -261,8 +339,9 @@ public partial class NetworkSessionManager
         if (target.ColorId == requestedColorId)
             return true;
 
-        NetworkPlayerInfo occupied = players.FirstOrDefault(p => p.ColorId == requestedColorId);
-        if (!requesterIsHost && occupied != null && occupied.ClientId != target.ClientId)
+        NetworkPlayerInfo occupied = players.FirstOrDefault(p =>
+            p.ColorId == requestedColorId && p.ParticipantId != target.ParticipantId);
+        if (!requesterIsHost && occupied != null)
         {
             SetStatus("Ese color ya está ocupado.");
             return false;
@@ -270,12 +349,14 @@ public partial class NetworkSessionManager
 
         int previousTargetColor = target.ColorId;
         target.ColorId = requestedColorId;
-        target.IsReady = false;
+        if (target.IsHuman)
+            target.IsReady = false;
 
-        if (requesterIsHost && occupied != null && occupied.ClientId != target.ClientId)
+        if (requesterIsHost && occupied != null)
         {
             occupied.ColorId = previousTargetColor;
-            occupied.IsReady = false;
+            if (occupied.IsHuman)
+                occupied.IsReady = false;
         }
 
         BroadcastRoster();
@@ -283,11 +364,26 @@ public partial class NetworkSessionManager
         return true;
     }
 
-    private void UpsertPlayer(ulong clientId, string playerName, int teamId, int colorId, bool isReady)
+    private NetworkPlayerInfo UpsertPlayer(ulong clientId, string playerName, int teamId, int colorId, bool isReady)
     {
-        NetworkPlayerInfo existing = players.FirstOrDefault(p => p.ClientId == clientId);
+        NetworkPlayerInfo existing = players.FirstOrDefault(p => p.IsHuman && p.ClientId == clientId);
         if (existing == null)
-            players.Add(new NetworkPlayerInfo(clientId, playerName, teamId, colorId, isReady));
+        {
+            int slotIndex = FindFirstFreeSlotIndex(0, SelectedScenarioMaxParticipants);
+            if (slotIndex < 0)
+                return null;
+
+            existing = new NetworkPlayerInfo(
+                AllocateParticipantId(),
+                GetDefaultSlotId(slotIndex),
+                slotIndex,
+                clientId,
+                playerName,
+                teamId,
+                colorId,
+                isReady);
+            players.Add(existing);
+        }
         else
         {
             existing.PlayerName = playerName;
@@ -296,13 +392,58 @@ public partial class NetworkSessionManager
             existing.IsReady = isReady;
         }
 
-        players.Sort((a, b) => a.TeamId.CompareTo(b.TeamId));
+        SortParticipants();
         PlayersChanged?.Invoke();
+        return existing;
+    }
+
+    private int AllocateParticipantId()
+    {
+        while (players.Any(item => item.ParticipantId == nextParticipantId))
+            nextParticipantId++;
+
+        return nextParticipantId++;
+    }
+
+    private int FindFirstFreeSlotIndex(int minimumInclusive, int maximumExclusive)
+    {
+        int upper = Mathf.Clamp(maximumExclusive, 1, MaxParticipants);
+        int lower = Mathf.Clamp(minimumInclusive, 0, upper - 1);
+        for (int slotIndex = lower; slotIndex < upper; slotIndex++)
+        {
+            if (players.All(item => item.SlotIndex != slotIndex))
+                return slotIndex;
+        }
+
+        return -1;
+    }
+
+    private static string GetDefaultSlotId(int slotIndex)
+    {
+        return $"slot.{slotIndex + 1}";
+    }
+
+    private void SortParticipants()
+    {
+        players.Sort((a, b) =>
+        {
+            int bySlot = a.SlotIndex.CompareTo(b.SlotIndex);
+            return bySlot != 0 ? bySlot : a.ParticipantId.CompareTo(b.ParticipantId);
+        });
+    }
+
+    private void ResetHumanReadiness()
+    {
+        foreach (NetworkPlayerInfo participant in players)
+        {
+            if (participant.IsHuman)
+                participant.IsReady = false;
+        }
     }
 
     private int GetNextTeamId()
     {
-        return LobbyRuleService.GetNextTeamId(players, MaxTeams);
+        return LobbyRuleService.GetNextTeamId(players, SelectedScenarioMaxTeams);
     }
 
     private int GetNextAvailableColorId()

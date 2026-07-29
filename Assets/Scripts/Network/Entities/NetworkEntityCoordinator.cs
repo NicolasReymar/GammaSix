@@ -7,8 +7,8 @@ using Unity.Netcode;
 using UnityEngine;
 
 /// <summary>
-/// Prototipo autoritativo de unidades RTS con selección local avanzada.
-/// El servidor conserva el estado real y valida todas las órdenes.
+/// Adaptador de input, selección, vistas y red para las entidades RTS.
+/// El estado autoritativo vive en AuthoritativeMatchRuntime.
 /// </summary>
 public class NetworkEntityCoordinator : MonoBehaviour
 {
@@ -20,7 +20,6 @@ public class NetworkEntityCoordinator : MonoBehaviour
 
     public static NetworkEntityCoordinator Instance { get; private set; }
 
-    private readonly Dictionary<int, EntityRuntimeState> serverUnits = new();
     private readonly Dictionary<int, NetworkEntityView> unitViews = new();
     private EntitySelectionService selectionService;
     private ControlGroupService controlGroupService;
@@ -36,12 +35,21 @@ public class NetworkEntityCoordinator : MonoBehaviour
         ? NetworkRuntimeBootstrap.Instance.NetworkManager
         : null;
 
+    private MatchRuntimeController RuntimeController => MatchRuntimeController.Instance;
+    private AuthoritativeMatchRuntime Runtime => RuntimeController?.Runtime;
+    private bool NetworkIsActive => Manager != null && Manager.IsListening;
+    private int LocalParticipantId => RuntimeController?.LocalParticipantId ??
+                                      NetworkSessionManager.Instance?.GetLocalPlayer()?.ParticipantId ?? -1;
+    private ulong LocalClientId => NetworkIsActive ? Manager.LocalClientId : 0UL;
+    private bool CanIssueLocalCommands => LocalParticipantId > 0 &&
+                                          (!NetworkIsActive || Manager.IsConnectedClient);
+
     private Camera gameplayCamera;
     private RTSCameraController cameraController;
     private float snapshotTimer;
     private float directInputTimer;
     private bool handlersRegistered;
-    private bool serverInitialized;
+    private bool runtimeEventsSubscribed;
     private bool draggingSelection;
     private Vector2 dragStart;
     private Vector2 dragCurrent;
@@ -66,10 +74,15 @@ public class NetworkEntityCoordinator : MonoBehaviour
         gameplayCamera = Camera.main;
         EnsureCameraController();
         TryRegisterMessageHandlers();
+        TrySubscribeRuntimeEvents();
+
+        if (Runtime != null && Runtime.IsInitialized)
+            BroadcastSnapshot();
     }
 
     private void OnDestroy()
     {
+        UnsubscribeRuntimeEvents();
         UnregisterMessageHandlers();
         if (Instance == this)
             Instance = null;
@@ -77,28 +90,24 @@ public class NetworkEntityCoordinator : MonoBehaviour
 
     private void Update()
     {
-        if (Manager == null || !Manager.IsListening)
-            return;
-
-        TryRegisterMessageHandlers();
-
-        if (Manager.IsServer)
-        {
-            if (!serverInitialized)
-                InitializeServerUnits();
-
-            ResourceExtractionService.Update(serverUnits, Time.deltaTime);
-            EntityInteractionService.Update(serverUnits);
-            EntityMovementService.Update(serverUnits, Time.deltaTime);
-            snapshotTimer += Time.deltaTime;
-            if (snapshotTimer >= SnapshotInterval)
-            {
-                snapshotTimer = 0f;
-                BroadcastSnapshot();
-            }
-        }
+        if (NetworkIsActive)
+            TryRegisterMessageHandlers();
+        TrySubscribeRuntimeEvents();
 
         HandleLocalInput();
+    }
+
+    private void LateUpdate()
+    {
+        if (Runtime == null || !Runtime.IsInitialized)
+            return;
+
+        snapshotTimer += Time.deltaTime;
+        if (snapshotTimer < SnapshotInterval)
+            return;
+
+        snapshotTimer = 0f;
+        BroadcastSnapshot();
     }
 
     private void OnGUI()
@@ -140,33 +149,10 @@ public class NetworkEntityCoordinator : MonoBehaviour
         cameraController.Initialize(gameplayCamera);
     }
 
-    private void InitializeServerUnits()
-    {
-        NetworkSessionManager session = NetworkSessionManager.Instance;
-        if (session == null)
-            return;
-
-        IReadOnlyList<NetworkPlayerInfo> players = session.Players;
-        if (players == null || players.Count == 0)
-            return;
-
-        serverUnits.Clear();
-
-        ScenarioDefinition scenario = GameContentRepository.LoadScenario(session.SelectedScenarioId);
-        bool loadedFromScenario = ScenarioEntitySpawner.TryPopulate(serverUnits, scenario, players);
-
-        if (!loadedFromScenario)
-            ScenarioEntitySpawner.CreateFallback(serverUnits, players);
-
-        serverInitialized = true;
-        BroadcastSnapshot();
-        Debug.Log($"[NetworkEntityCoordinator] {serverUnits.Count} entidades iniciales creadas " +
-                  $"{(loadedFromScenario ? "desde el escenario" : "mediante fallback")}.");
-    }
 
     private void HandleLocalInput()
     {
-        if (gameplayCamera == null || !Manager.IsConnectedClient)
+        if (gameplayCamera == null || !CanIssueLocalCommands)
             return;
 
         if (GameUiModalService.BlocksGameplayInput)
@@ -352,9 +338,26 @@ public class NetworkEntityCoordinator : MonoBehaviour
 
     private void SelectSameTypeVisible(NetworkEntityView source, bool shift)
     {
+        if (source == null)
+            return;
+
+        // unit.heroic convierte a la entidad en una selección individual. La regla
+        // depende del atributo y no del ID o nombre concreto de la unidad, por lo
+        // que cualquier entidad futura con este tag obtiene el mismo comportamiento.
+        if (source.HasAttribute(EntityAttributeIds.Heroic))
+        {
+            if (!shift)
+                ClearSelection();
+
+            if (!SelectedEntities.Contains(source))
+                AddSelection(source);
+            return;
+        }
+
         List<NetworkEntityView> sameType = unitViews.Values
             .Where(IsOwnedByLocalPlayer)
             .Where(view => view != null && view.IsSelectableForCurrentMatch())
+            .Where(view => !view.HasAttribute(EntityAttributeIds.Heroic))
             .Where(view => string.Equals(view.UnitName, source.UnitName, StringComparison.OrdinalIgnoreCase))
             .Where(IsVisibleOnScreen)
             .OrderBy(view => view.UnitId)
@@ -380,10 +383,10 @@ public class NetworkEntityCoordinator : MonoBehaviour
 
         Vector2 pointer = GameInputReader.PointerPosition;
         NetworkEntityView target = GetEntityUnderCursor(pointer);
-        ulong localClientId = Manager.LocalClientId;
+        int localParticipantId = LocalParticipantId;
 
         List<NetworkEntityView> ownedControllable = SelectedEntities
-            .Where(view => view != null && view.OwnerClientId == localClientId)
+            .Where(view => view != null && view.OwnerParticipantId == localParticipantId)
             .Where(view => view.HasAttribute(EntityAttributeIds.Controllable))
             .ToList();
 
@@ -408,7 +411,7 @@ public class NetworkEntityCoordinator : MonoBehaviour
                 ContextualEntityAction action = EntityInteractionRules.Resolve(
                     source,
                     target,
-                    localClientId);
+                    localParticipantId);
 
                 switch (action)
                 {
@@ -419,6 +422,11 @@ public class NetworkEntityCoordinator : MonoBehaviour
 
                     case ContextualEntityAction.Follow:
                         RequestEntityInteraction(source.UnitId, target.UnitId);
+                        issuedAnyContextualOrder = true;
+                        break;
+
+                    case ContextualEntityAction.Attack:
+                        RequestAttack(source.UnitId, target.UnitId);
                         issuedAnyContextualOrder = true;
                         break;
                 }
@@ -578,9 +586,10 @@ public class NetworkEntityCoordinator : MonoBehaviour
 
     private bool IsOwnedByLocalPlayer(NetworkEntityView view)
     {
-        return view != null && Manager != null &&
+        return view != null &&
+               LocalParticipantId > 0 &&
                view.TeamId != 0 &&
-               view.OwnerClientId == Manager.LocalClientId &&
+               view.OwnerParticipantId == LocalParticipantId &&
                view.IsSelectableForCurrentMatch();
     }
 
@@ -688,6 +697,30 @@ public class NetworkEntityCoordinator : MonoBehaviour
         return true;
     }
 
+    private void RequestAttack(int sourceUnitId, int targetUnitId)
+    {
+        EntityAttackCommand command = new()
+        {
+            SourceUnitId = sourceUnitId,
+            TargetUnitId = targetUnitId
+        };
+
+        if (TryQueueLocalCommand(MatchCommandType.Attack, command))
+            return;
+
+        SendCommandToServer(EntityNetworkMessageNames.AttackCommand, command);
+    }
+
+    private void HandleAttackCommand(ulong senderClientId, FastBufferReader reader)
+    {
+        if (Manager == null || !Manager.IsServer)
+            return;
+
+        reader.ReadValueSafe(out FixedString512Bytes payload);
+        EntityAttackCommand command = JsonUtility.FromJson<EntityAttackCommand>(payload.ToString());
+        QueueRemoteHumanCommand(senderClientId, MatchCommandType.Attack, command);
+    }
+
     private void RequestEntityInteraction(int sourceUnitId, int targetUnitId)
     {
         EntityInteractionCommand command = new()
@@ -696,39 +729,20 @@ public class NetworkEntityCoordinator : MonoBehaviour
             TargetUnitId = targetUnitId
         };
 
-        if (Manager.IsServer)
-        {
-            ApplyEntityInteractionCommand(Manager.LocalClientId, command);
+        if (TryQueueLocalCommand(MatchCommandType.EntityInteraction, command))
             return;
-        }
 
-        string json = JsonUtility.ToJson(command);
-        FixedString512Bytes payload = json;
-        using FastBufferWriter writer = new(FastBufferWriter.GetWriteSize(payload), Allocator.Temp);
-        writer.WriteValueSafe(payload);
-        Manager.CustomMessagingManager.SendNamedMessage(
-            EntityNetworkMessageNames.EntityInteractionCommand,
-            NetworkManager.ServerClientId,
-            writer);
+        SendCommandToServer(EntityNetworkMessageNames.EntityInteractionCommand, command);
     }
 
     private void HandleEntityInteractionCommand(ulong senderClientId, FastBufferReader reader)
     {
-        if (!Manager.IsServer)
+        if (Manager == null || !Manager.IsServer)
             return;
 
         reader.ReadValueSafe(out FixedString512Bytes payload);
         EntityInteractionCommand command = JsonUtility.FromJson<EntityInteractionCommand>(payload.ToString());
-        ApplyEntityInteractionCommand(senderClientId, command);
-    }
-
-    private void ApplyEntityInteractionCommand(ulong senderClientId, EntityInteractionCommand command)
-    {
-        if (EntityInteractionService.TryAssignFollow(serverUnits, senderClientId, command, out string rejectionReason))
-            return;
-
-        if (!string.IsNullOrWhiteSpace(rejectionReason))
-            Debug.LogWarning($"[NetworkEntityCoordinator] {rejectionReason}");
+        QueueRemoteHumanCommand(senderClientId, MatchCommandType.EntityInteraction, command);
     }
 
     private void RequestResourceInteraction(int workerUnitId, int resourceUnitId)
@@ -739,39 +753,20 @@ public class NetworkEntityCoordinator : MonoBehaviour
             ResourceUnitId = resourceUnitId
         };
 
-        if (Manager.IsServer)
-        {
-            ApplyResourceInteractionCommand(Manager.LocalClientId, command);
+        if (TryQueueLocalCommand(MatchCommandType.ResourceInteraction, command))
             return;
-        }
 
-        string json = JsonUtility.ToJson(command);
-        FixedString512Bytes payload = json;
-        using FastBufferWriter writer = new(FastBufferWriter.GetWriteSize(payload), Allocator.Temp);
-        writer.WriteValueSafe(payload);
-        Manager.CustomMessagingManager.SendNamedMessage(
-            EntityNetworkMessageNames.ResourceInteractionCommand,
-            NetworkManager.ServerClientId,
-            writer);
+        SendCommandToServer(EntityNetworkMessageNames.ResourceInteractionCommand, command);
     }
 
     private void HandleResourceInteractionCommand(ulong senderClientId, FastBufferReader reader)
     {
-        if (!Manager.IsServer)
+        if (Manager == null || !Manager.IsServer)
             return;
 
         reader.ReadValueSafe(out FixedString512Bytes payload);
         ResourceInteractionCommand command = JsonUtility.FromJson<ResourceInteractionCommand>(payload.ToString());
-        ApplyResourceInteractionCommand(senderClientId, command);
-    }
-
-    private void ApplyResourceInteractionCommand(ulong senderClientId, ResourceInteractionCommand command)
-    {
-        if (ResourceExtractionService.TryAssignExtraction(serverUnits, senderClientId, command, out string rejectionReason))
-            return;
-
-        if (!string.IsNullOrWhiteSpace(rejectionReason))
-            Debug.LogWarning($"[NetworkEntityCoordinator] {rejectionReason}");
+        QueueRemoteHumanCommand(senderClientId, MatchCommandType.ResourceInteraction, command);
     }
 
     private void RequestMove(int unitId, Vector3 destination)
@@ -784,78 +779,84 @@ public class NetworkEntityCoordinator : MonoBehaviour
             Z = destination.z
         };
 
-        if (Manager.IsServer)
+        if (TryQueueLocalCommand(MatchCommandType.Move, command))
+            return;
+
+        SendCommandToServer(EntityNetworkMessageNames.MoveCommand, command);
+    }
+
+    private void HandleMoveCommand(ulong senderClientId, FastBufferReader reader)
+    {
+        if (Manager == null || !Manager.IsServer)
+            return;
+
+        reader.ReadValueSafe(out FixedString512Bytes payload);
+        EntityMoveCommand command = JsonUtility.FromJson<EntityMoveCommand>(payload.ToString());
+        QueueRemoteHumanCommand(senderClientId, MatchCommandType.Move, command);
+    }
+
+    private bool TryQueueLocalCommand(MatchCommandType commandType, object command)
+    {
+        if (Runtime == null || LocalParticipantId <= 0)
+            return false;
+
+        Runtime.EnqueueHumanCommand(
+            LocalParticipantId,
+            LocalClientId,
+            commandType,
+            command);
+        return true;
+    }
+
+    private void QueueRemoteHumanCommand(
+        ulong senderClientId,
+        MatchCommandType commandType,
+        object command)
+    {
+        if (Runtime == null)
+            return;
+
+        if (RuntimeController == null ||
+            !RuntimeController.TryResolveHumanParticipant(
+                senderClientId,
+                out MatchParticipantRuntimeState participant))
         {
-            ApplyMoveCommand(Manager.LocalClientId, command);
+            Debug.LogWarning($"[NetworkEntityCoordinator] No existe participante humano para ClientId {senderClientId}.");
             return;
         }
+
+        Runtime.EnqueueHumanCommand(
+            participant.ParticipantId,
+            senderClientId,
+            commandType,
+            command);
+    }
+
+    private void SendCommandToServer(string messageName, object command)
+    {
+        if (!NetworkIsActive || Manager.CustomMessagingManager == null || command == null)
+            return;
 
         string json = JsonUtility.ToJson(command);
         FixedString512Bytes payload = json;
         using FastBufferWriter writer = new(FastBufferWriter.GetWriteSize(payload), Allocator.Temp);
         writer.WriteValueSafe(payload);
-        Manager.CustomMessagingManager.SendNamedMessage(EntityNetworkMessageNames.MoveCommand, NetworkManager.ServerClientId, writer);
-    }
-
-    private void HandleMoveCommand(ulong senderClientId, FastBufferReader reader)
-    {
-        if (!Manager.IsServer)
-            return;
-
-        reader.ReadValueSafe(out FixedString512Bytes payload);
-        EntityMoveCommand command = JsonUtility.FromJson<EntityMoveCommand>(payload.ToString());
-        ApplyMoveCommand(senderClientId, command);
-    }
-
-    private void ApplyMoveCommand(ulong senderClientId, EntityMoveCommand command)
-    {
-        if (EntityMovementService.TryApplyMove(serverUnits, senderClientId, command, out string rejectionReason))
-            return;
-
-        if (!string.IsNullOrWhiteSpace(rejectionReason))
-            Debug.LogWarning($"[NetworkEntityCoordinator] {rejectionReason}");
+        Manager.CustomMessagingManager.SendNamedMessage(
+            messageName,
+            NetworkManager.ServerClientId,
+            writer);
     }
 
     private void BroadcastSnapshot()
     {
-        if (!Manager.IsServer || Manager.CustomMessagingManager == null)
+        if (Runtime == null || !Runtime.IsInitialized)
             return;
 
-        EntitySnapshotPayload snapshot = new();
-        foreach (EntityRuntimeState unit in serverUnits.Values.OrderBy(u => u.UnitId))
-        {
-            snapshot.Units.Add(new EntitySnapshotData
-            {
-                UnitId = unit.UnitId,
-                EntityDefinitionId = unit.EntityDefinitionId,
-                UnitName = unit.UnitName,
-                UnitTypeId = unit.UnitTypeId,
-                OwnerClientId = unit.OwnerClientId,
-                TeamId = unit.TeamId,
-                ColorId = unit.ColorId,
-                X = unit.Position.x,
-                Y = unit.Position.y,
-                Z = unit.Position.z,
-                Health = unit.Health,
-                MaxHealth = unit.MaxHealth,
-                Solid = unit.Solid,
-                Attributes = unit.Attributes?.ToArray(),
-                ResourceInfinite = unit.Resource?.Infinite ?? false,
-                ResourceTier = unit.Resource?.ResourceTier ?? 0,
-                Resources = unit.Resource?.Resources?
-                    .Select(resource => new ResourceSnapshotData
-                    {
-                        ResourceId = resource.ResourceId,
-                        Amount = resource.Amount
-                    })
-                    .ToArray(),
-                WorkerResourceName = unit.Worker?.CarriedResourceName,
-                WorkerCarriedAmount = unit.Worker?.CarriedResourceAmount ?? 0,
-                WorkerIsExtracting = unit.Worker?.IsExtracting ?? false
-            });
-        }
-
+        EntitySnapshotPayload snapshot = EntitySnapshotBuilder.Build(Runtime.World);
         ApplySnapshot(snapshot);
+
+        if (Manager == null || !Manager.IsServer || Manager.CustomMessagingManager == null)
+            return;
 
         if (Manager.ConnectedClientsIds.Count <= 1)
             return;
@@ -865,9 +866,6 @@ public class NetworkEntityCoordinator : MonoBehaviour
         using FastBufferWriter writer = new(sizeof(int) + payload.Length, Allocator.Temp);
         writer.WriteValueSafe(payload.Length);
         writer.WriteBytesSafe(payload, payload.Length);
-        // Se usa un payload UTF-8 dinámico y entrega fragmentada: así el snapshot
-        // no queda limitado por FixedString4096 cuando crezcan entidades, recursos
-        // y estados especializados.
         Manager.CustomMessagingManager.SendNamedMessageToAll(
             EntityNetworkMessageNames.Snapshot,
             writer,
@@ -876,7 +874,7 @@ public class NetworkEntityCoordinator : MonoBehaviour
 
     private void HandleSnapshot(ulong senderClientId, FastBufferReader reader)
     {
-        if (Manager.IsServer)
+        if (Manager != null && Manager.IsServer)
             return;
 
         reader.ReadValueSafe(out int length);
@@ -898,50 +896,165 @@ public class NetworkEntityCoordinator : MonoBehaviour
             return;
 
         HashSet<int> receivedIds = new();
-
         foreach (EntitySnapshotData state in snapshot.Units)
         {
+            if (state == null)
+                continue;
             receivedIds.Add(state.UnitId);
-
-            if (unitViews.TryGetValue(state.UnitId, out NetworkEntityView existingView) &&
-                !string.Equals(existingView.EntityDefinitionId, state.EntityDefinitionId, StringComparison.OrdinalIgnoreCase))
-            {
-                RemoveSelection(existingView);
-                if (cameraController != null && cameraController.LockedTarget == existingView)
-                    cameraController.Unlock();
-                Destroy(existingView.gameObject);
-                unitViews.Remove(state.UnitId);
-            }
-
-            if (!unitViews.TryGetValue(state.UnitId, out NetworkEntityView view))
-            {
-                view = EntityViewFactory.Create(state);
-                unitViews.Add(state.UnitId, view);
-            }
-
-            view.ApplyState(state);
+            ApplyEntityState(state);
         }
 
         foreach (int removedId in unitViews.Keys.Where(id => !receivedIds.Contains(id)).ToList())
+            RemoveEntityView(removedId);
+    }
+
+    private void ApplyEntityState(EntitySnapshotData state)
+    {
+        if (state == null || state.UnitId <= 0)
+            return;
+
+        if (unitViews.TryGetValue(state.UnitId, out NetworkEntityView existingView) &&
+            !string.Equals(existingView.EntityDefinitionId, state.EntityDefinitionId, StringComparison.OrdinalIgnoreCase))
         {
-            NetworkEntityView removed = unitViews[removedId];
-            RemoveSelection(removed);
-            if (cameraController != null && cameraController.LockedTarget == removed)
-                cameraController.Unlock();
-            Destroy(removed.gameObject);
-            unitViews.Remove(removedId);
+            RemoveEntityView(state.UnitId);
         }
+
+        if (!unitViews.TryGetValue(state.UnitId, out NetworkEntityView view))
+        {
+            view = EntityViewFactory.Create(state);
+            unitViews.Add(state.UnitId, view);
+        }
+
+        view.ApplyState(state);
+    }
+
+    private void RemoveEntityView(int entityId)
+    {
+        if (!unitViews.TryGetValue(entityId, out NetworkEntityView removed))
+            return;
+
+        RemoveSelection(removed);
+        if (cameraController != null && cameraController.LockedTarget == removed)
+            cameraController.Unlock();
+        Destroy(removed.gameObject);
+        unitViews.Remove(entityId);
+    }
+
+    private void TrySubscribeRuntimeEvents()
+    {
+        if (runtimeEventsSubscribed || Runtime == null)
+            return;
+
+        Runtime.EntitySpawned += HandleRuntimeEntitySpawned;
+        Runtime.EntityDespawned += HandleRuntimeEntityDespawned;
+        runtimeEventsSubscribed = true;
+    }
+
+    private void UnsubscribeRuntimeEvents()
+    {
+        if (!runtimeEventsSubscribed || Runtime == null)
+            return;
+
+        Runtime.EntitySpawned -= HandleRuntimeEntitySpawned;
+        Runtime.EntityDespawned -= HandleRuntimeEntityDespawned;
+        runtimeEventsSubscribed = false;
+    }
+
+    private void HandleRuntimeEntitySpawned(EntitySpawnedEvent lifecycleEvent)
+    {
+        if (lifecycleEvent?.Entity == null)
+            return;
+
+        EntitySnapshotData state = EntitySnapshotBuilder.BuildSingle(lifecycleEvent.Entity);
+        ApplyEntityState(state);
+        if (Manager == null || !Manager.IsServer || Manager.ConnectedClientsIds.Count <= 1)
+            return;
+
+        SendJsonToAll(
+            EntityNetworkMessageNames.EntitySpawned,
+            new EntitySpawnEventPayload
+            {
+                Entity = state,
+                Reason = lifecycleEvent.Reason
+            });
+    }
+
+    private void HandleRuntimeEntityDespawned(EntityDespawnedEvent lifecycleEvent)
+    {
+        if (lifecycleEvent == null || lifecycleEvent.EntityId <= 0)
+            return;
+
+        RemoveEntityView(lifecycleEvent.EntityId);
+        if (Manager == null || !Manager.IsServer || Manager.ConnectedClientsIds.Count <= 1)
+            return;
+
+        SendJsonToAll(
+            EntityNetworkMessageNames.EntityDespawned,
+            new EntityDespawnEventPayload
+            {
+                EntityId = lifecycleEvent.EntityId,
+                Reason = lifecycleEvent.Reason
+            });
+    }
+
+    private void HandleEntitySpawnedMessage(ulong senderClientId, FastBufferReader reader)
+    {
+        if (Manager != null && Manager.IsServer)
+            return;
+
+        EntitySpawnEventPayload payload = ReadJsonPayload<EntitySpawnEventPayload>(reader);
+        if (payload?.Entity != null)
+            ApplyEntityState(payload.Entity);
+    }
+
+    private void HandleEntityDespawnedMessage(ulong senderClientId, FastBufferReader reader)
+    {
+        if (Manager != null && Manager.IsServer)
+            return;
+
+        EntityDespawnEventPayload payload = ReadJsonPayload<EntityDespawnEventPayload>(reader);
+        if (payload != null)
+            RemoveEntityView(payload.EntityId);
+    }
+
+    private void SendJsonToAll(string messageName, object payloadObject)
+    {
+        if (Manager?.CustomMessagingManager == null || payloadObject == null)
+            return;
+
+        byte[] payload = Encoding.UTF8.GetBytes(JsonUtility.ToJson(payloadObject));
+        using FastBufferWriter writer = new(sizeof(int) + payload.Length, Allocator.Temp);
+        writer.WriteValueSafe(payload.Length);
+        writer.WriteBytesSafe(payload, payload.Length);
+        Manager.CustomMessagingManager.SendNamedMessageToAll(
+            messageName,
+            writer,
+            NetworkDelivery.ReliableFragmentedSequenced);
+    }
+
+    private static T ReadJsonPayload<T>(FastBufferReader reader) where T : class
+    {
+        reader.ReadValueSafe(out int length);
+        if (length <= 0 || length > 1024 * 1024)
+            return null;
+
+        byte[] payload = new byte[length];
+        reader.ReadBytesSafe(ref payload, length);
+        return JsonUtility.FromJson<T>(Encoding.UTF8.GetString(payload));
     }
 
     private void TryRegisterMessageHandlers()
     {
-        if (handlersRegistered || Manager?.CustomMessagingManager == null)
+        if (!NetworkIsActive || handlersRegistered || Manager?.CustomMessagingManager == null)
             return;
 
         Manager.CustomMessagingManager.RegisterNamedMessageHandler(EntityNetworkMessageNames.Snapshot, HandleSnapshot);
+        Manager.CustomMessagingManager.RegisterNamedMessageHandler(EntityNetworkMessageNames.EntitySpawned, HandleEntitySpawnedMessage);
+        Manager.CustomMessagingManager.RegisterNamedMessageHandler(EntityNetworkMessageNames.EntityDespawned, HandleEntityDespawnedMessage);
         Manager.CustomMessagingManager.RegisterNamedMessageHandler(EntityNetworkMessageNames.MoveCommand, HandleMoveCommand);
         Manager.CustomMessagingManager.RegisterNamedMessageHandler(EntityNetworkMessageNames.ResourceInteractionCommand, HandleResourceInteractionCommand);
         Manager.CustomMessagingManager.RegisterNamedMessageHandler(EntityNetworkMessageNames.EntityInteractionCommand, HandleEntityInteractionCommand);
+        Manager.CustomMessagingManager.RegisterNamedMessageHandler(EntityNetworkMessageNames.AttackCommand, HandleAttackCommand);
         handlersRegistered = true;
     }
 
@@ -951,9 +1064,12 @@ public class NetworkEntityCoordinator : MonoBehaviour
             return;
 
         Manager.CustomMessagingManager.UnregisterNamedMessageHandler(EntityNetworkMessageNames.Snapshot);
+        Manager.CustomMessagingManager.UnregisterNamedMessageHandler(EntityNetworkMessageNames.EntitySpawned);
+        Manager.CustomMessagingManager.UnregisterNamedMessageHandler(EntityNetworkMessageNames.EntityDespawned);
         Manager.CustomMessagingManager.UnregisterNamedMessageHandler(EntityNetworkMessageNames.MoveCommand);
         Manager.CustomMessagingManager.UnregisterNamedMessageHandler(EntityNetworkMessageNames.ResourceInteractionCommand);
         Manager.CustomMessagingManager.UnregisterNamedMessageHandler(EntityNetworkMessageNames.EntityInteractionCommand);
+        Manager.CustomMessagingManager.UnregisterNamedMessageHandler(EntityNetworkMessageNames.AttackCommand);
         handlersRegistered = false;
     }
 

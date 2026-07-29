@@ -164,7 +164,10 @@ public partial class NetworkSessionManager
     {
         if (IsHost)
         {
-            players.RemoveAll(p => p.ClientId == clientId);
+            contentCompatibilityByClient.Remove(clientId);
+            int removed = players.RemoveAll(p => p.IsHuman && p.ClientId == clientId);
+            if (removed > 0)
+                ResetHumanReadiness();
             BroadcastRoster();
             ConnectionStateChanged?.Invoke();
             return;
@@ -194,12 +197,17 @@ public partial class NetworkSessionManager
         if (!IsHost) return;
 
         reader.ReadValueSafe(out FixedString64Bytes playerName);
-        if (players.Count >= Mathf.Clamp(SelectedScenarioMaxPlayers, 1, MaxPlayers))
+        if (HumanPlayerCount >= Mathf.Clamp(SelectedScenarioMaxPlayers, 1, MaxPlayers) ||
+            FindFirstFreeSlotIndex(0, SelectedScenarioMaxParticipants) < 0)
         {
             SetStatus($"Sesión llena. Se rechazó al cliente {senderClientId}.");
             Manager.DisconnectClient(senderClientId);
             return;
         }
+
+        // La composición del lobby cambió. Cualquier confirmación anterior deja
+        // de ser válida, por lo que todos deben revisar nuevamente la partida.
+        ResetHumanReadiness();
 
         int teamId = GetNextTeamId();
         int colorId = GetInitialColorForTeam(teamId);
@@ -231,7 +239,16 @@ public partial class NetworkSessionManager
         SelectedContentId = "test_scenario_01";
         SelectedContentType = GameContentType.Scenario;
         SelectedScenarioMaxPlayers = MaxPlayers;
+        SelectedScenarioMaxParticipants = MaxPlayers;
         SelectedScenarioMaxTeams = MaxTeams;
+        SelectedGameModeId = HeadlessProfileCatalog.NormalGameModeId;
+        SelectedPackageId = null;
+        SelectedPackageVersion = null;
+        SelectedContentHash = null;
+        selectedScenarioDefinition = null;
+        nextParticipantId = 1;
+        contentCompatibilityByClient.Clear();
+        availableHeadlessProfiles.Clear();
         activeOverrides.Clear();
         MatchManager.Instance?.ClearMatch();
         GameManager.Instance?.SetState(GameState.MainMenu);

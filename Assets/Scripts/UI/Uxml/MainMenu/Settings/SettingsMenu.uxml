@@ -1,63 +1,71 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
-    <Style src="project://database/Assets/Scripts/UI/Uxml/MainMenu/Shared/MainMenuTheme.uss?fileID=7433441132597879392&amp;guid=9e28c42f3b8f4ec993d64783ddb4d799&amp;type=3#MainMenuTheme"/>
+    <Style src="../Shared/MainMenuTheme.uss" />
     <ui:VisualElement name="main-menu-panel" class="gs-screen">
-        <ui:VisualElement class="gs-top-accent"/>
+        <ui:VisualElement class="gs-top-accent" />
         <ui:VisualElement class="gs-header">
             <ui:VisualElement class="gs-header-main">
-                <ui:Label text="SISTEMA" class="gs-eyebrow"/>
-                <ui:Label text="Ajustes" class="gs-title"/>
-                <ui:Label text="Las mismas categorías se utilizan dentro y fuera de una partida." class="gs-subtitle"/>
+                <ui:Label text="SISTEMA" class="gs-eyebrow" />
+                <ui:Label text="Ajustes" class="gs-title" />
+                <ui:Label text="Las mismas categorías se utilizan dentro y fuera de una partida." class="gs-subtitle" />
             </ui:VisualElement>
             <ui:VisualElement class="gs-header-actions">
-                <ui:Button text="Volver" name="mp-menu-back-button" class="gs-button"/>
-                <ui:Button text="Guardar y volver" name="settings-save-back-button" class="gs-button gs-button-primary"/>
+                <ui:Button text="Volver" name="mp-menu-back-button" class="gs-button" />
+                <ui:Button text="Guardar y volver" name="settings-save-back-button" class="gs-button gs-button-primary" />
             </ui:VisualElement>
         </ui:VisualElement>
+
         <ui:VisualElement class="gs-content gs-card">
             <ui:VisualElement class="gs-settings-shell">
                 <ui:VisualElement class="gs-settings-nav">
-                    <ui:Label text="CATEGORÍAS" class="gs-eyebrow"/>
-                    <ui:Button text="Video" name="graphics-setting-button" class="gs-settings-nav-button"/>
-                    <ui:Button text="Sonido" name="sound-setting-button" class="gs-settings-nav-button"/>
-                    <ui:Button text="Interfaz" name="interface-setting-button" class="gs-settings-nav-button"/>
-                    <ui:Button text="Multijugador" name="mp-settings-button" class="gs-settings-nav-button"/>
+                    <ui:Label text="CATEGORÍAS" class="gs-eyebrow" />
+                    <ui:Button text="Video" name="graphics-setting-button" class="gs-settings-nav-button" />
+                    <ui:Button text="Sonido" name="sound-setting-button" class="gs-settings-nav-button" />
+                    <ui:Button text="Interfaz" name="interface-setting-button" class="gs-settings-nav-button" />
+                    <ui:Button text="Multijugador" name="mp-settings-button" class="gs-settings-nav-button" />
                 </ui:VisualElement>
+
                 <ui:VisualElement class="gs-settings-content">
                     <ui:VisualElement name="settings-video-content" class="gs-setting-panel">
-                        <ui:Label text="Video" class="gs-card-title"/>
+                        <ui:Label text="Video" class="gs-card-title" />
+                        <ui:Label text="Aquí se incorporarán resolución, modo de pantalla, calidad gráfica y límites de rendimiento." class="gs-card-description" />
                         <ui:VisualElement class="gs-setting-action-card">
-                            <ui:Label text="Configuración pendiente" class="gs-card-title-small"/>
-                            <ui:Label text="Esta sección conserva su espacio visual sin modificar la configuración gráfica actual del proyecto." class="gs-card-description"/>
+                            <ui:Label text="Configuración pendiente" class="gs-card-title-small" />
+                            <ui:Label text="Esta sección conserva su espacio visual sin modificar la configuración gráfica actual del proyecto." class="gs-card-description" />
                         </ui:VisualElement>
                     </ui:VisualElement>
+
                     <ui:VisualElement name="settings-sound-content" class="gs-setting-panel">
-                        <ui:Label text="Sonido" class="gs-card-title"/>
+                        <ui:Label text="Sonido" class="gs-card-title" />
+                        <ui:Label text="Aquí se incorporarán volumen general, música, efectos, interfaz y voz." class="gs-card-description" />
                         <ui:VisualElement class="gs-setting-action-card">
-                            <ui:Label text="Configuración pendiente" class="gs-card-title-small"/>
-                            <ui:Label text="No se cambió el sistema de audio ni se agregaron valores simulados." class="gs-card-description"/>
+                            <ui:Label text="Configuración pendiente" class="gs-card-title-small" />
+                            <ui:Label text="No se cambió el sistema de audio ni se agregaron valores simulados." class="gs-card-description" />
                         </ui:VisualElement>
                     </ui:VisualElement>
+
                     <ui:VisualElement name="settings-interface-content" class="gs-setting-panel">
-                        <ui:Label text="Interfaz" class="gs-card-title"/>
-                        <ui:Label text="Posición guardada de los paneles del HUD." class="gs-card-description"/>
+                        <ui:Label text="Interfaz" class="gs-card-title" />
+                        <ui:Label text="Administra la posición guardada de los paneles movibles del HUD." class="gs-card-description" />
                         <ui:VisualElement class="gs-setting-action-card">
-                            <ui:Label text="Restablecer distribución" class="gs-card-title-small"/>
-                            <ui:Label text="Elimina las coordenadas personalizadas. La próxima partida utilizará las posiciones predeterminadas de oro, selección y grupos." class="gs-card-description"/>
-                            <ui:Button text="Restablecer interfaz" name="settings-reset-interface-button" class="gs-button gs-button-danger"/>
+                            <ui:Label text="Restablecer distribución" class="gs-card-title-small" />
+                            <ui:Label text="Elimina las coordenadas personalizadas. La próxima partida utilizará las posiciones predeterminadas de oro, selección y grupos." class="gs-card-description" />
+                            <ui:Button text="Restablecer interfaz" name="settings-reset-interface-button" class="gs-button gs-button-danger" />
                         </ui:VisualElement>
-                        <ui:Label text="" name="settings-interface-status-label" class="gs-status"/>
+                        <ui:Label text="" name="settings-interface-status-label" class="gs-status" />
                     </ui:VisualElement>
+
                     <ui:VisualElement name="settings-multiplayer-content" class="gs-setting-panel">
-                        <ui:Label text="Multijugador" class="gs-card-title"/>
+                        <ui:Label text="Multijugador" class="gs-card-title" />
+                        <ui:Label text="El nombre guardado se muestra a todos los jugadores de la sala." class="gs-card-description" />
                         <ui:VisualElement class="gs-setting-action-card">
-                            <ui:Label text="Identidad del jugador" class="gs-card-title-small"/>
-                            <ui:Label text="Abre la pantalla de identidad para modificar el nombre utilizado al conectarte." class="gs-card-description"/>
-                            <ui:Button text="Abrir ajustes multijugador" name="settings-open-multiplayer-button" class="gs-button gs-button-primary"/>
+                            <ui:Label text="Identidad del jugador" class="gs-card-title-small" />
+                            <ui:Label text="Abre la pantalla de identidad para modificar el nombre utilizado al conectarte." class="gs-card-description" />
+                            <ui:Button text="Abrir ajustes multijugador" name="settings-open-multiplayer-button" class="gs-button gs-button-primary" />
                         </ui:VisualElement>
                     </ui:VisualElement>
                 </ui:VisualElement>
             </ui:VisualElement>
-            <ui:Label text="" name="settings-global-status-label" class="gs-status"/>
+            <ui:Label text="" name="settings-global-status-label" class="gs-status" />
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

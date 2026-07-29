@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public static class BuildingEntityView
@@ -6,10 +7,15 @@ public static class BuildingEntityView
         EntityDefinition definition,
         int runtimeId,
         int teamId,
-        bool effectiveSolid)
+        bool effectiveSolid,
+        bool isAreaEntity)
     {
-        PrimitiveType primitive = string.Equals(definition.visual, "aura", System.StringComparison.OrdinalIgnoreCase)
-            ? PrimitiveType.Cylinder
+        bool auraVisual = string.Equals(definition.visual, "aura", StringComparison.OrdinalIgnoreCase);
+        bool rectangularArea = isAreaEntity &&
+                               definition.area != null &&
+                               string.Equals(definition.area.shape, EntityAreaShapes.Rectangle, StringComparison.OrdinalIgnoreCase);
+        PrimitiveType primitive = auraVisual
+            ? (rectangularArea ? PrimitiveType.Cube : PrimitiveType.Cylinder)
             : PrimitiveType.Cube;
 
         GameObject building = GameObject.CreatePrimitive(primitive);
@@ -18,12 +24,33 @@ public static class BuildingEntityView
         Vector3 fallback = primitive == PrimitiveType.Cube
             ? new Vector3(4f, 4f, 4f)
             : new Vector3(2f, 0.04f, 2f);
-        building.transform.localScale = definition.GetScale(fallback);
+        Vector3 scale = definition.GetScale(fallback);
+        if (isAreaEntity && auraVisual && definition.area != null)
+        {
+            if (string.Equals(definition.area.shape, EntityAreaShapes.Rectangle, StringComparison.OrdinalIgnoreCase) &&
+                definition.area.size != null)
+            {
+                Vector3 areaSize = definition.area.size.ToVector3();
+                scale = new Vector3(
+                    Mathf.Max(0.05f, areaSize.x),
+                    Mathf.Max(0.02f, scale.y),
+                    Mathf.Max(0.05f, areaSize.z));
+            }
+            else if (definition.area.radius > 0f)
+            {
+                float diameter = definition.area.radius * 2f;
+                scale = new Vector3(diameter, Mathf.Max(0.02f, scale.y), diameter);
+            }
+        }
 
+        building.transform.localScale = scale;
         ConfigureCollider(building, effectiveSolid);
 
-        if (string.Equals(definition.visual, "aura", System.StringComparison.OrdinalIgnoreCase))
-            building.AddComponent<AuraBuildingTrigger>();
+        if (isAreaEntity)
+        {
+            AreaEntityVisual areaVisual = building.AddComponent<AreaEntityVisual>();
+            areaVisual.Configure(definition);
+        }
 
         return building;
     }
@@ -33,8 +60,8 @@ public static class BuildingEntityView
         Collider collider = building.GetComponent<Collider>();
         if (collider != null)
         {
-            // Las entidades no sólidas mantienen un trigger para raycast y eventos,
-            // pero no bloquean físicamente el movimiento.
+            // El collider solo sirve para raycast/presentación. La detección de
+            // área real se calcula en EntityAreaRuntimeSystem sobre el servidor.
             collider.enabled = true;
             collider.isTrigger = !effectiveSolid;
         }
@@ -48,41 +75,47 @@ public static class BuildingEntityView
     }
 }
 
-public class AuraBuildingTrigger : MonoBehaviour
+/// <summary>
+/// Skin provisional para entidades de área. No ejecuta lógica de gameplay:
+/// únicamente refleja visualmente si el área tiene ocupantes.
+/// </summary>
+public sealed class AreaEntityVisual : MonoBehaviour
 {
-    private Renderer auraRenderer;
-    private int humanoidsInside;
-    private static readonly Color EmptyColor = new(0.12f, 0.8f, 0.22f, 0.72f);
-    private static readonly Color ActiveColor = new(0.95f, 0.82f, 0.12f, 0.82f);
+    private Renderer areaRenderer;
+    private Color emptyColor = new(0.12f, 0.8f, 0.22f, 0.55f);
+    private Color activeColor = new(0.95f, 0.82f, 0.12f, 0.78f);
+    private int occupantCount;
+
+    public void Configure(EntityDefinition definition)
+    {
+        areaRenderer = GetComponentInChildren<Renderer>();
+        EntityAttributeSet attributes = EntityAttributeResolver.Resolve(definition?.attributes);
+        if (attributes.Has(EntityAttributeIds.AreaAura) && !attributes.Has(EntityAttributeIds.AreaTrigger))
+        {
+            emptyColor = new Color(0.15f, 0.45f, 0.95f, 0.48f);
+            activeColor = new Color(0.2f, 0.9f, 1f, 0.76f);
+        }
+
+        if (definition?.area != null && !definition.area.visible && areaRenderer != null)
+            areaRenderer.enabled = false;
+        ApplyColor();
+    }
+
+    public void SetOccupantCount(int count)
+    {
+        occupantCount = Mathf.Max(0, count);
+        ApplyColor();
+    }
 
     private void Awake()
     {
-        auraRenderer = GetComponent<Renderer>();
-        ApplyColor();
-    }
-
-    private void OnTriggerEnter(Collider other)
-    {
-        NetworkEntityView view = other.GetComponentInParent<NetworkEntityView>();
-        if (view == null || !view.HasAttribute(EntityAttributeIds.Humanoid))
-            return;
-        humanoidsInside++;
-        ApplyColor();
-        Debug.Log($"[AuraBuildingTrigger] Humanoide ingresó en {name}. Trigger de evento disponible.");
-    }
-
-    private void OnTriggerExit(Collider other)
-    {
-        NetworkEntityView view = other.GetComponentInParent<NetworkEntityView>();
-        if (view == null || !view.HasAttribute(EntityAttributeIds.Humanoid))
-            return;
-        humanoidsInside = Mathf.Max(0, humanoidsInside - 1);
+        areaRenderer = GetComponentInChildren<Renderer>();
         ApplyColor();
     }
 
     private void ApplyColor()
     {
-        if (auraRenderer != null)
-            auraRenderer.material.color = humanoidsInside > 0 ? ActiveColor : EmptyColor;
+        if (areaRenderer != null)
+            areaRenderer.material.color = occupantCount > 0 ? activeColor : emptyColor;
     }
 }

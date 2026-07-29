@@ -6,7 +6,11 @@
   "moveSpeed": 4.0,
   "solid": true,
   "visual": "capsule",
-  "scale": { "x": 0.8, "y": 1.0, "z": 0.8 },
+  "scale": {
+    "x": 0.8,
+    "y": 1.0,
+    "z": 0.8
+  },
   "attributes": [
     "entity",
     "entity.unit",
@@ -15,7 +19,8 @@
     "movement.ground",
     "interaction.selectable",
     "interaction.controllable",
-    "physics.solid"
+    "physics.solid",
+    "melee"
   ],
   "worker": {
     "extractionTime": 2.0,
@@ -24,5 +29,21 @@
     "workerTier": 1,
     "tools": [],
     "interactionRange": 0.75
+  },
+  "attack": {
+    "delivery": "melee",
+    "damageType": "physical",
+    "baseDamage": 5,
+    "baseAttackSpeed": 0.85,
+    "attackTime": 0.35,
+    "recoveryTime": 0.65,
+    "attackRange": 0.5,
+    "chaseTarget": true
+  },
+  "life": {
+    "deathOutcome": "replace",
+    "deathOutcomeDelay": 0.75,
+    "deathReplacementEntityId": "unit.humanoid.corpse",
+    "deathReplacementInheritsOwner": true
   }
 }

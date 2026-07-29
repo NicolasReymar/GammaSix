@@ -11,6 +11,8 @@ public static class TerrainDefinitionRepository
 
     public static string TerrainsPath => Path.Combine(Application.persistentDataPath, RootFolderName, TerrainsFolderName);
 
+    public static void ClearCache() => Cache.Clear();
+
     public static void EnsureDefinitions()
     {
         Directory.CreateDirectory(TerrainsPath);
@@ -34,25 +36,49 @@ public static class TerrainDefinitionRepository
             return null;
 
         EnsureDefinitionsIfNeeded();
-        if (Cache.TryGetValue(terrainId, out TerrainDefinition cached))
+        ContentReference reference = ContentReference.Parse(terrainId);
+        string cacheKey = reference.ToString();
+        if (Cache.TryGetValue(cacheKey, out TerrainDefinition cached))
             return cached;
 
-        string exact = Path.Combine(TerrainsPath, $"{terrainId}.json");
+        if (reference.IsQualified && !reference.IsBase)
+        {
+            if (!PackageContentResolver.TryFindContentFile(
+                    reference.ToString(),
+                    PackageContentResolver.TerrainsFolderName,
+                    out string packagedFile,
+                    out InstalledGameContentPackage package))
+            {
+                Debug.LogError($"[TerrainDefinitionRepository] No existe el terreno empaquetado '{terrainId}'.");
+                return null;
+            }
+
+            TerrainDefinition packaged = JsonUtility.FromJson<TerrainDefinition>(File.ReadAllText(packagedFile));
+            Validate(packaged, packagedFile);
+            packaged.id = ContentReference.Qualify(package.PackageId, packaged.id);
+            Cache[cacheKey] = packaged;
+            Cache[packaged.id] = packaged;
+            return packaged;
+        }
+
+        string legacyId = reference.LocalId;
+        string exact = Path.Combine(TerrainsPath, $"{legacyId}.json");
         if (File.Exists(exact))
-            return Read(exact, terrainId);
+            return Read(exact, cacheKey);
 
         foreach (string file in Directory.GetFiles(TerrainsPath, "*.json"))
         {
             TerrainDefinition candidate = JsonUtility.FromJson<TerrainDefinition>(File.ReadAllText(file));
-            if (candidate != null && string.Equals(candidate.id, terrainId, StringComparison.OrdinalIgnoreCase))
+            if (candidate != null && string.Equals(candidate.id, legacyId, StringComparison.OrdinalIgnoreCase))
             {
                 Validate(candidate, file);
-                Cache[terrainId] = candidate;
+                Cache[cacheKey] = candidate;
+                Cache[candidate.id] = candidate;
                 return candidate;
             }
         }
 
-        Debug.LogError($"[TerrainDefinitionRepository] No existe el terreno '{terrainId}' en {TerrainsPath}.");
+        Debug.LogError($"[TerrainDefinitionRepository] No existe el terreno '{terrainId}'.");
         return null;
     }
 
@@ -61,6 +87,7 @@ public static class TerrainDefinitionRepository
         TerrainDefinition definition = JsonUtility.FromJson<TerrainDefinition>(File.ReadAllText(file));
         Validate(definition, file);
         Cache[requestedId] = definition;
+        Cache[definition.id] = definition;
         return definition;
     }
 

@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -8,15 +7,17 @@ using UnityEngine;
 /// </summary>
 public static class EntityMovementService
 {
-    private const float MapLimit = 19f;
-
-    public static void Update(IDictionary<int, EntityRuntimeState> entities, float deltaTime)
+    public static void Update(EntityWorld world, float deltaTime)
     {
-        foreach (EntityRuntimeState entity in entities.Values)
+        if (world == null)
+            return;
+
+        foreach (EntityRuntimeState entity in world.Values)
         {
-            if (entity.Attributes == null ||
-                !entity.Attributes.Has(EntityAttributeIds.Controllable) ||
-                entity.MoveSpeed <= 0f)
+            // La capacidad de desplazarse no depende de ser controlable por un
+            // humano. Un headless o una regla puede asignar Destination a cualquier
+            // entidad móvil; el atributo controllable solo valida órdenes directas.
+            if (entity.MoveSpeed <= 0f || entity.Life == null || !entity.Life.CanAct)
                 continue;
 
             Vector3 difference = entity.Destination - entity.Position;
@@ -30,7 +31,7 @@ public static class EntityMovementService
 
             Vector3 next = Vector3.MoveTowards(entity.Position, entity.Destination, entity.MoveSpeed * deltaTime);
             next.y = entity.Position.y;
-            if (!IsPositionBlocked(entities, entity, next))
+            if (!IsPositionBlocked(world, entity, next))
             {
                 entity.Position = next;
             }
@@ -42,21 +43,29 @@ public static class EntityMovementService
     }
 
     public static bool TryApplyMove(
-        IDictionary<int, EntityRuntimeState> entities,
-        ulong senderClientId,
+        EntityWorld world,
+        int issuerParticipantId,
         EntityMoveCommand command,
+        MatchWorldBounds worldBounds,
         out string rejectionReason)
     {
         rejectionReason = null;
-        if (command == null || !entities.TryGetValue(command.UnitId, out EntityRuntimeState entity))
+        if (world == null || command == null ||
+            !world.TryGet(command.UnitId, out EntityRuntimeState entity))
         {
             rejectionReason = "Entidad inexistente.";
             return false;
         }
 
-        if (entity.OwnerClientId != senderClientId)
+        if (entity.Life == null || !entity.Life.CanAct)
         {
-            rejectionReason = $"Cliente {senderClientId} intentó mover una entidad ajena ({command.UnitId}).";
+            rejectionReason = $"La entidad {command.UnitId} no puede moverse en su estado actual.";
+            return false;
+        }
+
+        if (entity.OwnerParticipantId != issuerParticipantId)
+        {
+            rejectionReason = $"El participante {issuerParticipantId} intentó mover una entidad ajena ({command.UnitId}).";
             return false;
         }
 
@@ -67,10 +76,12 @@ public static class EntityMovementService
         }
 
         Vector3 requestedDestination = new(command.X, entity.Position.y, command.Z);
-        requestedDestination.x = Mathf.Clamp(requestedDestination.x, -MapLimit, MapLimit);
-        requestedDestination.z = Mathf.Clamp(requestedDestination.z, -MapLimit, MapLimit);
+        requestedDestination = worldBounds != null
+            ? worldBounds.Clamp(requestedDestination)
+            : requestedDestination;
         entity.Destination = requestedDestination;
         entity.InteractionTargetUnitId = -1;
+        entity.Attack?.ClearTargetPreservingRecovery();
         if (entity.Worker != null)
         {
             entity.Worker.TargetResourceUnitId = -1;
@@ -81,7 +92,7 @@ public static class EntityMovementService
     }
 
     private static bool IsPositionBlocked(
-        IDictionary<int, EntityRuntimeState> entities,
+        EntityWorld world,
         EntityRuntimeState moving,
         Vector3 candidate)
     {
@@ -90,7 +101,7 @@ public static class EntityMovementService
             return false;
 
         float movingRadius = Mathf.Max(moving.BoundsSize.x, moving.BoundsSize.z) * 0.5f;
-        foreach (EntityRuntimeState other in entities.Values)
+        foreach (EntityRuntimeState other in world.Values)
         {
             if (other.UnitId == moving.UnitId || !other.Solid)
                 continue;
@@ -126,8 +137,6 @@ public static class EntityMovementService
         if (!currentlyInside)
             return true;
 
-        // Una entidad que haya aparecido solapada puede salir, pero no profundizar
-        // el solapamiento. Esta protección es general y no depende de atributos de interacción.
         float currentPenetration = Mathf.Min(halfX - currentX, halfZ - currentZ);
         float candidatePenetration = Mathf.Min(halfX - candidateX, halfZ - candidateZ);
         return candidatePenetration >= currentPenetration - 0.0001f;
