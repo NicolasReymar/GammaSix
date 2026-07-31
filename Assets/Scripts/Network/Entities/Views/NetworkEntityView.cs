@@ -39,6 +39,13 @@ public class NetworkEntityView : MonoBehaviour
     public string AttackDamageType { get; private set; }
     public int AttackTargetEntityId { get; private set; } = -1;
     public EntityAttackPhase AttackPhase { get; private set; }
+    public bool AttackForceTarget { get; private set; }
+    public EntityCombatStance CombatStance { get; private set; } = EntityCombatStance.Aggressive;
+    public EntityNavigationOrderType NavigationOrder { get; private set; }
+    public EntityPathPurpose NavigationPathPurpose { get; private set; }
+    public int NavigationWaypointIndex { get; private set; }
+    public int NavigationWaypointCount { get; private set; }
+    public string NavigationStatus { get; private set; }
     public float SelectionRadius => Mathf.Max(transform.lossyScale.x, transform.lossyScale.z) * 0.75f;
 
     private Renderer unitRenderer;
@@ -248,6 +255,16 @@ public class NetworkEntityView : MonoBehaviour
         AttackTargetEntityId = state.AttackTargetEntityId;
         Enum.TryParse(state.AttackPhase, true, out EntityAttackPhase parsedAttackPhase);
         AttackPhase = parsedAttackPhase;
+        AttackForceTarget = state.AttackForceTarget;
+        Enum.TryParse(state.CombatStance, true, out EntityCombatStance parsedStance);
+        CombatStance = parsedStance;
+        Enum.TryParse(state.NavigationOrder, true, out EntityNavigationOrderType parsedNavigationOrder);
+        NavigationOrder = parsedNavigationOrder;
+        Enum.TryParse(state.NavigationPathPurpose, true, out EntityPathPurpose parsedPathPurpose);
+        NavigationPathPurpose = parsedPathPurpose;
+        NavigationWaypointIndex = state.NavigationWaypointIndex;
+        NavigationWaypointCount = state.NavigationWaypointCount;
+        NavigationStatus = state.NavigationStatus;
         GetComponent<AreaEntityVisual>()?.SetOccupantCount(AreaOccupantCount);
         if (unitRenderer != null && tintByTeam && !HasAttribute(EntityAttributeIds.AuraTrigger) && !HasAttribute(EntityAttributeIds.EntityArea))
             unitRenderer.material.color = PlayerColorPalette.GetColor(ColorId);

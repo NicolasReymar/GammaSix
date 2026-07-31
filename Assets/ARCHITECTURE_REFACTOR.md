@@ -257,3 +257,33 @@ Fase 14 Paquete Kodo Tag jugable                              pendiente
 ```
 
 La fase 6 separa estado de vida, actividad, indicadores de combate, ciclo de ataque y forma de entrega del impacto. El primer delivery operativo es `melee`; los proyectiles se agregarán como otra entrega sin reemplazar el Command Bus ni el ciclo windup/recovery.
+
+## Fase 9.5 — Diplomacia asimétrica
+
+La relación entre equipos se resuelve mediante `DiplomacyRuntimeService` y no
+mediante comparación directa de IDs. Las posturas son direccionales, se cargan
+desde el escenario, se sincronizan con los clientes y son consumidas por
+combate, interacción, áreas y controladores Headless. `O` abre un módulo UXML de
+diplomacia; el envío de recursos queda fuera de esta fase.
+
+## Fase 9.5 - ajustes administrativos de propiedad y diplomacia
+
+- `/spawn` puede resolver propietario por participante, slot o equipo.
+- Una entidad de equipo siempre queda asociada a un participante real; `team 0` crea una entidad neutral sin propietario.
+- `/change_owner` transfiere propietario, equipo, color y control de forma conjunta.
+- `/change_team` es un atajo seguro: solo funciona cuando el equipo tiene un único participante; si hay varios exige seleccionar participante o slot.
+- La transferencia cancela órdenes e interacciones activas para evitar que una entidad continúe ejecutando órdenes del propietario anterior.
+- Cuando `SourceTeam -> TargetTeam` deja de ser `Enemy`, el combate no forzado contra ese equipo se cancela inmediatamente. Las órdenes manuales marcadas como `ForceTarget` se mantienen por diseño hasta el futuro pulido del sistema de órdenes.
+
+## Fase 10 — Navegación e IA individual
+
+La autoridad inicializa `NavigationRuntimeSystem` desde los límites y la sección
+`navigation` del escenario. Movimiento, persecución, seguimiento y extracción
+solicitan caminos al mismo sistema. Las órdenes persistentes `Move`,
+`AttackMove` y `Patrol` permanecen separadas de los caminos temporales `Chase`,
+`Follow` y `ResourceInteraction`.
+
+`EntityAiRuntimeSystem` solo resuelve comportamiento individual cercano y
+consulta `DiplomacyRuntimeService`; la estrategia sigue perteneciendo a los
+controladores Headless o al jugador. La construcción futura actualizará la
+misma revisión de obstáculos dinámicos.

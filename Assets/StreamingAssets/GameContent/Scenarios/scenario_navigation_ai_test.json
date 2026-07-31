@@ -1,0 +1,175 @@
+{
+  "contentType": "scenario",
+  "id": "scenario_navigation_ai_test",
+  "name": "Navegación e IA individual - Prueba",
+  "description": "Escenario técnico de la Fase 10. Las unidades deben rodear una barrera de edificios, perseguir objetivos móviles, ejecutar attack-move y patrullar entre dos puntos.",
+  "maxTeams": 2,
+  "maxPlayers": 1,
+  "fixedTeams": true,
+  "gameModeId": "base:game-mode.normal",
+  "participantConfiguration": {
+    "maximumHumanPlayers": 1,
+    "maximumParticipants": 2,
+    "availableHeadlessProfiles": [
+      "phase10.simple-assault"
+    ],
+    "requiredParticipants": [
+      {
+        "slotId": "phase10.enemy",
+        "slotIndex": 1,
+        "displayName": "Navegador Headless",
+        "controllerProfileId": "phase10.simple-assault",
+        "teamId": 2,
+        "colorId": 0,
+        "participantLocked": true,
+        "teamLocked": true,
+        "colorLocked": true
+      }
+    ]
+  },
+  "headlessProfiles": [
+    {
+      "id": "phase10.simple-assault",
+      "displayName": "Asalto con navegación",
+      "description": "Controlador técnico que selecciona hostiles; la IA individual y el pathfinding ejecutan la persecución.",
+      "sourceId": "base",
+      "sourceLabel": "Prueba Fase 10",
+      "gameModeId": "base:game-mode.normal",
+      "maximumInstances": 1,
+      "runtimeImplemented": true,
+      "runtimeControllerId": "base:headless-controller.simple-assault",
+      "controllerSettings": {
+        "updateInterval": 0.35,
+        "maxOrdersPerUpdate": 3,
+        "targetPolicy": "nearest-hostile",
+        "includeNeutralTargets": false,
+        "controlledRequiredAttributes": [
+          "phase10.ai-controlled"
+        ],
+        "controlledExcludedAttributes": [
+          "entity.area"
+        ],
+        "targetRequiredAttributes": [],
+        "targetExcludedAttributes": [
+          "entity.area"
+        ]
+      }
+    }
+  ],
+  "worldSize": {
+    "width": 48,
+    "height": 36
+  },
+  "navigation": {
+    "cellSize": 0.8,
+    "allowDiagonal": true,
+    "obstacleRefreshInterval": 0.25,
+    "repathInterval": 0.2,
+    "arrivalTolerance": 0.18,
+    "attackMoveAcquisitionRange": 7.0,
+    "individualAiInterval": 0.15
+  },
+  "terrain": {
+    "defaultTerrainId": "praderas_primavera",
+    "tiles": []
+  },
+  "entityCatalog": {
+    "includeGameModeDefaults": true,
+    "spawnableEntityIds": [
+      "building.mercenary"
+    ]
+  },
+  "spawnPoints": [
+    {
+      "teamId": 1,
+      "position": { "x": -12, "y": 0, "z": 0 }
+    },
+    {
+      "teamId": 2,
+      "position": { "x": 12, "y": 0, "z": 0 }
+    }
+  ],
+  "entities": [
+    {
+      "id": "phase10_player_01",
+      "entityId": "unit.humanoid.default",
+      "teamId": 1,
+      "ownerTeamSlot": 1,
+      "position": { "x": -11, "y": 0.5, "z": -2 }
+    },
+    {
+      "id": "phase10_player_02",
+      "entityId": "unit.humanoid.default",
+      "teamId": 1,
+      "ownerTeamSlot": 1,
+      "position": { "x": -11, "y": 0.5, "z": 2 }
+    },
+    {
+      "id": "phase10_enemy_01",
+      "entityId": "unit.humanoid.default",
+      "teamId": 2,
+      "ownerTeamSlot": 1,
+      "attributes": [ "phase10.ai-controlled" ],
+      "position": { "x": 11, "y": 0.5, "z": -2 }
+    },
+    {
+      "id": "phase10_enemy_02",
+      "entityId": "unit.humanoid.default",
+      "teamId": 2,
+      "ownerTeamSlot": 1,
+      "attributes": [ "phase10.ai-controlled" ],
+      "position": { "x": 11, "y": 0.5, "z": 2 }
+    },
+    {
+      "id": "phase10_wall_01",
+      "entityId": "building.mercenary",
+      "teamId": 0,
+      "ownerTeamSlot": 1,
+      "attributes": [ "phase10.navigation-obstacle" ],
+      "position": { "x": 0, "y": 2, "z": -4 }
+    },
+    {
+      "id": "phase10_wall_02",
+      "entityId": "building.mercenary",
+      "teamId": 0,
+      "ownerTeamSlot": 1,
+      "attributes": [ "phase10.navigation-obstacle" ],
+      "position": { "x": 0, "y": 2, "z": 0 }
+    },
+    {
+      "id": "phase10_wall_03",
+      "entityId": "building.mercenary",
+      "teamId": 0,
+      "ownerTeamSlot": 1,
+      "attributes": [ "phase10.navigation-obstacle" ],
+      "position": { "x": 0, "y": 2, "z": 4 }
+    }
+  ],
+  "rules": [
+    {
+      "id": "phase10.instructions",
+      "enabled": true,
+      "eventType": "match-started",
+      "conditions": [],
+      "actions": [
+        {
+          "type": "show-message",
+          "message": "Fase 10: los Headless deben rodear la barrera. Selecciona tus unidades: A + terreno = attack-move; R + terreno = patrulla; /nav muestra rutas."
+        }
+      ]
+    }
+  ],
+  "waveControllers": [],
+  "missions": [],
+  "teamResources": [],
+  "participantResources": [],
+  "settingOverrides": [],
+  "diplomacy": [
+    {
+      "sourceTeamId": 1,
+      "targetTeamId": 2,
+      "stance": "Enemy",
+      "bidirectional": true
+    }
+  ]
+}

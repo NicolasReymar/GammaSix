@@ -2,19 +2,28 @@ using System;
 using UnityEngine;
 
 /// <summary>
-/// Ejecuta ataques declarados por las entidades. La entrega melee aplica daño
-/// en el instante de impacto; otros delivery types podrán crear proyectiles sin
-/// alterar el ciclo windup/recovery ni el comando de ataque.
+/// Ejecuta ataques declarados por las entidades. La persecución utiliza el
+/// sistema de navegación y puede suspender temporalmente una patrulla o
+/// attack-move para reanudarla al terminar el objetivo.
 /// </summary>
 public sealed class CombatRuntimeSystem
 {
     private readonly EntityWorld world;
     private readonly DamageRuntimeService damage;
+    private readonly DiplomacyRuntimeService diplomacy;
+    private readonly NavigationRuntimeSystem navigation;
+    private float currentElapsedTime;
 
-    public CombatRuntimeSystem(EntityWorld world, DamageRuntimeService damage)
+    public CombatRuntimeSystem(
+        EntityWorld world,
+        DamageRuntimeService damage,
+        DiplomacyRuntimeService diplomacy,
+        NavigationRuntimeSystem navigation)
     {
         this.world = world ?? throw new ArgumentNullException(nameof(world));
         this.damage = damage ?? throw new ArgumentNullException(nameof(damage));
+        this.diplomacy = diplomacy ?? throw new ArgumentNullException(nameof(diplomacy));
+        this.navigation = navigation ?? throw new ArgumentNullException(nameof(navigation));
     }
 
     public bool TryAssignAttack(
@@ -31,10 +40,24 @@ public sealed class CombatRuntimeSystem
             return false;
         }
 
-        if (!EntityCombatRules.CanAttack(source, target, issuerParticipantId, out rejectionReason))
+        if (!EntityCombatRules.CanAttack(
+                source,
+                target,
+                issuerParticipantId,
+                command.ForceTarget,
+                diplomacy,
+                out rejectionReason))
+        {
             return false;
+        }
 
-        source.Attack.AssignTarget(target.UnitId);
+        if (!command.PreserveNavigationOrder)
+            navigation.ClearOrders(source, "direct-attack");
+
+        source.Attack.AssignTarget(
+            target.UnitId,
+            command.ForceTarget,
+            command.PreserveNavigationOrder);
         source.InteractionTargetUnitId = -1;
         ClearWorkerActivity(source);
         return true;
@@ -42,6 +65,7 @@ public sealed class CombatRuntimeSystem
 
     public void Update(float deltaTime, float elapsedTime)
     {
+        currentElapsedTime = elapsedTime;
         float safeDelta = Mathf.Max(0f, deltaTime);
         foreach (EntityRuntimeState attacker in world.SnapshotValues())
         {
@@ -49,10 +73,6 @@ public sealed class CombatRuntimeSystem
             if (attack == null)
                 continue;
 
-            // Recovery pertenece a la entidad, no al objetivo. El temporizador
-            // continúa aunque cambie la orden, pero no inmoviliza a la unidad:
-            // puede desplazarse o acercarse al siguiente objetivo sin iniciar
-            // otro windup hasta que finalice la recuperación.
             if (attack.Phase == EntityAttackPhase.Recovery)
             {
                 UpdateRecovery(attacker, attack, safeDelta);
@@ -63,7 +83,7 @@ public sealed class CombatRuntimeSystem
                 continue;
 
             if (!world.TryGet(attack.TargetEntityId, out EntityRuntimeState target) ||
-                !EntityCombatRules.IsStillValidTarget(attacker, target))
+                !EntityCombatRules.IsStillValidTarget(attacker, target, diplomacy, attack.ForceTarget))
             {
                 ClearAttack(attacker);
                 continue;
@@ -84,11 +104,14 @@ public sealed class CombatRuntimeSystem
                     {
                         attack.Phase = EntityAttackPhase.Approaching;
                         if (attack.ChaseTarget && attacker.MoveSpeed > 0f)
-                            attacker.Destination = new Vector3(target.Position.x, attacker.Position.y, target.Position.z);
+                            navigation.SetChaseDestination(attacker, target.Position, elapsedTime);
                     }
                     else
                     {
-                        attacker.Destination = attacker.Position;
+                        navigation.HoldPosition(
+                            attacker,
+                            attack.ResumeNavigationOrderAfterTarget,
+                            "attack-range");
                         BeginWindup(attacker, target, attack, elapsedTime);
                     }
                     break;
@@ -96,22 +119,14 @@ public sealed class CombatRuntimeSystem
         }
     }
 
-
-    private void UpdateRecovery(
-        EntityRuntimeState attacker,
-        EntityAttackRuntimeState attack,
-        float deltaTime)
+    private void UpdateRecovery(EntityRuntimeState attacker, EntityAttackRuntimeState attack, float deltaTime)
     {
         attack.PhaseRemaining -= deltaTime;
 
-        // Si durante Recovery se asignó otro objetivo de ataque, la unidad puede
-        // aproximarse a él. La fase no cambia a Windup hasta que el temporizador
-        // llegue a cero. Una orden de movimiento limpia TargetEntityId y conserva
-        // la recuperación, por lo que su Destination manual no se sobrescribe.
         if (attack.TargetEntityId > 0)
         {
             if (!world.TryGet(attack.TargetEntityId, out EntityRuntimeState target) ||
-                !EntityCombatRules.IsStillValidTarget(attacker, target))
+                !EntityCombatRules.IsStillValidTarget(attacker, target, diplomacy, attack.ForceTarget))
             {
                 ClearAttackTargetPreservingRecovery(attacker);
             }
@@ -125,14 +140,14 @@ public sealed class CombatRuntimeSystem
 
                 if (!inRange && attack.ChaseTarget && attacker.MoveSpeed > 0f)
                 {
-                    attacker.Destination = new Vector3(
-                        target.Position.x,
-                        attacker.Position.y,
-                        target.Position.z);
+                    navigation.SetChaseDestination(attacker, target.Position, currentElapsedTime);
                 }
                 else if (inRange)
                 {
-                    attacker.Destination = attacker.Position;
+                    navigation.HoldPosition(
+                        attacker,
+                        attack.ResumeNavigationOrderAfterTarget,
+                        "attack-recovery-range");
                 }
             }
         }
@@ -141,6 +156,34 @@ public sealed class CombatRuntimeSystem
         {
             attack.Phase = EntityAttackPhase.None;
             attack.PhaseRemaining = 0f;
+        }
+    }
+
+    public void HandleDiplomacyChanged(int sourceTeamId, int targetTeamId, DiplomacyStance newStance)
+    {
+        if (newStance == DiplomacyStance.Enemy)
+            return;
+
+        foreach (EntityRuntimeState attacker in world.Values)
+        {
+            if (attacker?.TeamId != sourceTeamId ||
+                attacker.Attack == null ||
+                attacker.Attack.TargetEntityId <= 0 ||
+                attacker.Attack.ForceTarget)
+            {
+                continue;
+            }
+
+            if (!world.TryGet(attacker.Attack.TargetEntityId, out EntityRuntimeState target) ||
+                target.TeamId != targetTeamId)
+            {
+                continue;
+            }
+
+            if (attacker.Attack.Phase == EntityAttackPhase.Recovery)
+                ClearAttackTargetPreservingRecovery(attacker);
+            else
+                ClearAttack(attacker);
         }
     }
 
@@ -161,13 +204,13 @@ public sealed class CombatRuntimeSystem
         float deltaTime,
         float elapsedTime)
     {
-        attacker.Destination = attacker.Position;
+        navigation.HoldPosition(attacker, attack.ResumeNavigationOrderAfterTarget, "attack-windup");
         if (!inRange && EntityCombatRules.NormalizeDelivery(attack.Delivery) == EntityAttackDeliveryTypes.Melee)
         {
             attack.Phase = EntityAttackPhase.Approaching;
             attack.PhaseRemaining = 0f;
             if (attack.ChaseTarget && attacker.MoveSpeed > 0f)
-                attacker.Destination = new Vector3(target.Position.x, attacker.Position.y, target.Position.z);
+                navigation.SetChaseDestination(attacker, target.Position, elapsedTime);
             return;
         }
 
@@ -223,20 +266,30 @@ public sealed class CombatRuntimeSystem
             out _);
     }
 
-    private static void ClearAttackTargetPreservingRecovery(EntityRuntimeState attacker)
+    private void ClearAttackTargetPreservingRecovery(EntityRuntimeState attacker)
     {
         if (attacker == null)
             return;
+
+        bool resume = attacker.Attack?.ResumeNavigationOrderAfterTarget == true;
         attacker.Attack?.ClearTargetPreservingRecovery();
-        attacker.Destination = attacker.Position;
+        if (resume && attacker.Navigation?.HasBaseOrder == true)
+            navigation.ResumeBaseOrder(attacker, currentElapsedTime);
+        else
+            navigation.HoldPosition(attacker, false, "attack-target-cleared");
     }
 
-    private static void ClearAttack(EntityRuntimeState attacker)
+    private void ClearAttack(EntityRuntimeState attacker)
     {
         if (attacker == null)
             return;
+
+        bool resume = attacker.Attack?.ResumeNavigationOrderAfterTarget == true;
         attacker.Attack?.ClearTarget();
-        attacker.Destination = attacker.Position;
+        if (resume && attacker.Navigation?.HasBaseOrder == true)
+            navigation.ResumeBaseOrder(attacker, currentElapsedTime);
+        else
+            navigation.HoldPosition(attacker, false, "attack-ended");
     }
 
     private static void ClearWorkerActivity(EntityRuntimeState source)

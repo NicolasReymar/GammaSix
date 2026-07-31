@@ -6,6 +6,13 @@ using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
+public enum UnitOrderTargetingMode
+{
+    None,
+    Attack,
+    Patrol
+}
+
 /// <summary>
 /// Adaptador de input, selección, vistas y red para las entidades RTS.
 /// El estado autoritativo vive en AuthoritativeMatchRuntime.
@@ -27,9 +34,12 @@ public class NetworkEntityCoordinator : MonoBehaviour
     public IReadOnlyList<NetworkEntityView> SelectedEntities => selectionService?.Selected ?? Array.Empty<NetworkEntityView>();
     public NetworkEntityView PrimarySelectedEntity => selectionService?.PrimarySelected;
     public int InspectedSelectionGroupIndex => selectionService?.InspectedGroupIndex ?? 0;
+    public UnitOrderTargetingMode ActiveOrderMode { get; private set; }
+    public string ActiveOrderStatus { get; private set; } = string.Empty;
 
     public event Action SelectionChanged;
     public event Action InspectedSelectionChanged;
+    public event Action UnitOrderStateChanged;
 
     private NetworkManager Manager => NetworkRuntimeBootstrap.Instance != null
         ? NetworkRuntimeBootstrap.Instance.NetworkManager
@@ -65,7 +75,7 @@ public class NetworkEntityCoordinator : MonoBehaviour
             IsOwnedByLocalPlayer,
             GetLockedTargetForSelection);
         controlGroupService = new ControlGroupService(MaxSelectedUnits);
-        selectionService.SelectionChanged += () => SelectionChanged?.Invoke();
+        selectionService.SelectionChanged += HandleSelectionChangedInternal;
         selectionService.InspectionChanged += () => InspectedSelectionChanged?.Invoke();
     }
 
@@ -84,6 +94,7 @@ public class NetworkEntityCoordinator : MonoBehaviour
     {
         UnsubscribeRuntimeEvents();
         UnregisterMessageHandlers();
+        DiplomacyClientState.Reset();
         if (Instance == this)
             Instance = null;
     }
@@ -160,6 +171,10 @@ public class NetworkEntityCoordinator : MonoBehaviour
             CancelPendingSelectionDrag();
             return;
         }
+
+        HandleUnitOrderHotkeys();
+        if (HandleActiveUnitOrderInput())
+            return;
 
         HandleControlGroups();
         HandleSelectionInspectionCycle();
@@ -493,6 +508,232 @@ public class NetworkEntityCoordinator : MonoBehaviour
              unit.HasAttribute(EntityAttributeIds.ThirdPersonCamera)));
     }
 
+    private void HandleSelectionChangedInternal()
+    {
+        if (ActiveOrderMode != UnitOrderTargetingMode.None &&
+            !GetOwnedControllableSelection().Any())
+        {
+            SetUnitOrderState(UnitOrderTargetingMode.None, "La orden fue cancelada porque no hay unidades controlables seleccionadas.");
+        }
+
+        SelectionChanged?.Invoke();
+        UnitOrderStateChanged?.Invoke();
+    }
+
+    private void HandleUnitOrderHotkeys()
+    {
+        if (cameraController != null && cameraController.IsLocked)
+            return;
+
+        if (GameInputReader.APressedThisFrame)
+        {
+            ToggleAttackOrderMode();
+            return;
+        }
+
+        if (GameInputReader.RPressedThisFrame && !GameInputReader.AltHeld)
+        {
+            TogglePatrolOrderMode();
+            return;
+        }
+
+        if (GameInputReader.SPressedThisFrame)
+        {
+            IssueStopOrderForSelection();
+            return;
+        }
+
+        if (GameInputReader.PPressedThisFrame)
+            TogglePassiveStanceForSelection();
+    }
+
+    private bool HandleActiveUnitOrderInput()
+    {
+        if (ActiveOrderMode == UnitOrderTargetingMode.None)
+            return false;
+
+        if (GameInputReader.EscapePressedThisFrame || GameInputReader.RightPressedThisFrame)
+        {
+            CancelUnitOrderMode("Orden cancelada.");
+            return true;
+        }
+
+        if (!GameInputReader.LeftPressedThisFrame)
+            return true;
+
+        Vector2 pointer = GameInputReader.PointerPosition;
+        if (HudInteractionService.IsPointerOverHud(pointer))
+            return true;
+
+        if (ActiveOrderMode == UnitOrderTargetingMode.Attack)
+        {
+            NetworkEntityView target = GetEntityUnderCursor(pointer);
+            if (target == null)
+            {
+                if (!TryGetGroundPoint(pointer, out Vector3 attackMoveDestination))
+                    return true;
+
+                int attackMoveCount = SendFormationAttackMove(attackMoveDestination);
+                SetUnitOrderState(
+                    UnitOrderTargetingMode.None,
+                    attackMoveCount > 0
+                        ? $"Attack-move enviado a {attackMoveCount} entidad(es)."
+                        : "Ninguna entidad seleccionada puede ejecutar attack-move.");
+                return true;
+            }
+
+            int issued = 0;
+            foreach (NetworkEntityView source in GetOwnedControllableSelection()
+                         .Where(view => view.HasAttack))
+            {
+                if (source.UnitId == target.UnitId)
+                    continue;
+
+                RequestAttack(source.UnitId, target.UnitId, forceTarget: true);
+                issued++;
+            }
+
+            if (issued > 0)
+            {
+                EntityCommandFeedbackService.AcknowledgeTarget(target);
+                SetUnitOrderState(
+                    UnitOrderTargetingMode.None,
+                    $"Orden de ataque enviada a {issued} entidad(es)." );
+            }
+            else
+            {
+                SetUnitOrderState(
+                    UnitOrderTargetingMode.Attack,
+                    "Ninguna entidad seleccionada puede atacar ese objetivo.");
+            }
+
+            return true;
+        }
+
+        if (ActiveOrderMode == UnitOrderTargetingMode.Patrol)
+        {
+            if (!TryGetGroundPoint(pointer, out Vector3 patrolDestination))
+                return true;
+
+            int patrolCount = SendFormationPatrol(patrolDestination);
+            SetUnitOrderState(
+                UnitOrderTargetingMode.None,
+                patrolCount > 0
+                    ? $"Patrulla enviada a {patrolCount} entidad(es)."
+                    : "Ninguna entidad seleccionada puede patrullar.");
+            return true;
+        }
+
+        return false;
+    }
+
+    public void ToggleAttackOrderMode()
+    {
+        if (ActiveOrderMode == UnitOrderTargetingMode.Attack)
+        {
+            CancelUnitOrderMode("Orden de ataque cancelada.");
+            return;
+        }
+
+        bool canAttack = GetOwnedControllableSelection().Any(view => view.HasAttack);
+        if (!canAttack)
+        {
+            SetUnitOrderState(
+                UnitOrderTargetingMode.None,
+                "Selecciona al menos una entidad propia con ataque.");
+            return;
+        }
+
+        SetUnitOrderState(
+            UnitOrderTargetingMode.Attack,
+            "Atacar [A]: clic en una entidad para atacarla o clic en terreno para attack-move.");
+    }
+
+    public void TogglePatrolOrderMode()
+    {
+        if (ActiveOrderMode == UnitOrderTargetingMode.Patrol)
+        {
+            CancelUnitOrderMode("Orden de patrulla cancelada.");
+            return;
+        }
+
+        bool canPatrol = GetOwnedControllableSelection().Any(view => view != null);
+        if (!canPatrol)
+        {
+            SetUnitOrderState(UnitOrderTargetingMode.None, "Selecciona al menos una entidad móvil propia.");
+            return;
+        }
+
+        SetUnitOrderState(
+            UnitOrderTargetingMode.Patrol,
+            "Patrulla [R]: selecciona el segundo extremo del recorrido.");
+    }
+
+    public void CancelUnitOrderMode(string message = null)
+    {
+        SetUnitOrderState(UnitOrderTargetingMode.None, message ?? "Orden cancelada.");
+    }
+
+    public void IssueStopOrderForSelection()
+    {
+        List<NetworkEntityView> selected = GetOwnedControllableSelection().ToList();
+        if (selected.Count == 0)
+        {
+            SetUnitOrderState(UnitOrderTargetingMode.None, "No hay entidades propias controlables seleccionadas.");
+            return;
+        }
+
+        foreach (NetworkEntityView entity in selected)
+            RequestStop(entity.UnitId);
+
+        SetUnitOrderState(
+            UnitOrderTargetingMode.None,
+            $"Detener [S] enviado a {selected.Count} entidad(es)." );
+    }
+
+    public void TogglePassiveStanceForSelection()
+    {
+        List<NetworkEntityView> selected = GetOwnedControllableSelection()
+            .Where(view => view.HasAttack)
+            .ToList();
+        if (selected.Count == 0)
+        {
+            SetUnitOrderState(UnitOrderTargetingMode.None, "La selección no posee entidades con postura de combate.");
+            return;
+        }
+
+        bool allPassive = selected.All(view => view.CombatStance == EntityCombatStance.Passive);
+        EntityCombatStance next = allPassive
+            ? EntityCombatStance.Aggressive
+            : EntityCombatStance.Passive;
+
+        foreach (NetworkEntityView entity in selected)
+            RequestCombatStance(entity.UnitId, next);
+
+        string label = next == EntityCombatStance.Passive ? "Pasiva" : "Agresiva";
+        SetUnitOrderState(
+            UnitOrderTargetingMode.None,
+            $"Postura {label} aplicada a {selected.Count} entidad(es)." );
+    }
+
+    public IReadOnlyList<NetworkEntityView> GetOwnedControllableSelection()
+    {
+        int participantId = LocalParticipantId;
+        return SelectedEntities
+            .Where(view => view != null)
+            .Where(view => view.OwnerParticipantId == participantId)
+            .Where(view => view.HasAttribute(EntityAttributeIds.Controllable))
+            .Where(view => view.LifeState == EntityLifeState.Alive)
+            .ToList();
+    }
+
+    private void SetUnitOrderState(UnitOrderTargetingMode mode, string status)
+    {
+        ActiveOrderMode = mode;
+        ActiveOrderStatus = status ?? string.Empty;
+        UnitOrderStateChanged?.Invoke();
+    }
+
     private void HandleControlGroups()
     {
         for (int group = 1; group <= 3; group++)
@@ -551,6 +792,47 @@ public class NetworkEntityCoordinator : MonoBehaviour
                 controllable[i].UnitId,
                 center + new Vector3(offsetX, 0f, offsetZ));
         }
+    }
+
+    private int SendFormationAttackMove(Vector3 center)
+    {
+        List<NetworkEntityView> controllable = GetOwnedControllableSelection()
+            .Where(view => view.HasAttack)
+            .ToList();
+        return SendFormationGroundOrder(controllable, center, true);
+    }
+
+    private int SendFormationPatrol(Vector3 center)
+    {
+        List<NetworkEntityView> controllable = GetOwnedControllableSelection().ToList();
+        return SendFormationGroundOrder(controllable, center, false);
+    }
+
+    private int SendFormationGroundOrder(
+        List<NetworkEntityView> controllable,
+        Vector3 center,
+        bool attackMove)
+    {
+        if (controllable == null || controllable.Count == 0)
+            return 0;
+
+        const float spacing = 1.7f;
+        int columns = Mathf.CeilToInt(Mathf.Sqrt(controllable.Count));
+        int rows = Mathf.CeilToInt(controllable.Count / (float)columns);
+        for (int i = 0; i < controllable.Count; i++)
+        {
+            int row = i / columns;
+            int column = i % columns;
+            float offsetX = (column - (columns - 1) * 0.5f) * spacing;
+            float offsetZ = (row - (rows - 1) * 0.5f) * spacing;
+            Vector3 destination = center + new Vector3(offsetX, 0f, offsetZ);
+            if (attackMove)
+                RequestAttackMove(controllable[i].UnitId, destination);
+            else
+                RequestPatrol(controllable[i].UnitId, destination);
+        }
+
+        return controllable.Count;
     }
 
     private NetworkEntityView GetEntityUnderCursor(Vector2 mousePosition)
@@ -697,12 +979,16 @@ public class NetworkEntityCoordinator : MonoBehaviour
         return true;
     }
 
-    private void RequestAttack(int sourceUnitId, int targetUnitId)
+    private void RequestAttack(
+        int sourceUnitId,
+        int targetUnitId,
+        bool forceTarget = false)
     {
         EntityAttackCommand command = new()
         {
             SourceUnitId = sourceUnitId,
-            TargetUnitId = targetUnitId
+            TargetUnitId = targetUnitId,
+            ForceTarget = forceTarget
         };
 
         if (TryQueueLocalCommand(MatchCommandType.Attack, command))
@@ -719,6 +1005,96 @@ public class NetworkEntityCoordinator : MonoBehaviour
         reader.ReadValueSafe(out FixedString512Bytes payload);
         EntityAttackCommand command = JsonUtility.FromJson<EntityAttackCommand>(payload.ToString());
         QueueRemoteHumanCommand(senderClientId, MatchCommandType.Attack, command);
+    }
+
+    private void RequestStop(int unitId)
+    {
+        EntityStopCommand command = new()
+        {
+            UnitId = unitId
+        };
+
+        if (TryQueueLocalCommand(MatchCommandType.Stop, command))
+            return;
+
+        SendCommandToServer(EntityNetworkMessageNames.StopCommand, command);
+    }
+
+    private void HandleStopCommand(ulong senderClientId, FastBufferReader reader)
+    {
+        if (Manager == null || !Manager.IsServer)
+            return;
+
+        reader.ReadValueSafe(out FixedString512Bytes payload);
+        EntityStopCommand command = JsonUtility.FromJson<EntityStopCommand>(payload.ToString());
+        QueueRemoteHumanCommand(senderClientId, MatchCommandType.Stop, command);
+    }
+
+    private void RequestCombatStance(int unitId, EntityCombatStance stance)
+    {
+        EntityStanceCommand command = new()
+        {
+            UnitId = unitId,
+            Stance = stance.ToString()
+        };
+
+        if (TryQueueLocalCommand(MatchCommandType.SetCombatStance, command))
+            return;
+
+        SendCommandToServer(EntityNetworkMessageNames.StanceCommand, command);
+    }
+
+    private void HandleStanceCommand(ulong senderClientId, FastBufferReader reader)
+    {
+        if (Manager == null || !Manager.IsServer)
+            return;
+
+        reader.ReadValueSafe(out FixedString512Bytes payload);
+        EntityStanceCommand command = JsonUtility.FromJson<EntityStanceCommand>(payload.ToString());
+        QueueRemoteHumanCommand(senderClientId, MatchCommandType.SetCombatStance, command);
+    }
+
+    public bool RequestDiplomacyStance(int targetTeamId, DiplomacyStance stance)
+    {
+        int sourceTeamId = ResolveLocalTeamId();
+        if (sourceTeamId <= 0 || targetTeamId <= 0 || sourceTeamId == targetTeamId)
+            return false;
+
+        DiplomacyStanceCommand command = new()
+        {
+            SourceTeamId = sourceTeamId,
+            TargetTeamId = targetTeamId,
+            Stance = stance.ToString(),
+            Reason = "diplomacy-ui"
+        };
+
+        if (TryQueueLocalCommand(MatchCommandType.SetDiplomacyStance, command))
+            return true;
+
+        SendCommandToServer(EntityNetworkMessageNames.DiplomacyCommand, command);
+        return NetworkIsActive;
+    }
+
+    private void HandleDiplomacyCommand(ulong senderClientId, FastBufferReader reader)
+    {
+        if (Manager == null || !Manager.IsServer)
+            return;
+
+        reader.ReadValueSafe(out FixedString512Bytes payload);
+        DiplomacyStanceCommand command = JsonUtility.FromJson<DiplomacyStanceCommand>(payload.ToString());
+        QueueRemoteHumanCommand(senderClientId, MatchCommandType.SetDiplomacyStance, command);
+    }
+
+    private int ResolveLocalTeamId()
+    {
+        NetworkPlayerInfo local = NetworkSessionManager.Instance?.GetLocalPlayer();
+        if (local != null && local.TeamId > 0)
+            return local.TeamId;
+
+        return Runtime?.Participants != null &&
+               Runtime.Participants.TryGet(LocalParticipantId, out MatchParticipantRuntimeState participant)
+            ? participant.TeamId
+            : -1;
     }
 
     private void RequestEntityInteraction(int sourceUnitId, int targetUnitId)
@@ -767,6 +1143,58 @@ public class NetworkEntityCoordinator : MonoBehaviour
         reader.ReadValueSafe(out FixedString512Bytes payload);
         ResourceInteractionCommand command = JsonUtility.FromJson<ResourceInteractionCommand>(payload.ToString());
         QueueRemoteHumanCommand(senderClientId, MatchCommandType.ResourceInteraction, command);
+    }
+
+    private void RequestAttackMove(int unitId, Vector3 destination)
+    {
+        EntityAttackMoveCommand command = new()
+        {
+            UnitId = unitId,
+            X = destination.x,
+            Y = 0.5f,
+            Z = destination.z
+        };
+
+        if (TryQueueLocalCommand(MatchCommandType.AttackMove, command))
+            return;
+
+        SendCommandToServer(EntityNetworkMessageNames.AttackMoveCommand, command);
+    }
+
+    private void HandleAttackMoveCommand(ulong senderClientId, FastBufferReader reader)
+    {
+        if (Manager == null || !Manager.IsServer)
+            return;
+
+        reader.ReadValueSafe(out FixedString512Bytes payload);
+        EntityAttackMoveCommand command = JsonUtility.FromJson<EntityAttackMoveCommand>(payload.ToString());
+        QueueRemoteHumanCommand(senderClientId, MatchCommandType.AttackMove, command);
+    }
+
+    private void RequestPatrol(int unitId, Vector3 destination)
+    {
+        EntityPatrolCommand command = new()
+        {
+            UnitId = unitId,
+            X = destination.x,
+            Y = 0.5f,
+            Z = destination.z
+        };
+
+        if (TryQueueLocalCommand(MatchCommandType.Patrol, command))
+            return;
+
+        SendCommandToServer(EntityNetworkMessageNames.PatrolCommand, command);
+    }
+
+    private void HandlePatrolCommand(ulong senderClientId, FastBufferReader reader)
+    {
+        if (Manager == null || !Manager.IsServer)
+            return;
+
+        reader.ReadValueSafe(out FixedString512Bytes payload);
+        EntityPatrolCommand command = JsonUtility.FromJson<EntityPatrolCommand>(payload.ToString());
+        QueueRemoteHumanCommand(senderClientId, MatchCommandType.Patrol, command);
     }
 
     private void RequestMove(int unitId, Vector3 destination)
@@ -852,7 +1280,7 @@ public class NetworkEntityCoordinator : MonoBehaviour
         if (Runtime == null || !Runtime.IsInitialized)
             return;
 
-        EntitySnapshotPayload snapshot = EntitySnapshotBuilder.Build(Runtime.World);
+        EntitySnapshotPayload snapshot = EntitySnapshotBuilder.Build(Runtime.World, Runtime.Diplomacy);
         ApplySnapshot(snapshot);
 
         if (Manager == null || !Manager.IsServer || Manager.CustomMessagingManager == null)
@@ -892,7 +1320,11 @@ public class NetworkEntityCoordinator : MonoBehaviour
 
     private void ApplySnapshot(EntitySnapshotPayload snapshot)
     {
-        if (snapshot?.Units == null)
+        if (snapshot == null)
+            return;
+
+        DiplomacyClientState.Apply(snapshot.DiplomacyTeamIds, snapshot.Diplomacy);
+        if (snapshot.Units == null)
             return;
 
         HashSet<int> receivedIds = new();
@@ -1052,9 +1484,14 @@ public class NetworkEntityCoordinator : MonoBehaviour
         Manager.CustomMessagingManager.RegisterNamedMessageHandler(EntityNetworkMessageNames.EntitySpawned, HandleEntitySpawnedMessage);
         Manager.CustomMessagingManager.RegisterNamedMessageHandler(EntityNetworkMessageNames.EntityDespawned, HandleEntityDespawnedMessage);
         Manager.CustomMessagingManager.RegisterNamedMessageHandler(EntityNetworkMessageNames.MoveCommand, HandleMoveCommand);
+        Manager.CustomMessagingManager.RegisterNamedMessageHandler(EntityNetworkMessageNames.AttackMoveCommand, HandleAttackMoveCommand);
+        Manager.CustomMessagingManager.RegisterNamedMessageHandler(EntityNetworkMessageNames.PatrolCommand, HandlePatrolCommand);
         Manager.CustomMessagingManager.RegisterNamedMessageHandler(EntityNetworkMessageNames.ResourceInteractionCommand, HandleResourceInteractionCommand);
         Manager.CustomMessagingManager.RegisterNamedMessageHandler(EntityNetworkMessageNames.EntityInteractionCommand, HandleEntityInteractionCommand);
         Manager.CustomMessagingManager.RegisterNamedMessageHandler(EntityNetworkMessageNames.AttackCommand, HandleAttackCommand);
+        Manager.CustomMessagingManager.RegisterNamedMessageHandler(EntityNetworkMessageNames.StopCommand, HandleStopCommand);
+        Manager.CustomMessagingManager.RegisterNamedMessageHandler(EntityNetworkMessageNames.StanceCommand, HandleStanceCommand);
+        Manager.CustomMessagingManager.RegisterNamedMessageHandler(EntityNetworkMessageNames.DiplomacyCommand, HandleDiplomacyCommand);
         handlersRegistered = true;
     }
 
@@ -1067,9 +1504,14 @@ public class NetworkEntityCoordinator : MonoBehaviour
         Manager.CustomMessagingManager.UnregisterNamedMessageHandler(EntityNetworkMessageNames.EntitySpawned);
         Manager.CustomMessagingManager.UnregisterNamedMessageHandler(EntityNetworkMessageNames.EntityDespawned);
         Manager.CustomMessagingManager.UnregisterNamedMessageHandler(EntityNetworkMessageNames.MoveCommand);
+        Manager.CustomMessagingManager.UnregisterNamedMessageHandler(EntityNetworkMessageNames.AttackMoveCommand);
+        Manager.CustomMessagingManager.UnregisterNamedMessageHandler(EntityNetworkMessageNames.PatrolCommand);
         Manager.CustomMessagingManager.UnregisterNamedMessageHandler(EntityNetworkMessageNames.ResourceInteractionCommand);
         Manager.CustomMessagingManager.UnregisterNamedMessageHandler(EntityNetworkMessageNames.EntityInteractionCommand);
         Manager.CustomMessagingManager.UnregisterNamedMessageHandler(EntityNetworkMessageNames.AttackCommand);
+        Manager.CustomMessagingManager.UnregisterNamedMessageHandler(EntityNetworkMessageNames.StopCommand);
+        Manager.CustomMessagingManager.UnregisterNamedMessageHandler(EntityNetworkMessageNames.StanceCommand);
+        Manager.CustomMessagingManager.UnregisterNamedMessageHandler(EntityNetworkMessageNames.DiplomacyCommand);
         handlersRegistered = false;
     }
 

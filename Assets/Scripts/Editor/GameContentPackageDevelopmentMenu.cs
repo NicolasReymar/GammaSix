@@ -23,7 +23,7 @@ public static class GameContentPackageDevelopmentMenu
         GameContentPackageManifest manifest = new()
         {
             packageId = ExamplePackageId,
-            packageVersion = "1.6.0",
+            packageVersion = "1.7.0",
             displayName = "Ejemplo de contenido dinámico",
             description = "Paquete de prueba que utiliza entidades reales del juego base.",
             author = "GammaSix",
@@ -45,7 +45,8 @@ public static class GameContentPackageDevelopmentMenu
                 "runtime.declarative-actions.v2",
                 "runtime.participant-variables.v1",
                 "runtime.event-snapshots.v1",
-                "runtime.channels.v1"
+                "runtime.channels.v1",
+                "runtime.wave-mode.v1"
             }
         };
 
@@ -94,7 +95,40 @@ public static class GameContentPackageDevelopmentMenu
                     entityId = "base:building.aura",
                     teamId = 0,
                     ownerTeamSlot = 0,
+                    attributes = new[] { "package.wave.spawn" },
                     position = new ScenarioVector3 { x = 5f, y = 0.04f, z = 0f }
+                }
+            },
+            waveControllers = new[]
+            {
+                new ScenarioWaveControllerDefinition
+                {
+                    id = "package.wave-controller",
+                    autoStart = true,
+                    initialDelay = 3f,
+                    defaultInterWaveDelay = 1f,
+                    repeatMode = ScenarioWaveRepeatModes.None,
+                    waves = new[]
+                    {
+                        new ScenarioWaveDefinition
+                        {
+                            id = "package.wave.one",
+                            completionCondition = ScenarioWaveCompletionConditions.SpawnComplete,
+                            groups = new[]
+                            {
+                                new ScenarioWaveGroupDefinition
+                                {
+                                    id = "package.group",
+                                    entityId = "base:unit.humanoid.worker",
+                                    count = 2,
+                                    spawnInterval = 0.5f,
+                                    teamId = 0,
+                                    spawnAreaAttribute = "package.wave.spawn",
+                                    randomizePositionInArea = true
+                                }
+                            }
+                        }
+                    }
                 }
             },
             rules = new[]

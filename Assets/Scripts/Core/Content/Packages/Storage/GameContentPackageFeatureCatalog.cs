@@ -22,7 +22,11 @@ public static class GameContentPackageFeatureCatalog
         "runtime.declarative-actions.v2",
         "runtime.participant-variables.v1",
         "runtime.event-snapshots.v1",
-        "runtime.channels.v1"
+        "runtime.channels.v1",
+        "runtime.wave-mode.v1",
+        "runtime.headless-controllers.v1",
+        "runtime.diplomacy.v1",
+        "ui.diplomacy.v1"
     };
 
     public static bool IsSupported(string featureId)

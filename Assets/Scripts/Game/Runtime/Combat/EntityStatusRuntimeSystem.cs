@@ -78,9 +78,14 @@ public static class EntityStatusRuntimeSystem
             if (difference.sqrMagnitude > 0.01f)
             {
                 status.Activity = EntityActivityState.Moving;
-                status.ActivityDetail = entity.Attack?.Phase == EntityAttackPhase.Approaching
-                    ? "approaching-attack-target"
-                    : "moving";
+                if (entity.Attack?.Phase == EntityAttackPhase.Approaching)
+                    status.ActivityDetail = "approaching-attack-target";
+                else if (entity.Navigation?.OrderType == EntityNavigationOrderType.AttackMove)
+                    status.ActivityDetail = "attack-move";
+                else if (entity.Navigation?.OrderType == EntityNavigationOrderType.Patrol)
+                    status.ActivityDetail = "patrol";
+                else
+                    status.ActivityDetail = "moving";
                 continue;
             }
 

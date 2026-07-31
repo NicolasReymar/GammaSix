@@ -22,7 +22,9 @@ public sealed class RuleRuntimeSystem
     private readonly MatchRuntimeState matchState;
     private readonly EntityAreaRuntimeSystem areas;
     private readonly RuntimeChannelSystem channels;
+    private readonly DiplomacyRuntimeService diplomacy;
     private DamageRuntimeService damage;
+    private WaveRuntimeSystem waves;
     private int ruleSpawnSequence;
 
     public int RuleCount => rules.Count;
@@ -37,7 +39,8 @@ public sealed class RuleRuntimeSystem
         EntityLifecycleService lifecycle,
         MatchRuntimeState matchState,
         EntityAreaRuntimeSystem areas,
-        RuntimeChannelSystem channels)
+        RuntimeChannelSystem channels,
+        DiplomacyRuntimeService diplomacy)
     {
         this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
         this.participants = participants ?? throw new ArgumentNullException(nameof(participants));
@@ -47,6 +50,7 @@ public sealed class RuleRuntimeSystem
         this.matchState = matchState ?? throw new ArgumentNullException(nameof(matchState));
         this.areas = areas ?? throw new ArgumentNullException(nameof(areas));
         this.channels = channels ?? throw new ArgumentNullException(nameof(channels));
+        this.diplomacy = diplomacy ?? throw new ArgumentNullException(nameof(diplomacy));
 
         if (definitions != null)
         {
@@ -70,6 +74,11 @@ public sealed class RuleRuntimeSystem
     public void BindDamageService(DamageRuntimeService damageService)
     {
         damage = damageService ?? throw new ArgumentNullException(nameof(damageService));
+    }
+
+    public void BindWaveSystem(WaveRuntimeSystem waveSystem)
+    {
+        waves = waveSystem ?? throw new ArgumentNullException(nameof(waveSystem));
     }
 
     /// <summary>
@@ -282,6 +291,106 @@ public sealed class RuleRuntimeSystem
             if (type == "channel-id-is")
             {
                 if (!string.Equals(Normalize(runtimeEvent.ChannelId), Normalize(condition.value), StringComparison.Ordinal))
+                    return false;
+                continue;
+            }
+
+            if (type == "wave-controller-id-is")
+            {
+                string expected = string.IsNullOrWhiteSpace(condition.waveControllerId)
+                    ? condition.value
+                    : condition.waveControllerId;
+                if (!string.Equals(runtimeEvent.WaveControllerId, expected, StringComparison.OrdinalIgnoreCase))
+                    return false;
+                continue;
+            }
+
+            if (type == "wave-id-is")
+            {
+                string expected = string.IsNullOrWhiteSpace(condition.waveId)
+                    ? condition.value
+                    : condition.waveId;
+                if (!string.Equals(runtimeEvent.WaveId, expected, StringComparison.OrdinalIgnoreCase))
+                    return false;
+                continue;
+            }
+
+            if (type == "wave-index-is")
+            {
+                int expected = condition.waveIndex >= 0
+                    ? condition.waveIndex
+                    : condition.participantId;
+                if (runtimeEvent.WaveIndex != expected)
+                    return false;
+                continue;
+            }
+
+            if (type == "wave-cycle-is")
+            {
+                int expected = condition.waveCycle > 0
+                    ? condition.waveCycle
+                    : condition.participantId;
+                if (runtimeEvent.WaveCycle != expected)
+                    return false;
+                continue;
+            }
+
+            if (type == "wave-state-is")
+            {
+                string expected = string.IsNullOrWhiteSpace(condition.state)
+                    ? condition.value
+                    : condition.state;
+                if (!string.Equals(
+                        Normalize(runtimeEvent.WaveControllerStatus),
+                        Normalize(expected),
+                        StringComparison.Ordinal))
+                    return false;
+                continue;
+            }
+
+            if (type == "diplomacy-source-team-is")
+            {
+                int expected = condition.sourceTeamId > 0 ? condition.sourceTeamId : condition.teamId;
+                if (runtimeEvent.DiplomacySourceTeamId != expected)
+                    return false;
+                continue;
+            }
+
+            if (type == "diplomacy-target-team-is")
+            {
+                int expected = condition.targetTeamId > 0 ? condition.targetTeamId : condition.teamId;
+                if (runtimeEvent.DiplomacyTargetTeamId != expected)
+                    return false;
+                continue;
+            }
+
+            if (type == "diplomacy-stance-is")
+            {
+                string expectedValue = !string.IsNullOrWhiteSpace(condition.diplomacyStance)
+                    ? condition.diplomacyStance
+                    : !string.IsNullOrWhiteSpace(condition.state)
+                        ? condition.state
+                        : condition.value;
+                if (!DiplomacyRuntimeService.TryParseStance(expectedValue, out DiplomacyStance expected))
+                    return false;
+
+                DiplomacyStance actual;
+                if (runtimeEvent.Type == RuntimeEventType.DiplomacyStanceChanged)
+                {
+                    actual = runtimeEvent.CurrentDiplomacyStance;
+                }
+                else
+                {
+                    int sourceTeamId = condition.sourceTeamId > 0
+                        ? condition.sourceTeamId
+                        : runtimeEvent.DiplomacySourceTeamId;
+                    int targetTeamId = condition.targetTeamId > 0
+                        ? condition.targetTeamId
+                        : runtimeEvent.DiplomacyTargetTeamId;
+                    actual = diplomacy.GetStance(sourceTeamId, targetTeamId);
+                }
+
+                if (actual != expected)
                     return false;
                 continue;
             }
@@ -548,6 +657,61 @@ public sealed class RuleRuntimeSystem
                 continue;
             }
 
+            if (type == "set-diplomacy-stance")
+            {
+                string stanceValue = !string.IsNullOrWhiteSpace(action.diplomacyStance)
+                    ? action.diplomacyStance
+                    : !string.IsNullOrWhiteSpace(action.value)
+                        ? action.value
+                        : action.result;
+                if (!DiplomacyRuntimeService.TryParseStance(stanceValue, out DiplomacyStance stance))
+                {
+                    Debug.LogWarning($"[RuleRuntimeSystem] Postura diplomática inválida: {stanceValue}.");
+                    continue;
+                }
+
+                int sourceTeamId = action.sourceTeamId > 0
+                    ? action.sourceTeamId
+                    : runtimeEvent.DiplomacySourceTeamId > 0
+                        ? runtimeEvent.DiplomacySourceTeamId
+                        : ResolveTeamId(runtimeEvent);
+                int targetTeamId = action.targetTeamId > 0
+                    ? action.targetTeamId
+                    : runtimeEvent.DiplomacyTargetTeamId;
+                if (!diplomacy.TrySetStance(
+                        sourceTeamId,
+                        targetTeamId,
+                        stance,
+                        runtimeEvent.ParticipantId,
+                        action.reason ?? "runtime-rule",
+                        out string rejection))
+                {
+                    Debug.LogWarning($"[RuleRuntimeSystem] Diplomacia rechazada: {rejection}");
+                }
+                else if (action.bidirectional &&
+                         !diplomacy.TrySetStance(
+                             targetTeamId,
+                             sourceTeamId,
+                             stance,
+                             runtimeEvent.ParticipantId,
+                             action.reason ?? "runtime-rule-bidirectional",
+                             out rejection))
+                {
+                    Debug.LogWarning($"[RuleRuntimeSystem] Diplomacia inversa rechazada: {rejection}");
+                }
+                continue;
+            }
+
+            if (type == "start-wave-controller" ||
+                type == "pause-wave-controller" ||
+                type == "resume-wave-controller" ||
+                type == "stop-wave-controller" ||
+                type == "advance-wave-controller")
+            {
+                ExecuteWaveAction(type, action, runtimeEvent);
+                continue;
+            }
+
             if (type == "give-resource" || type == "remove-resource")
             {
                 int signedAmount = type == "remove-resource" ? -Mathf.Abs(action.amount) : Mathf.Abs(action.amount);
@@ -583,6 +747,47 @@ public sealed class RuleRuntimeSystem
 
             Debug.LogWarning($"[RuleRuntimeSystem] Acción desconocida '{action.type}'.");
         }
+    }
+
+    private void ExecuteWaveAction(
+        string type,
+        ScenarioRuleActionDefinition action,
+        RuntimeEventContext runtimeEvent)
+    {
+        if (waves == null)
+        {
+            Debug.LogWarning("[RuleRuntimeSystem] El sistema de oleadas no está enlazado.");
+            return;
+        }
+
+        string controllerId = !string.IsNullOrWhiteSpace(action.waveControllerId)
+            ? action.waveControllerId
+            : !string.IsNullOrWhiteSpace(action.value)
+                ? action.value
+                : runtimeEvent.WaveControllerId;
+        bool success;
+        string rejection;
+        switch (type)
+        {
+            case "start-wave-controller":
+                success = waves.TryStart(controllerId, runtimeEvent.ElapsedTime, out rejection);
+                break;
+            case "pause-wave-controller":
+                success = waves.TryPause(controllerId, runtimeEvent.ElapsedTime, out rejection);
+                break;
+            case "resume-wave-controller":
+                success = waves.TryResume(controllerId, runtimeEvent.ElapsedTime, out rejection);
+                break;
+            case "stop-wave-controller":
+                success = waves.TryStop(controllerId, runtimeEvent.ElapsedTime, out rejection);
+                break;
+            default:
+                success = waves.TryAdvance(controllerId, runtimeEvent.ElapsedTime, out rejection);
+                break;
+        }
+
+        if (!success)
+            Debug.LogWarning($"[RuleRuntimeSystem] Acción de oleada rechazada: {rejection}");
     }
 
     private void ChangeResource(
@@ -896,6 +1101,7 @@ public sealed class RuleRuntimeSystem
         Vector3 target = destination;
         target.y = entity.Position.y;
         entity.Position = target;
+        entity.Navigation?.ClearAll(target, "teleported");
         entity.Destination = target;
         entity.InteractionTargetUnitId = -1;
         entity.Attack?.ClearTarget();
@@ -905,6 +1111,7 @@ public sealed class RuleRuntimeSystem
     {
         if (entity == null)
             return;
+        entity.Navigation?.ClearAll(entity.Position, "stopped-by-runtime");
         entity.Destination = entity.Position;
         entity.InteractionTargetUnitId = -1;
         entity.Attack?.ClearTarget();
@@ -964,6 +1171,14 @@ public sealed class RuleRuntimeSystem
                normalized == "participant-variable-is" ||
                normalized == "rule-variable-is" ||
                normalized == "channel-id-is" ||
+               normalized == "wave-controller-id-is" ||
+               normalized == "wave-id-is" ||
+               normalized == "wave-index-is" ||
+               normalized == "wave-cycle-is" ||
+               normalized == "wave-state-is" ||
+               normalized == "diplomacy-source-team-is" ||
+               normalized == "diplomacy-target-team-is" ||
+               normalized == "diplomacy-stance-is" ||
                normalized == "match-phase-is";
     }
 
@@ -989,6 +1204,12 @@ public sealed class RuleRuntimeSystem
                normalized == "despawn-participant-entities" ||
                normalized == "start-channel" ||
                normalized == "cancel-channel" ||
+               normalized == "start-wave-controller" ||
+               normalized == "pause-wave-controller" ||
+               normalized == "resume-wave-controller" ||
+               normalized == "stop-wave-controller" ||
+               normalized == "advance-wave-controller" ||
+               normalized == "set-diplomacy-stance" ||
                normalized == "give-resource" ||
                normalized == "remove-resource" ||
                normalized == "spawn-entity" ||
@@ -1014,10 +1235,21 @@ public sealed class RuleRuntimeSystem
             case "channel-started": eventType = RuntimeEventType.ChannelStarted; return true;
             case "channel-completed": eventType = RuntimeEventType.ChannelCompleted; return true;
             case "channel-cancelled": eventType = RuntimeEventType.ChannelCancelled; return true;
+            case "wave-controller-started": eventType = RuntimeEventType.WaveControllerStarted; return true;
+            case "wave-preparation-started": eventType = RuntimeEventType.WavePreparationStarted; return true;
+            case "wave-started": eventType = RuntimeEventType.WaveStarted; return true;
+            case "wave-group-started": eventType = RuntimeEventType.WaveGroupStarted; return true;
+            case "wave-group-completed": eventType = RuntimeEventType.WaveGroupCompleted; return true;
+            case "wave-completed": eventType = RuntimeEventType.WaveCompleted; return true;
+            case "wave-controller-paused": eventType = RuntimeEventType.WaveControllerPaused; return true;
+            case "wave-controller-resumed": eventType = RuntimeEventType.WaveControllerResumed; return true;
+            case "wave-controller-stopped": eventType = RuntimeEventType.WaveControllerStopped; return true;
+            case "wave-controller-completed": eventType = RuntimeEventType.WaveControllerCompleted; return true;
             case "participant-state-changed": eventType = RuntimeEventType.ParticipantStateChanged; return true;
             case "participant-control-changed": eventType = RuntimeEventType.ParticipantControlChanged; return true;
             case "participant-attribute-changed": eventType = RuntimeEventType.ParticipantAttributeChanged; return true;
             case "participant-variable-changed": eventType = RuntimeEventType.ParticipantVariableChanged; return true;
+            case "diplomacy-stance-changed": eventType = RuntimeEventType.DiplomacyStanceChanged; return true;
             case "resource-changed": eventType = RuntimeEventType.ResourceChanged; return true;
             case "match-result-declared": eventType = RuntimeEventType.MatchResultDeclared; return true;
             default:

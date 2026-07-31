@@ -9,6 +9,12 @@ public enum EntityAttackPhase
     Recovery
 }
 
+public enum EntityCombatStance
+{
+    Aggressive,
+    Passive
+}
+
 public enum EntityLifeState
 {
     Alive,
@@ -59,6 +65,9 @@ public sealed class EntityAttackRuntimeState
     public int TargetEntityId = -1;
     public EntityAttackPhase Phase;
     public float PhaseRemaining;
+    public bool ForceTarget;
+    public bool ResumeNavigationOrderAfterTarget;
+    public EntityCombatStance Stance = EntityCombatStance.Aggressive;
 
     public float EffectiveSpeed => Mathf.Max(0.05f, BaseAttackSpeed * AttackSpeedMultiplier);
     public float EffectiveAttackTime => Mathf.Max(0f, AttackTime) / EffectiveSpeed;
@@ -68,9 +77,11 @@ public sealed class EntityAttackRuntimeState
     /// Cambia el objetivo sin saltarse una recuperación ya iniciada.
     /// Fuera de Recovery, una nueva orden reinicia la preparación del ataque.
     /// </summary>
-    public void AssignTarget(int targetEntityId)
+    public void AssignTarget(int targetEntityId, bool forceTarget = false, bool resumeNavigationOrderAfterTarget = false)
     {
         TargetEntityId = targetEntityId;
+        ForceTarget = forceTarget;
+        ResumeNavigationOrderAfterTarget = resumeNavigationOrderAfterTarget;
         if (Phase == EntityAttackPhase.Recovery)
             return;
 
@@ -86,6 +97,8 @@ public sealed class EntityAttackRuntimeState
     public void ClearTargetPreservingRecovery()
     {
         TargetEntityId = -1;
+        ForceTarget = false;
+        ResumeNavigationOrderAfterTarget = false;
         if (Phase == EntityAttackPhase.Recovery)
             return;
 
@@ -100,6 +113,8 @@ public sealed class EntityAttackRuntimeState
     public void ClearTarget()
     {
         TargetEntityId = -1;
+        ForceTarget = false;
+        ResumeNavigationOrderAfterTarget = false;
         Phase = EntityAttackPhase.None;
         PhaseRemaining = 0f;
     }

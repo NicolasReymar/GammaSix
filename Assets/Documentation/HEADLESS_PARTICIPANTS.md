@@ -82,3 +82,9 @@ minigame.kodo-tag:headless.kodo-commander
 El lobby sincroniza el packageId, la versión y el hash antes de permitir el inicio.
 La ejecución del controlador Headless declarativo sigue pendiente de la fase de
 controladores, pero su identidad ya queda aislada dentro del paquete.
+
+## Runtime de controladores (Fase 9)
+
+Los perfiles pueden declarar `runtimeControllerId` y `controllerSettings`. La
+autoridad crea un controlador por participante Headless y todas sus decisiones
+pasan por `MatchCommandBus`. Consulta `HEADLESS_RUNTIME_CONTROLLERS.md`.

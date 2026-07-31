@@ -5,7 +5,7 @@ using System.Linq;
 /// </summary>
 public static class EntitySnapshotBuilder
 {
-    public static EntitySnapshotPayload Build(EntityWorld world)
+    public static EntitySnapshotPayload Build(EntityWorld world, DiplomacyRuntimeService diplomacy)
     {
         EntitySnapshotPayload snapshot = new();
         if (world == null)
@@ -13,6 +13,12 @@ public static class EntitySnapshotBuilder
 
         foreach (EntityRuntimeState unit in world.Values.OrderBy(item => item.UnitId))
             snapshot.Units.Add(BuildSingle(unit));
+
+        if (diplomacy != null)
+        {
+            snapshot.DiplomacyTeamIds.AddRange(diplomacy.TeamIds);
+            snapshot.Diplomacy.AddRange(diplomacy.CreateSnapshot());
+        }
 
         return snapshot;
     }
@@ -68,7 +74,14 @@ public static class EntitySnapshotBuilder
             AttackDelivery = unit.Attack?.Delivery,
             AttackDamageType = unit.Attack?.DamageType,
             AttackTargetEntityId = unit.Attack?.TargetEntityId ?? -1,
-            AttackPhase = (unit.Attack?.Phase ?? EntityAttackPhase.None).ToString()
+            AttackPhase = (unit.Attack?.Phase ?? EntityAttackPhase.None).ToString(),
+            AttackForceTarget = unit.Attack?.ForceTarget ?? false,
+            CombatStance = (unit.Attack?.Stance ?? EntityCombatStance.Aggressive).ToString(),
+            NavigationOrder = (unit.Navigation?.OrderType ?? EntityNavigationOrderType.None).ToString(),
+            NavigationPathPurpose = (unit.Navigation?.PathPurpose ?? EntityPathPurpose.None).ToString(),
+            NavigationWaypointIndex = unit.Navigation?.WaypointIndex ?? 0,
+            NavigationWaypointCount = unit.Navigation?.Waypoints.Count ?? 0,
+            NavigationStatus = unit.Navigation?.LastPathStatus
         };
     }
 }

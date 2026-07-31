@@ -161,8 +161,10 @@ public sealed class MatchTextChannelController : MonoBehaviour
         if (command.CommandType == MatchTextCommandType.Help)
         {
             ReplyToSender(senderClientId, isLocalAuthoritySubmission, SystemMessage(
-                "Comandos: /entities [filtro] · /spawn <id-cargado> posicion(x,y,z) · " +
+                "Comandos: /entities [filtro] · /spawn <id> <x> <y> <z> [owner <P>|slot <id>|team <E>] · " +
+                "/change_owner <runtime-id> <participant P|slot id> · /change_team <runtime-id> <E> · " +
                 "/despawn <runtime-id|last> (retira sin matar) · /runtime [filtro] · /state · /areas · /combat [filtro] · /channels · " +
+                "/waves [filtro] · /wave <start|pause|resume|stop|advance> <id> · /headless [filtro] · /nav [filtro] · /path_visualization <on|off> · /diplomacy · /diplomacy_stance <origen> <objetivo> <ally|neutral|enemy> · " +
                 "/attack <atacante> <objetivo> · /damage <objetivo> <cantidad> [origen]. " +
                 "Spawn solo acepta entidades habilitadas por el escenario.",
                 false));
@@ -211,6 +213,34 @@ public sealed class MatchTextChannelController : MonoBehaviour
             return;
         }
 
+        if (command.CommandType == MatchTextCommandType.Waves)
+        {
+            ReplyToSender(senderClientId, isLocalAuthoritySubmission,
+                SystemMessage(BuildWaveSummary(command.Filter), false));
+            return;
+        }
+
+        if (command.CommandType == MatchTextCommandType.HeadlessControllers)
+        {
+            ReplyToSender(senderClientId, isLocalAuthoritySubmission,
+                SystemMessage(BuildHeadlessControllerSummary(command.Filter), false));
+            return;
+        }
+
+        if (command.CommandType == MatchTextCommandType.Navigation)
+        {
+            ReplyToSender(senderClientId, isLocalAuthoritySubmission,
+                SystemMessage(BuildNavigationSummary(command.Filter), false));
+            return;
+        }
+
+        if (command.CommandType == MatchTextCommandType.Diplomacy)
+        {
+            ReplyToSender(senderClientId, isLocalAuthoritySubmission,
+                SystemMessage(BuildDiplomacySummary(), false));
+            return;
+        }
+
         if (!CanMutateRuntime(senderClientId, isLocalAuthoritySubmission))
         {
             ReplyToSender(senderClientId, isLocalAuthoritySubmission,
@@ -218,9 +248,33 @@ public sealed class MatchTextChannelController : MonoBehaviour
             return;
         }
 
+        if (command.CommandType == MatchTextCommandType.PathVisualization)
+        {
+            ExecutePathVisualization(senderClientId, isLocalAuthoritySubmission, command);
+            return;
+        }
+
+        if (command.CommandType == MatchTextCommandType.DiplomacyStance)
+        {
+            ExecuteDiplomacyStance(senderClientId, isLocalAuthoritySubmission, command);
+            return;
+        }
+
         if (command.CommandType == MatchTextCommandType.Spawn)
         {
             ExecuteSpawn(participantId, senderClientId, isLocalAuthoritySubmission, command);
+            return;
+        }
+
+        if (command.CommandType == MatchTextCommandType.ChangeOwner)
+        {
+            ExecuteChangeOwner(senderClientId, isLocalAuthoritySubmission, command);
+            return;
+        }
+
+        if (command.CommandType == MatchTextCommandType.ChangeTeam)
+        {
+            ExecuteChangeTeam(senderClientId, isLocalAuthoritySubmission, command);
             return;
         }
 
@@ -242,8 +296,106 @@ public sealed class MatchTextChannelController : MonoBehaviour
             return;
         }
 
+        if (command.CommandType == MatchTextCommandType.WaveControl)
+        {
+            ExecuteWaveControl(senderClientId, isLocalAuthoritySubmission, command);
+            return;
+        }
+
         ReplyToSender(senderClientId, isLocalAuthoritySubmission,
             SystemMessage("El comando todavía no tiene una ejecución registrada.", true));
+    }
+
+    private void ExecutePathVisualization(
+        ulong senderClientId,
+        bool isLocalAuthoritySubmission,
+        MatchTextCommandParseResult command)
+    {
+        NavigationRuntimeSystem navigation = Runtime.Navigation;
+        if (navigation == null)
+        {
+            ReplyToSender(senderClientId, isLocalAuthoritySubmission,
+                SystemMessage("El sistema de navegación todavía no está disponible.", true));
+            return;
+        }
+
+        navigation.SetPathVisualizationEnabled(command.ToggleEnabled);
+        ReplyToSender(senderClientId, isLocalAuthoritySubmission,
+            SystemMessage(
+                command.ToggleEnabled
+                    ? "Visualización de rutas activada para todas las unidades con un camino vigente."
+                    : "Visualización de rutas desactivada.",
+                false));
+    }
+
+    private void ExecuteDiplomacyStance(
+        ulong senderClientId,
+        bool isLocalAuthoritySubmission,
+        MatchTextCommandParseResult command)
+    {
+        if (Runtime.Diplomacy == null ||
+            !DiplomacyRuntimeService.TryParseStance(
+                command.DiplomacyStance,
+                out DiplomacyStance stance))
+        {
+            ReplyToSender(senderClientId, isLocalAuthoritySubmission,
+                SystemMessage("El sistema o la postura diplomática no son válidos.", true));
+            return;
+        }
+
+        bool success = Runtime.Diplomacy.TrySetStance(
+            command.SourceTeamId,
+            command.TargetTeamId,
+            stance,
+            RuntimeController?.LocalParticipantId ?? -1,
+            "host-console",
+            out string rejection);
+        ReplyToSender(senderClientId, isLocalAuthoritySubmission,
+            SystemMessage(success
+                ? $"Diplomacia: Equipo {command.SourceTeamId} → Equipo {command.TargetTeamId} = {stance}."
+                : $"Cambio diplomático rechazado: {rejection}",
+                !success));
+    }
+
+    private void ExecuteWaveControl(
+        ulong senderClientId,
+        bool isLocalAuthoritySubmission,
+        MatchTextCommandParseResult command)
+    {
+        WaveRuntimeSystem waves = Runtime.Waves;
+        if (waves == null)
+        {
+            ReplyToSender(senderClientId, isLocalAuthoritySubmission,
+                SystemMessage("El sistema de oleadas no está inicializado.", true));
+            return;
+        }
+
+        bool success;
+        string rejection;
+        switch (command.WaveOperation)
+        {
+            case "start":
+                success = waves.TryStart(command.WaveControllerId, Runtime.ElapsedTime, out rejection);
+                break;
+            case "pause":
+                success = waves.TryPause(command.WaveControllerId, Runtime.ElapsedTime, out rejection);
+                break;
+            case "resume":
+                success = waves.TryResume(command.WaveControllerId, Runtime.ElapsedTime, out rejection);
+                break;
+            case "stop":
+                success = waves.TryStop(command.WaveControllerId, Runtime.ElapsedTime, out rejection);
+                break;
+            default:
+                success = waves.TryAdvance(command.WaveControllerId, Runtime.ElapsedTime, out rejection);
+                break;
+        }
+
+        ReplyToSender(senderClientId, isLocalAuthoritySubmission,
+            SystemMessage(success
+                ? $"Oleadas: {command.WaveOperation} aplicado a '{command.WaveControllerId}'."
+                : $"Operación de oleada rechazada: {rejection}",
+                !success));
     }
 
     private void ExecuteSpawn(
@@ -252,10 +404,16 @@ public sealed class MatchTextChannelController : MonoBehaviour
         bool isLocalAuthoritySubmission,
         MatchTextCommandParseResult command)
     {
-        if (!Runtime.Participants.TryGet(participantId, out MatchParticipantRuntimeState owner))
+        if (!TryResolveCommandOwner(
+                command,
+                participantId,
+                out MatchParticipantRuntimeState owner,
+                out int teamId,
+                out int colorId,
+                out string ownerRejection))
         {
             ReplyToSender(senderClientId, isLocalAuthoritySubmission,
-                SystemMessage($"No existe el participante {participantId}.", true));
+                SystemMessage($"Spawn rechazado: {ownerRejection}", true));
             return;
         }
 
@@ -277,9 +435,9 @@ public sealed class MatchTextChannelController : MonoBehaviour
         {
             EntityDefinitionId = resolvedEntityId,
             ScenarioInstanceId = $"command.spawn.{DateTime.UtcNow.Ticks}",
-            OwnerParticipantId = owner.ParticipantId,
-            TeamId = owner.TeamId,
-            ColorId = owner.ColorId,
+            OwnerParticipantId = owner?.ParticipantId ?? -1,
+            TeamId = teamId,
+            ColorId = colorId,
             Position = command.Position,
             Reason = EntityLifecycleReason.MatchCommand
         };
@@ -291,10 +449,166 @@ public sealed class MatchTextChannelController : MonoBehaviour
             return;
         }
 
+        string ownership = owner == null
+            ? "neutral (E0)"
+            : $"P{owner.ParticipantId}/{owner.SlotId}/E{owner.TeamId}";
         ReplyToSender(senderClientId, isLocalAuthoritySubmission, SystemMessage(
-            $"Spawn encolado: {definition.name} [{resolvedEntityId}] en " +
+            $"Spawn encolado: {definition.name} [{resolvedEntityId}] para {ownership} en " +
             $"({command.Position.x:0.##}, {command.Position.y:0.##}, {command.Position.z:0.##}).",
             false));
+    }
+
+    private void ExecuteChangeOwner(
+        ulong senderClientId,
+        bool isLocalAuthoritySubmission,
+        MatchTextCommandParseResult command)
+    {
+        MatchParticipantRuntimeState owner = null;
+        if (string.Equals(command.OwnerSelector, "participant", StringComparison.OrdinalIgnoreCase))
+        {
+            Runtime.Participants.TryGet(command.OwnerParticipantId, out owner);
+        }
+        else if (string.Equals(command.OwnerSelector, "slot", StringComparison.OrdinalIgnoreCase))
+        {
+            Runtime.Participants.TryGetBySlotId(command.OwnerSlotId, out owner);
+        }
+
+        if (owner == null)
+        {
+            ReplyToSender(senderClientId, isLocalAuthoritySubmission,
+                SystemMessage("No se encontró el participante propietario solicitado.", true));
+            return;
+        }
+
+        bool success = Runtime.EntityLifecycle.TryTransferOwnership(
+            command.RuntimeEntityId,
+            owner.ParticipantId,
+            out string rejectionReason);
+        ReplyToSender(senderClientId, isLocalAuthoritySubmission,
+            SystemMessage(success
+                ? $"Entidad {command.RuntimeEntityId} transferida a P{owner.ParticipantId}/{owner.SlotId}/E{owner.TeamId}."
+                : $"Transferencia rechazada: {rejectionReason}",
+                !success));
+    }
+
+    private void ExecuteChangeTeam(
+        ulong senderClientId,
+        bool isLocalAuthoritySubmission,
+        MatchTextCommandParseResult command)
+    {
+        if (!TryResolveParticipantForTeam(command.OwnerTeamId, out MatchParticipantRuntimeState owner, out string rejection))
+        {
+            ReplyToSender(senderClientId, isLocalAuthoritySubmission,
+                SystemMessage($"Cambio de equipo rechazado: {rejection}", true));
+            return;
+        }
+
+        int ownerParticipantId = owner?.ParticipantId ?? -1;
+        bool success = Runtime.EntityLifecycle.TryTransferOwnership(
+            command.RuntimeEntityId,
+            ownerParticipantId,
+            out string transferRejection);
+        string destination = owner == null
+            ? "equipo neutral E0"
+            : $"P{owner.ParticipantId}/{owner.SlotId}/E{owner.TeamId}";
+        ReplyToSender(senderClientId, isLocalAuthoritySubmission,
+            SystemMessage(success
+                ? $"Entidad {command.RuntimeEntityId} transferida a {destination}."
+                : $"Cambio de equipo rechazado: {transferRejection}",
+                !success));
+    }
+
+    private bool TryResolveCommandOwner(
+        MatchTextCommandParseResult command,
+        int defaultParticipantId,
+        out MatchParticipantRuntimeState owner,
+        out int teamId,
+        out int colorId,
+        out string rejectionReason)
+    {
+        owner = null;
+        teamId = 0;
+        colorId = PlayerColorPalette.Neutral;
+        rejectionReason = null;
+
+        if (string.IsNullOrWhiteSpace(command.OwnerSelector))
+        {
+            if (!Runtime.Participants.TryGet(defaultParticipantId, out owner))
+            {
+                rejectionReason = $"No existe el participante {defaultParticipantId}.";
+                return false;
+            }
+        }
+        else if (string.Equals(command.OwnerSelector, "participant", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!Runtime.Participants.TryGet(command.OwnerParticipantId, out owner))
+            {
+                rejectionReason = $"No existe el participante {command.OwnerParticipantId}.";
+                return false;
+            }
+        }
+        else if (string.Equals(command.OwnerSelector, "slot", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!Runtime.Participants.TryGetBySlotId(command.OwnerSlotId, out owner))
+            {
+                rejectionReason = $"No existe el slot '{command.OwnerSlotId}'.";
+                return false;
+            }
+        }
+        else if (string.Equals(command.OwnerSelector, "team", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!TryResolveParticipantForTeam(command.OwnerTeamId, out owner, out rejectionReason))
+                return false;
+        }
+        else
+        {
+            rejectionReason = $"Selector de propietario desconocido: {command.OwnerSelector}.";
+            return false;
+        }
+
+        if (owner != null)
+        {
+            teamId = owner.TeamId;
+            colorId = owner.ColorId;
+        }
+
+        return true;
+    }
+
+    private bool TryResolveParticipantForTeam(
+        int teamId,
+        out MatchParticipantRuntimeState owner,
+        out string rejectionReason)
+    {
+        owner = null;
+        rejectionReason = null;
+        if (teamId < 0)
+        {
+            rejectionReason = "El team-id no puede ser negativo.";
+            return false;
+        }
+
+        if (teamId == 0)
+            return true;
+
+        MatchParticipantRuntimeState[] candidates = Runtime.Participants.All
+            .Where(item => item.TeamId == teamId)
+            .ToArray();
+        if (candidates.Length == 0)
+        {
+            rejectionReason = $"El equipo {teamId} no tiene participantes propietarios.";
+            return false;
+        }
+
+        if (candidates.Length > 1)
+        {
+            rejectionReason =
+                $"El equipo {teamId} tiene {candidates.Length} participantes. Usa owner/participant o slot para elegir uno.";
+            return false;
+        }
+
+        owner = candidates[0];
+        return true;
     }
 
     private void ExecuteDespawn(
@@ -413,8 +727,8 @@ public sealed class MatchTextChannelController : MonoBehaviour
         string[] values = entities
             .OrderBy(item => item.UnitId)
             .Take(MaxListResults)
-            .Select(item => $"{item.UnitId}:{item.EntityDefinitionId} vida={item.Health}/{item.MaxHealth} " +
-                            $"estado={item.Status?.Activity ?? EntityActivityState.Idle}")
+            .Select(item => $"{item.UnitId}:{item.EntityDefinitionId} P{item.OwnerParticipantId}/E{item.TeamId} " +
+                            $"vida={item.Health}/{item.MaxHealth} estado={item.Status?.Activity ?? EntityActivityState.Idle}")
             .ToArray();
 
         return values.Length == 0
@@ -441,7 +755,7 @@ public sealed class MatchTextChannelController : MonoBehaviour
             string variables = item.SnapshotVariables().Count > 0
                 ? $" vars={string.Join(",", item.SnapshotVariables().Select(pair => $"{pair.Key}={pair.Value}"))}"
                 : string.Empty;
-            return $"P{item.ParticipantId}:{item.DisplayName}[{item.LifeState};{control}{attributes}{variables}]" +
+            return $"P{item.ParticipantId}:{item.DisplayName}[slot={item.SlotId};E{item.TeamId};{item.ControllerKind};{item.LifeState};{control}{attributes}{variables}]" +
                    (string.IsNullOrEmpty(resources) ? string.Empty : $" {{{resources}}}");
         }));
 
@@ -484,6 +798,93 @@ public sealed class MatchTextChannelController : MonoBehaviour
         return values.Length == 0
             ? "No hay canalizaciones activas."
             : $"Canalizaciones activas ({values.Length}): {string.Join(" · ", values)}";
+    }
+
+    private string BuildNavigationSummary(string filter)
+    {
+        NavigationRuntimeSystem navigation = Runtime.Navigation;
+        if (navigation == null)
+            return "El sistema de navegación no está inicializado.";
+
+        IReadOnlyList<string> values = navigation.BuildDiagnostics(filter);
+        string detail = values.Count == 0
+            ? "No hay entidades navegando con ese filtro."
+            : string.Join(" · ", values.Take(MaxListResults));
+        return $"Navegación: cell={navigation.CellSize:0.##}, obstáculos={navigation.ObstacleCount}, " +
+               $"revisión={navigation.ObstacleRevision}. {detail}";
+    }
+
+    private string BuildDiplomacySummary()
+    {
+        DiplomacyRuntimeService diplomacy = Runtime.Diplomacy;
+        if (diplomacy == null)
+            return "El sistema de diplomacia no está inicializado.";
+
+        int[] teams = diplomacy.TeamIds.ToArray();
+        if (teams.Length == 0)
+            return "No hay equipos registrados en la diplomacia.";
+
+        string[] rows = teams.Select(source =>
+        {
+            string relations = string.Join(", ", teams
+                .Where(target => target != source)
+                .Select(target => $"E{target}={diplomacy.GetStance(source, target)}"));
+            return $"E{source} → [{relations}]";
+        }).ToArray();
+        return $"Diplomacia direccional: {string.Join(" · ", rows)}";
+    }
+
+    private string BuildHeadlessControllerSummary(string filter)
+    {
+        HeadlessControllerRuntimeSystem system = Runtime.HeadlessControllers;
+        if (system == null)
+            return "El sistema de controladores Headless no está inicializado.";
+
+        IEnumerable<HeadlessControllerInstanceState> controllers = system.Controllers;
+        if (!string.IsNullOrWhiteSpace(filter))
+        {
+            controllers = controllers.Where(item =>
+                Contains(item.ParticipantName, filter) ||
+                Contains(item.ProfileId, filter) ||
+                Contains(item.RuntimeControllerId, filter) ||
+                Contains(item.Status.ToString(), filter));
+        }
+
+        string[] values = controllers
+            .Take(MaxListResults)
+            .Select(item =>
+                $"P{item.ParticipantId}:{item.ParticipantName} perfil={item.ProfileId ?? "-"} " +
+                $"controlador={item.RuntimeControllerId ?? "-"} estado={item.Status} " +
+                $"órdenes={item.OrdersIssued} decisión={item.LastDecision ?? "-"}")
+            .ToArray();
+
+        return values.Length == 0
+            ? "No hay controladores Headless que coincidan."
+            : $"Controladores Headless ({values.Length}): {string.Join(" · ", values)}";
+    }
+
+    private string BuildWaveSummary(string filter)
+    {
+        WaveRuntimeSystem waves = Runtime.Waves;
+        if (waves == null)
+            return "El sistema de oleadas no está inicializado.";
+
+        IEnumerable<WaveControllerRuntimeState> controllers = waves.Controllers;
+        if (!string.IsNullOrWhiteSpace(filter))
+        {
+            controllers = controllers.Where(item =>
+                Contains(item.ControllerId, filter) ||
+                Contains(item.CurrentWaveId, filter) ||
+                Contains(item.Status.ToString(), filter));
+        }
+
+        string[] values = controllers
+            .Take(MaxListResults)
+            .Select(item => item.ToString())
+            .ToArray();
+        return values.Length == 0
+            ? "No hay controladores de oleadas con ese filtro."
+            : $"Oleadas ({values.Length}{(values.Length == MaxListResults ? "+" : string.Empty)}): {string.Join(" · ", values)}";
     }
 
     private string BuildCombatSummary(string filter)

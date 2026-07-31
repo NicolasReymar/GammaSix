@@ -55,6 +55,25 @@ public sealed class MatchEntityCatalog
             }
         }
 
+        if (scenario?.waveControllers != null)
+        {
+            foreach (ScenarioWaveControllerDefinition controller in scenario.waveControllers)
+            {
+                if (controller == null || !controller.enabled || controller.waves == null)
+                    continue;
+                foreach (ScenarioWaveDefinition wave in controller.waves)
+                {
+                    if (wave?.groups == null)
+                        continue;
+                    foreach (ScenarioWaveGroupDefinition group in wave.groups)
+                    {
+                        if (group != null && !string.IsNullOrWhiteSpace(group.entityId))
+                            dynamicReferences.Add(group.entityId.Trim());
+                    }
+                }
+            }
+        }
+
         string[] configuredSpawnable = scenario?.entityCatalog?.spawnableEntityIds;
         bool hasExplicitSpawnableCatalog = configuredSpawnable != null &&
                                            configuredSpawnable.Any(value => !string.IsNullOrWhiteSpace(value));

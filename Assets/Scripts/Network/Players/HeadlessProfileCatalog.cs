@@ -45,7 +45,9 @@ public static class HeadlessProfileCatalog
                     GameModeId = supportedMode,
                     MaximumInstances = Math.Max(1, source.maximumInstances),
                     BuiltIn = false,
-                    RuntimeImplemented = source.runtimeImplemented
+                    RuntimeImplemented = source.runtimeImplemented,
+                    RuntimeControllerId = source.runtimeControllerId,
+                    ControllerSettings = source.controllerSettings
                 });
             }
         }
@@ -79,9 +81,12 @@ public static class HeadlessProfileCatalog
             GameModeId = NormalGameModeId,
             MaximumInstances = 7,
             BuiltIn = true,
-            // La representación y el matchmaking ya están disponibles. El
-            // planificador RTS completo se conectará en la siguiente etapa.
-            RuntimeImplemented = false
+            // El comandante completo de escaramuza se implementará después de
+            // navegación, construcción y economía. No se sustituye por el
+            // controlador de asalto técnico de esta fase.
+            RuntimeImplemented = false,
+            RuntimeControllerId = null,
+            ControllerSettings = null
         };
     }
 }

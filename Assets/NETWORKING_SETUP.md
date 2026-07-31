@@ -384,3 +384,21 @@ Mensajes nuevos:
 
 El snapshot ahora usa bytes UTF-8 de tamaño dinámico y no queda limitado por
 `FixedString4096Bytes`.
+
+## Propiedad runtime y snapshots
+
+Los cambios administrativos de propietario no crean una entidad nueva. La autoridad actualiza `OwnerParticipantId`, `OwnerClientId`, `TeamId` y `ColorId`; el snapshot periódico replica el cambio a todos los clientes. En multijugador, `/spawn`, `/change_owner` y `/change_team` son comandos exclusivos del host.
+
+## Mensajes de navegación de la Fase 10
+
+Las órdenes de terreno nuevas utilizan mensajes pequeños y autoritativos:
+
+```text
+GammaSix.UnitAttackMoveCommand
+GammaSix.UnitPatrolCommand
+```
+
+El servidor las transforma en `MatchCommandType.AttackMove` o
+`MatchCommandType.Patrol`. El cliente no es fuente de verdad del camino; los
+snapshots replican posición y diagnóstico de navegación (`NavigationOrder`,
+`NavigationPathPurpose`, waypoint actual y estado del cálculo).

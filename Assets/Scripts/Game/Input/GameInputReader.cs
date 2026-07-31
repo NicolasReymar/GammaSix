@@ -182,6 +182,54 @@ public static class GameInputReader
         }
     }
 
+    public static bool APressedThisFrame
+    {
+        get
+        {
+#if ENABLE_INPUT_SYSTEM
+            return Keyboard.current != null && Keyboard.current.aKey.wasPressedThisFrame;
+#else
+            return Input.GetKeyDown(KeyCode.A);
+#endif
+        }
+    }
+
+    public static bool SPressedThisFrame
+    {
+        get
+        {
+#if ENABLE_INPUT_SYSTEM
+            return Keyboard.current != null && Keyboard.current.sKey.wasPressedThisFrame;
+#else
+            return Input.GetKeyDown(KeyCode.S);
+#endif
+        }
+    }
+
+    public static bool OPressedThisFrame
+    {
+        get
+        {
+#if ENABLE_INPUT_SYSTEM
+            return Keyboard.current != null && Keyboard.current.oKey.wasPressedThisFrame;
+#else
+            return Input.GetKeyDown(KeyCode.O);
+#endif
+        }
+    }
+
+    public static bool PPressedThisFrame
+    {
+        get
+        {
+#if ENABLE_INPUT_SYSTEM
+            return Keyboard.current != null && Keyboard.current.pKey.wasPressedThisFrame;
+#else
+            return Input.GetKeyDown(KeyCode.P);
+#endif
+        }
+    }
+
     public static bool RPressedThisFrame
     {
         get

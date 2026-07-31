@@ -17,12 +17,17 @@ public sealed class AuthoritativeMatchRuntime
     public MatchEntityCatalog EntityCatalog { get; private set; }
     public MatchParticipantRegistry Participants { get; private set; }
     public MatchTeamRegistry Teams { get; private set; }
+    public DiplomacyRuntimeService Diplomacy { get; private set; }
     public MatchRuntimeState MatchState { get; private set; }
     public RuntimeEventBus EventBus { get; private set; }
     public EntityAreaRuntimeSystem Areas { get; private set; }
     public RuleRuntimeSystem Rules { get; private set; }
     public RuntimeChannelSystem Channels { get; private set; }
+    public WaveRuntimeSystem Waves { get; private set; }
+    public HeadlessControllerRuntimeSystem HeadlessControllers { get; private set; }
     public DamageRuntimeService Damage { get; private set; }
+    public NavigationRuntimeSystem Navigation { get; private set; }
+    public EntityAiRuntimeSystem IndividualAi { get; private set; }
     public CombatRuntimeSystem Combat { get; private set; }
     public MatchWorldBounds WorldBounds { get; private set; }
     public ScenarioDefinition Scenario { get; private set; }
@@ -46,6 +51,7 @@ public sealed class AuthoritativeMatchRuntime
         Scenario = scenario;
         Participants = new MatchParticipantRegistry(participants, scenario);
         Teams = new MatchTeamRegistry(scenario, Participants.All);
+        Diplomacy = new DiplomacyRuntimeService(scenario?.diplomacy, Teams.All);
         MatchState = new MatchRuntimeState();
         EventBus = new RuntimeEventBus();
         WorldBounds = MatchWorldBounds.FromScenario(scenario);
@@ -65,7 +71,7 @@ public sealed class AuthoritativeMatchRuntime
 
         SubscribeRuntimeEvents();
 
-        Areas = new EntityAreaRuntimeSystem(World, EventBus);
+        Areas = new EntityAreaRuntimeSystem(World, EventBus, Diplomacy);
         Channels = new RuntimeChannelSystem(
             World,
             Participants,
@@ -80,11 +86,22 @@ public sealed class AuthoritativeMatchRuntime
             EntityLifecycle,
             MatchState,
             Areas,
-            Channels);
+            Channels,
+            Diplomacy);
+        Waves = new WaveRuntimeSystem(
+            scenario?.waveControllers,
+            Participants,
+            World,
+            EntityLifecycle,
+            EventBus,
+            scenario?.id);
+        Rules.BindWaveSystem(Waves);
         Rules.MessageRaised += OnRuleMessageRaised;
         Damage = new DamageRuntimeService(World, EventBus, Rules);
         Rules.BindDamageService(Damage);
-        Combat = new CombatRuntimeSystem(World, Damage);
+        Navigation = new NavigationRuntimeSystem(World, WorldBounds, scenario?.navigation);
+        Combat = new CombatRuntimeSystem(World, Damage, Diplomacy, Navigation);
+        IndividualAi = new EntityAiRuntimeSystem(World, Diplomacy, Combat, Navigation, scenario?.navigation);
 
         bool loadedFromScenario = ScenarioEntitySpawner.TryPopulate(
             EntityLifecycle,
@@ -97,14 +114,26 @@ public sealed class AuthoritativeMatchRuntime
         MatchState.Start();
         EventBus.Publish(RuntimeEventContext.MatchStarted(ElapsedTime));
         EventBus.Flush();
+        Waves.StartAutomaticControllers(ElapsedTime);
+        Waves.Update(ElapsedTime);
+        EventBus.Flush();
         EntityLifecycle.FlushPending();
         EventBus.Flush();
         EntityStatusRuntimeSystem.Update(World, ElapsedTime);
 
+        HeadlessControllers = new HeadlessControllerRuntimeSystem(
+            scenario,
+            Participants,
+            World,
+            Diplomacy,
+            EnqueueHeadlessCommand);
+
         IsInitialized = true;
         Debug.Log($"[AuthoritativeMatchRuntime] Inicializado con {World.Count} entidades, " +
                   $"{Participants.Count} participantes, {Teams.Count} equipos, " +
-                  $"{EntityCatalog.Count} definiciones y {Rules.RuleCount} reglas.");
+                  $"{EntityCatalog.Count} definiciones, {Rules.RuleCount} reglas, " +
+                  $"{Waves.ControllerCount} controladores de oleadas y " +
+                  $"{HeadlessControllers.ControllerCount} controladores Headless.");
     }
 
     public void Update(float deltaTime)
@@ -115,24 +144,32 @@ public sealed class AuthoritativeMatchRuntime
         float safeDelta = Mathf.Max(0f, deltaTime);
         ElapsedTime += safeDelta;
 
+        // Los controladores Headless solo encolan órdenes. Las órdenes humanas,
+        // Headless y de reglas se validan juntas por el mismo Command Bus.
+        HeadlessControllers?.Update(ElapsedTime);
+
         // Orden estable del tick. Las reglas y áreas nunca modifican directamente
         // EntityWorld: encolan cambios en EntityLifecycleService.
         CommandBus.ProcessPending(HandleCommand);
         EntityLifecycle.FlushPending();
         EventBus.Flush();
 
-        ResourceExtractionService.Update(World, EntityLifecycle, safeDelta);
-        EntityInteractionService.Update(World);
+        Navigation.Update(ElapsedTime);
+        ResourceExtractionService.Update(World, EntityLifecycle, Navigation, safeDelta, ElapsedTime);
+        EntityInteractionService.Update(World, Diplomacy, Navigation, ElapsedTime);
+        IndividualAi.Update(ElapsedTime);
         Combat.Update(safeDelta, ElapsedTime);
         EventBus.Flush();
 
-        EntityMovementService.Update(World, safeDelta);
+        EntityMovementService.Update(World, Navigation, safeDelta, ElapsedTime);
         DeathRuntimeService.Update(World, EntityLifecycle, safeDelta);
         EntityStatusRuntimeSystem.Update(World, ElapsedTime);
 
         Areas.Update(ElapsedTime);
         EventBus.Flush();
         Channels.Update(safeDelta, ElapsedTime);
+        EventBus.Flush();
+        Waves.Update(ElapsedTime);
         EventBus.Flush();
         EntityLifecycle.FlushPending();
         EventBus.Flush();
@@ -244,9 +281,39 @@ public sealed class AuthoritativeMatchRuntime
                     participantId,
                     move,
                     WorldBounds,
+                    Navigation,
+                    ElapsedTime,
                     out string moveRejection)
                     ? MatchCommandResult.Success()
                     : MatchCommandResult.Rejected(moveRejection);
+
+            case MatchCommandType.AttackMove:
+                if (envelope.Payload is not EntityAttackMoveCommand attackMove)
+                    return MatchCommandResult.Rejected("Payload de attack-move inválido.");
+                return EntityMovementService.TryApplyAttackMove(
+                    World,
+                    participantId,
+                    attackMove,
+                    WorldBounds,
+                    Navigation,
+                    ElapsedTime,
+                    out string attackMoveRejection)
+                    ? MatchCommandResult.Success()
+                    : MatchCommandResult.Rejected(attackMoveRejection);
+
+            case MatchCommandType.Patrol:
+                if (envelope.Payload is not EntityPatrolCommand patrol)
+                    return MatchCommandResult.Rejected("Payload de patrulla inválido.");
+                return EntityMovementService.TryApplyPatrol(
+                    World,
+                    participantId,
+                    patrol,
+                    WorldBounds,
+                    Navigation,
+                    ElapsedTime,
+                    out string patrolRejection)
+                    ? MatchCommandResult.Success()
+                    : MatchCommandResult.Rejected(patrolRejection);
 
             case MatchCommandType.ResourceInteraction:
                 if (envelope.Payload is not ResourceInteractionCommand resource)
@@ -255,6 +322,7 @@ public sealed class AuthoritativeMatchRuntime
                     World,
                     participantId,
                     resource,
+                    Navigation,
                     out string resourceRejection)
                     ? MatchCommandResult.Success()
                     : MatchCommandResult.Rejected(resourceRejection);
@@ -264,6 +332,8 @@ public sealed class AuthoritativeMatchRuntime
                     return MatchCommandResult.Rejected("Payload de interacción inválido.");
                 return EntityInteractionService.TryAssignFollow(
                     World,
+                    Diplomacy,
+                    Navigation,
                     participantId,
                     interaction,
                     out string interactionRejection)
@@ -280,6 +350,65 @@ public sealed class AuthoritativeMatchRuntime
                     ? MatchCommandResult.Success()
                     : MatchCommandResult.Rejected(attackRejection);
 
+            case MatchCommandType.Stop:
+                if (envelope.Payload is not EntityStopCommand stop)
+                    return MatchCommandResult.Rejected("Payload de detención inválido.");
+                return EntityUnitOrderRuntimeService.TryStop(
+                    World,
+                    participantId,
+                    stop,
+                    Navigation,
+                    out string stopRejection)
+                    ? MatchCommandResult.Success()
+                    : MatchCommandResult.Rejected(stopRejection);
+
+            case MatchCommandType.SetCombatStance:
+                if (envelope.Payload is not EntityStanceCommand stance)
+                    return MatchCommandResult.Rejected("Payload de postura inválido.");
+                return EntityUnitOrderRuntimeService.TrySetCombatStance(
+                    World,
+                    participantId,
+                    stance,
+                    Navigation,
+                    out string stanceRejection)
+                    ? MatchCommandResult.Success()
+                    : MatchCommandResult.Rejected(stanceRejection);
+
+            case MatchCommandType.SetDiplomacyStance:
+                if (envelope.Payload is not DiplomacyStanceCommand diplomacyCommand)
+                    return MatchCommandResult.Rejected("Payload de diplomacia inválido.");
+                if (!DiplomacyRuntimeService.TryParseStance(
+                        diplomacyCommand.Stance,
+                        out DiplomacyStance diplomacyStance))
+                {
+                    return MatchCommandResult.Rejected(
+                        $"Postura diplomática desconocida: {diplomacyCommand.Stance}.");
+                }
+
+                int sourceTeamId = diplomacyCommand.SourceTeamId;
+                if (envelope.Issuer.Kind != MatchCommandIssuerKind.RuntimeRule)
+                {
+                    if (!Participants.TryGet(participantId, out MatchParticipantRuntimeState diplomacyIssuer))
+                        return MatchCommandResult.Rejected($"No existe el participante {participantId}.");
+                    if (sourceTeamId != diplomacyIssuer.TeamId)
+                    {
+                        return MatchCommandResult.Rejected(
+                            "Un participante solo puede cambiar la postura de su propio equipo.");
+                    }
+                }
+
+                return Diplomacy.TrySetStance(
+                    sourceTeamId,
+                    diplomacyCommand.TargetTeamId,
+                    diplomacyStance,
+                    participantId,
+                    string.IsNullOrWhiteSpace(diplomacyCommand.Reason)
+                        ? "match-command"
+                        : diplomacyCommand.Reason,
+                    out string diplomacyRejection)
+                    ? MatchCommandResult.Success()
+                    : MatchCommandResult.Rejected(diplomacyRejection);
+
             default:
                 return MatchCommandResult.Rejected($"Tipo de comando no soportado: {envelope.CommandType}.");
         }
@@ -295,6 +424,7 @@ public sealed class AuthoritativeMatchRuntime
         Participants.ParticipantVariableChanged += OnParticipantVariableChanged;
         Participants.ParticipantResourceChanged += OnResourceChanged;
         Teams.TeamResourceChanged += OnResourceChanged;
+        Diplomacy.StanceChanged += OnDiplomacyStanceChanged;
         MatchState.ResultDeclared += OnMatchResultDeclared;
     }
 
@@ -409,6 +539,30 @@ public sealed class AuthoritativeMatchRuntime
             ResourceId = resourceEvent?.ResourceId,
             PreviousResourceAmount = resourceEvent?.PreviousAmount ?? 0,
             CurrentResourceAmount = resourceEvent?.CurrentAmount ?? 0
+        });
+    }
+
+
+    private void OnDiplomacyStanceChanged(DiplomacyStanceChangedEvent diplomacyEvent)
+    {
+        if (diplomacyEvent == null)
+            return;
+
+        Combat?.HandleDiplomacyChanged(
+            diplomacyEvent.SourceTeamId,
+            diplomacyEvent.TargetTeamId,
+            diplomacyEvent.CurrentStance);
+
+        EventBus?.Publish(new RuntimeEventContext
+        {
+            Type = RuntimeEventType.DiplomacyStanceChanged,
+            ElapsedTime = ElapsedTime,
+            DiplomacySourceTeamId = diplomacyEvent.SourceTeamId,
+            DiplomacyTargetTeamId = diplomacyEvent.TargetTeamId,
+            PreviousDiplomacyStance = diplomacyEvent.PreviousStance,
+            CurrentDiplomacyStance = diplomacyEvent.CurrentStance,
+            ParticipantId = diplomacyEvent.ChangedByParticipantId,
+            Reason = diplomacyEvent.Reason
         });
     }
 

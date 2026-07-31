@@ -84,6 +84,54 @@ public sealed class EntityLifecycleService
         return true;
     }
 
+    public bool TryTransferOwnership(
+        int entityId,
+        int ownerParticipantId,
+        out string rejectionReason)
+    {
+        rejectionReason = null;
+        if (entityId <= 0 || !world.TryGet(entityId, out EntityRuntimeState entity))
+        {
+            rejectionReason = $"No existe la entidad runtime {entityId}.";
+            return false;
+        }
+
+        MatchParticipantRuntimeState owner = null;
+        if (ownerParticipantId > 0 && !participants.TryGet(ownerParticipantId, out owner))
+        {
+            rejectionReason = $"No existe el participante propietario {ownerParticipantId}.";
+            return false;
+        }
+
+        if (owner == null)
+        {
+            entity.OwnerParticipantId = -1;
+            entity.OwnerClientId = ulong.MaxValue;
+            entity.TeamId = 0;
+            entity.ColorId = PlayerColorPalette.Neutral;
+        }
+        else
+        {
+            entity.OwnerParticipantId = owner.ParticipantId;
+            entity.OwnerClientId = owner.ClientId;
+            entity.TeamId = owner.TeamId;
+            entity.ColorId = owner.ColorId;
+        }
+
+        entity.InteractionTargetUnitId = -1;
+        entity.Navigation?.ClearAll(entity.Position, "ownership-changed");
+        entity.Destination = entity.Position;
+        entity.Attack?.ClearTarget();
+        if (entity.Worker != null)
+        {
+            entity.Worker.TargetResourceUnitId = -1;
+            entity.Worker.ExtractionTimer = 0f;
+            entity.Worker.IsExtracting = false;
+        }
+
+        return true;
+    }
+
     public bool QueueDespawn(
         int entityId,
         EntityLifecycleReason reason,
@@ -267,7 +315,11 @@ public sealed class EntityLifecycleService
         foreach (EntityRuntimeState state in world.Values)
         {
             if (state.InteractionTargetUnitId == entityId)
+            {
                 state.InteractionTargetUnitId = -1;
+                state.Navigation?.ClearAll(state.Position, "target-removed");
+                state.Destination = state.Position;
+            }
             if (state.Worker != null && state.Worker.TargetResourceUnitId == entityId)
             {
                 state.Worker.TargetResourceUnitId = -1;

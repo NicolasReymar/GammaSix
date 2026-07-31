@@ -7,13 +7,37 @@ public static class EntityNetworkMessageNames
     public const string EntitySpawned = "GammaSix.EntitySpawned";
     public const string EntityDespawned = "GammaSix.EntityDespawned";
     public const string MoveCommand = "GammaSix.UnitMoveCommand";
+    public const string AttackMoveCommand = "GammaSix.UnitAttackMoveCommand";
+    public const string PatrolCommand = "GammaSix.UnitPatrolCommand";
     public const string ResourceInteractionCommand = "GammaSix.ResourceInteractionCommand";
     public const string EntityInteractionCommand = "GammaSix.EntityInteractionCommand";
     public const string AttackCommand = "GammaSix.EntityAttackCommand";
+    public const string StopCommand = "GammaSix.EntityStopCommand";
+    public const string StanceCommand = "GammaSix.EntityStanceCommand";
+    public const string DiplomacyCommand = "GammaSix.DiplomacyStanceCommand";
 }
 
 [Serializable]
 public sealed class EntityMoveCommand
+{
+    public int UnitId;
+    public float X;
+    public float Y;
+    public float Z;
+}
+
+
+[Serializable]
+public sealed class EntityAttackMoveCommand
+{
+    public int UnitId;
+    public float X;
+    public float Y;
+    public float Z;
+}
+
+[Serializable]
+public sealed class EntityPatrolCommand
 {
     public int UnitId;
     public float X;
@@ -40,12 +64,38 @@ public sealed class EntityAttackCommand
 {
     public int SourceUnitId;
     public int TargetUnitId;
+    public bool ForceTarget;
+    public bool PreserveNavigationOrder;
+}
+
+[Serializable]
+public sealed class EntityStopCommand
+{
+    public int UnitId;
+}
+
+[Serializable]
+public sealed class EntityStanceCommand
+{
+    public int UnitId;
+    public string Stance;
+}
+
+[Serializable]
+public sealed class DiplomacyStanceCommand
+{
+    public int SourceTeamId;
+    public int TargetTeamId;
+    public string Stance;
+    public string Reason;
 }
 
 [Serializable]
 public sealed class EntitySnapshotPayload
 {
     public List<EntitySnapshotData> Units = new();
+    public List<int> DiplomacyTeamIds = new();
+    public List<DiplomacyStanceSnapshotData> Diplomacy = new();
 }
 
 [Serializable]
@@ -90,6 +140,13 @@ public sealed class EntitySnapshotData
     public string AttackDamageType;
     public int AttackTargetEntityId;
     public string AttackPhase;
+    public bool AttackForceTarget;
+    public string CombatStance;
+    public string NavigationOrder;
+    public string NavigationPathPurpose;
+    public int NavigationWaypointIndex;
+    public int NavigationWaypointCount;
+    public string NavigationStatus;
 }
 
 [Serializable]

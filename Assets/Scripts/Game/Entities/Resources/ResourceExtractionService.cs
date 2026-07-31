@@ -14,6 +14,7 @@ public static class ResourceExtractionService
         EntityWorld world,
         int issuerParticipantId,
         ResourceInteractionCommand command,
+        NavigationRuntimeSystem navigation,
         out string rejectionReason)
     {
         rejectionReason = null;
@@ -58,21 +59,21 @@ public static class ResourceExtractionService
         if (!CanExtract(worker.Worker, resource.Resource, out rejectionReason))
             return false;
 
+        navigation?.ClearOrders(worker, "resource-interaction");
         worker.InteractionTargetUnitId = -1;
         worker.Attack?.ClearTargetPreservingRecovery();
         worker.Worker.TargetResourceUnitId = resource.UnitId;
         worker.Worker.ExtractionTimer = 0f;
         worker.Worker.IsExtracting = false;
-        worker.Destination = resource.Position;
         return true;
     }
 
-    public static void Update(EntityWorld world, float deltaTime)
-    {
-        Update(world, null, deltaTime);
-    }
-
-    public static void Update(EntityWorld world, EntityLifecycleService lifecycle, float deltaTime)
+    public static void Update(
+        EntityWorld world,
+        EntityLifecycleService lifecycle,
+        NavigationRuntimeSystem navigation,
+        float deltaTime,
+        float elapsedTime)
     {
         if (world == null)
             return;
@@ -86,7 +87,7 @@ public static class ResourceExtractionService
             {
                 if (workerState != null)
                     ClearJob(workerState);
-                worker.Destination = worker.Position;
+                navigation?.HoldPosition(worker, false, "worker-cannot-act");
                 continue;
             }
 
@@ -97,7 +98,7 @@ public static class ResourceExtractionService
                 resource.Resource == null)
             {
                 ClearJob(workerState);
-                worker.Destination = worker.Position;
+                navigation?.HoldPosition(worker, false, "resource-missing");
                 continue;
             }
 
@@ -105,7 +106,7 @@ public static class ResourceExtractionService
                 !CanExtract(workerState, resource.Resource, out _))
             {
                 ClearJob(workerState);
-                worker.Destination = worker.Position;
+                navigation?.HoldPosition(worker, false, "resource-invalid");
                 continue;
             }
 
@@ -115,11 +116,11 @@ public static class ResourceExtractionService
             {
                 workerState.IsExtracting = false;
                 workerState.ExtractionTimer = 0f;
-                worker.Destination = resource.Position;
+                navigation?.SetResourceDestination(worker, resource.Position, elapsedTime);
                 continue;
             }
 
-            worker.Destination = worker.Position;
+            navigation?.HoldPosition(worker, false, "resource-range");
             workerState.IsExtracting = true;
             workerState.ExtractionTimer += deltaTime;
             if (workerState.ExtractionTimer < workerState.ExtractionTime)

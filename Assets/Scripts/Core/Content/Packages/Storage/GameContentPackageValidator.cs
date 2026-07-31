@@ -270,6 +270,11 @@ public static class GameContentPackageValidator
             }
         }
 
+        ValidateNavigation(scenario, errors);
+        ValidateDiplomacy(scenario, errors);
+        ValidateWaveControllers(scenario, packageId, localEntities, errors);
+        ValidateHeadlessProfiles(scenario, errors);
+
         if (scenario.rules != null)
         {
             foreach (ScenarioRuleDefinition rule in scenario.rules)
@@ -307,6 +312,35 @@ public static class GameContentPackageValidator
                             errors.Add($"La regla '{rule.id}' declara start-channel sin channelId.");
                         if (action.duration <= 0f)
                             errors.Add($"La regla '{rule.id}' declara start-channel con duración no válida.");
+                    }
+
+                    string normalizedAction = action.type?.Trim().Replace('_', '-').ToLowerInvariant();
+                    if (normalizedAction == "set-diplomacy-stance")
+                    {
+                        string stanceValue = !string.IsNullOrWhiteSpace(action.diplomacyStance)
+                            ? action.diplomacyStance
+                            : action.value;
+                        if (action.sourceTeamId > 0 &&
+                            action.targetTeamId > 0 &&
+                            action.sourceTeamId == action.targetTeamId)
+                        {
+                            errors.Add($"La regla '{rule.id}' intenta configurar diplomacia de un equipo consigo mismo.");
+                        }
+                        if (!DiplomacyRuntimeService.TryParseStance(stanceValue, out _))
+                            errors.Add($"La regla '{rule.id}' usa postura diplomática desconocida '{stanceValue}'.");
+                    }
+
+                    if (normalizedAction == "start-wave-controller" ||
+                        normalizedAction == "pause-wave-controller" ||
+                        normalizedAction == "resume-wave-controller" ||
+                        normalizedAction == "stop-wave-controller" ||
+                        normalizedAction == "advance-wave-controller")
+                    {
+                        if (string.IsNullOrWhiteSpace(action.waveControllerId) &&
+                            string.IsNullOrWhiteSpace(action.value))
+                        {
+                            errors.Add($"La regla '{rule.id}' declara '{action.type}' sin waveControllerId.");
+                        }
                     }
 
                     if (!string.Equals(action.type, "spawn-entity", StringComparison.OrdinalIgnoreCase))
@@ -366,6 +400,213 @@ public static class GameContentPackageValidator
         }
     }
 
+
+    private static void ValidateNavigation(
+        ScenarioDefinition scenario,
+        List<string> errors)
+    {
+        ScenarioNavigationDefinition navigation = scenario?.navigation;
+        if (navigation == null)
+            return;
+
+        if (navigation.cellSize <= 0f)
+            errors.Add($"El escenario '{scenario.id}' debe declarar navigation.cellSize mayor que cero.");
+        if (navigation.obstacleRefreshInterval <= 0f)
+            errors.Add($"El escenario '{scenario.id}' debe declarar navigation.obstacleRefreshInterval mayor que cero.");
+        if (navigation.repathInterval <= 0f)
+            errors.Add($"El escenario '{scenario.id}' debe declarar navigation.repathInterval mayor que cero.");
+        if (navigation.arrivalTolerance <= 0f)
+            errors.Add($"El escenario '{scenario.id}' debe declarar navigation.arrivalTolerance mayor que cero.");
+        if (navigation.attackMoveAcquisitionRange <= 0f)
+            errors.Add($"El escenario '{scenario.id}' debe declarar navigation.attackMoveAcquisitionRange mayor que cero.");
+        if (navigation.individualAiInterval <= 0f)
+            errors.Add($"El escenario '{scenario.id}' debe declarar navigation.individualAiInterval mayor que cero.");
+    }
+
+
+    private static void ValidateHeadlessProfiles(
+        ScenarioDefinition scenario,
+        List<string> errors)
+    {
+        if (scenario?.headlessProfiles == null)
+            return;
+
+        HashSet<string> profileIds = new(StringComparer.OrdinalIgnoreCase);
+        foreach (ScenarioHeadlessProfileDefinition profile in scenario.headlessProfiles)
+        {
+            if (profile == null)
+                continue;
+            if (string.IsNullOrWhiteSpace(profile.id))
+            {
+                errors.Add($"El escenario '{scenario.id}' contiene un perfil Headless sin id.");
+                continue;
+            }
+            if (!profileIds.Add(profile.id.Trim()))
+                errors.Add($"Perfil Headless duplicado en '{scenario.id}': {profile.id}.");
+            if (profile.maximumInstances <= 0)
+                errors.Add($"El perfil Headless '{profile.id}' declara maximumInstances no válido.");
+
+            if (!profile.runtimeImplemented)
+                continue;
+            if (string.IsNullOrWhiteSpace(profile.runtimeControllerId))
+            {
+                errors.Add($"El perfil Headless '{profile.id}' está implementado pero no declara runtimeControllerId.");
+                continue;
+            }
+            if (!HeadlessControllerRegistry.IsRegistered(profile.runtimeControllerId))
+                errors.Add($"El perfil Headless '{profile.id}' referencia el controlador no registrado '{profile.runtimeControllerId}'.");
+
+            ScenarioHeadlessControllerSettings settings = profile.controllerSettings;
+            if (settings == null)
+                continue;
+            if (settings.updateInterval < 0f)
+                errors.Add($"El perfil Headless '{profile.id}' declara updateInterval negativo.");
+            if (settings.maxOrdersPerUpdate < 0)
+                errors.Add($"El perfil Headless '{profile.id}' declara maxOrdersPerUpdate negativo.");
+            if (!string.IsNullOrWhiteSpace(settings.targetPolicy) &&
+                !string.Equals(settings.targetPolicy, "nearest-hostile", StringComparison.OrdinalIgnoreCase))
+            {
+                errors.Add($"El perfil Headless '{profile.id}' usa targetPolicy desconocida '{settings.targetPolicy}'.");
+            }
+        }
+    }
+
+    private static void ValidateDiplomacy(
+        ScenarioDefinition scenario,
+        List<string> errors)
+    {
+        if (scenario?.diplomacy == null)
+            return;
+
+        HashSet<long> directedPairs = new();
+        foreach (ScenarioDiplomacyDefinition definition in scenario.diplomacy)
+        {
+            if (definition == null)
+                continue;
+            if (definition.sourceTeamId <= 0 || definition.targetTeamId <= 0)
+            {
+                errors.Add($"El escenario '{scenario.id}' declara diplomacia con equipos no válidos.");
+                continue;
+            }
+            if (definition.sourceTeamId == definition.targetTeamId)
+                errors.Add($"El escenario '{scenario.id}' intenta configurar diplomacia del equipo {definition.sourceTeamId} consigo mismo.");
+            if (scenario.maxTeams > 0 &&
+                (definition.sourceTeamId > scenario.maxTeams || definition.targetTeamId > scenario.maxTeams))
+            {
+                errors.Add($"El escenario '{scenario.id}' declara diplomacia fuera de maxTeams ({scenario.maxTeams}).");
+            }
+            if (!DiplomacyRuntimeService.TryParseStance(definition.stance, out _))
+                errors.Add($"El escenario '{scenario.id}' usa postura diplomática desconocida '{definition.stance}'.");
+
+            long key = ((long)definition.sourceTeamId << 32) ^ (uint)definition.targetTeamId;
+            if (!directedPairs.Add(key))
+                errors.Add($"El escenario '{scenario.id}' repite la relación {definition.sourceTeamId} → {definition.targetTeamId}.");
+        }
+    }
+
+    private static void ValidateWaveControllers(
+        ScenarioDefinition scenario,
+        string packageId,
+        HashSet<string> localEntities,
+        List<string> errors)
+    {
+        if (scenario?.waveControllers == null)
+            return;
+
+        HashSet<string> controllerIds = new(StringComparer.OrdinalIgnoreCase);
+        foreach (ScenarioWaveControllerDefinition controller in scenario.waveControllers)
+        {
+            if (controller == null || !controller.enabled)
+                continue;
+            if (string.IsNullOrWhiteSpace(controller.id))
+            {
+                errors.Add($"El escenario '{scenario.id}' contiene un controlador de oleadas sin id.");
+                continue;
+            }
+            if (!controllerIds.Add(controller.id.Trim()))
+                errors.Add($"Controlador de oleadas duplicado en '{scenario.id}': {controller.id}.");
+            if (controller.initialDelay < 0f || controller.defaultInterWaveDelay < 0f)
+                errors.Add($"El controlador '{controller.id}' declara retrasos negativos.");
+
+            string repeatMode = string.IsNullOrWhiteSpace(controller.repeatMode)
+                ? ScenarioWaveRepeatModes.None
+                : controller.repeatMode.Trim();
+            if (!string.Equals(repeatMode, ScenarioWaveRepeatModes.None, StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(repeatMode, ScenarioWaveRepeatModes.Loop, StringComparison.OrdinalIgnoreCase))
+            {
+                errors.Add($"El controlador '{controller.id}' usa repeatMode desconocido '{controller.repeatMode}'.");
+            }
+
+            if (controller.waves == null || controller.waves.Length == 0)
+            {
+                errors.Add($"El controlador '{controller.id}' no contiene oleadas.");
+                continue;
+            }
+
+            HashSet<string> waveIds = new(StringComparer.OrdinalIgnoreCase);
+            for (int waveIndex = 0; waveIndex < controller.waves.Length; waveIndex++)
+            {
+                ScenarioWaveDefinition wave = controller.waves[waveIndex];
+                if (wave == null)
+                {
+                    errors.Add($"El controlador '{controller.id}' contiene una oleada nula en índice {waveIndex}.");
+                    continue;
+                }
+                if (!string.IsNullOrWhiteSpace(wave.id) && !waveIds.Add(wave.id.Trim()))
+                    errors.Add($"El controlador '{controller.id}' contiene wave id duplicado '{wave.id}'.");
+                if (wave.preparationTime < 0f || wave.delayAfterCompletion < -1f)
+                    errors.Add($"La oleada '{wave.id ?? waveIndex.ToString()}' declara tiempos negativos.");
+
+                string completion = string.IsNullOrWhiteSpace(wave.completionCondition)
+                    ? ScenarioWaveCompletionConditions.AllSpawnedResolved
+                    : wave.completionCondition.Trim();
+                bool supportedCompletion =
+                    string.Equals(completion, ScenarioWaveCompletionConditions.SpawnComplete, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(completion, "all-groups-spawned", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(completion, ScenarioWaveCompletionConditions.AllSpawnedResolved, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(completion, "all-spawned-defeated", StringComparison.OrdinalIgnoreCase);
+                if (!supportedCompletion)
+                    errors.Add($"La oleada '{wave.id}' usa completionCondition desconocida '{wave.completionCondition}'.");
+
+                if (wave.groups == null || wave.groups.Length == 0)
+                {
+                    errors.Add($"La oleada '{wave.id ?? waveIndex.ToString()}' no contiene grupos.");
+                    continue;
+                }
+
+                HashSet<string> groupIds = new(StringComparer.OrdinalIgnoreCase);
+                for (int groupIndex = 0; groupIndex < wave.groups.Length; groupIndex++)
+                {
+                    ScenarioWaveGroupDefinition group = wave.groups[groupIndex];
+                    if (group == null)
+                    {
+                        errors.Add($"La oleada '{wave.id}' contiene un grupo nulo en índice {groupIndex}.");
+                        continue;
+                    }
+                    if (!string.IsNullOrWhiteSpace(group.id) && !groupIds.Add(group.id.Trim()))
+                        errors.Add($"La oleada '{wave.id}' contiene group id duplicado '{group.id}'.");
+                    if (string.IsNullOrWhiteSpace(group.entityId))
+                    {
+                        errors.Add($"El grupo '{group.id}' del controlador '{controller.id}' no declara entityId.");
+                    }
+                    else
+                    {
+                        ValidateEntityReference(
+                            scenario.id,
+                            group.entityId,
+                            packageId,
+                            localEntities,
+                            errors,
+                            $"oleada '{wave.id}', grupo '{group.id}'");
+                    }
+                    if (group.count <= 0)
+                        errors.Add($"El grupo '{group.id}' debe declarar count mayor que cero.");
+                    if (group.startDelay < 0f || group.spawnInterval < 0f || group.positionJitterRadius < 0f)
+                        errors.Add($"El grupo '{group.id}' declara tiempos o radio negativos.");
+                }
+            }
+        }
+    }
 
     private static void ValidateEntityCombatDefinitions(string folder, List<string> errors)
     {

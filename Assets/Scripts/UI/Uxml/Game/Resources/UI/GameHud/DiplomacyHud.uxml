@@ -1,0 +1,21 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="GameHudShared.uss" />
+    <Style src="DiplomacyHud.uss" />
+    <ui:VisualElement name="diplomacy-overlay" class="diplomacy-overlay" picking-mode="Ignore">
+        <ui:VisualElement name="diplomacy-panel" class="diplomacy-panel" picking-mode="Position">
+            <ui:VisualElement class="diplomacy-header">
+                <ui:VisualElement>
+                    <ui:Label text="DIPLOMACIA" class="diplomacy-title" />
+                    <ui:Label name="diplomacy-local-team" text="Tu equipo" class="diplomacy-local-team" />
+                </ui:VisualElement>
+                <ui:Button name="diplomacy-close" text="×" class="diplomacy-close" />
+            </ui:VisualElement>
+            <ui:Label text="Las posturas son direccionales: tu decisión no cambia automáticamente lo que el otro equipo piensa de ti." class="diplomacy-description" />
+            <ui:ScrollView name="diplomacy-team-list" class="diplomacy-team-list" horizontal-scroller-visibility="Hidden" />
+            <ui:VisualElement class="diplomacy-footer">
+                <ui:Label name="diplomacy-status" text="O cierra esta ventana" class="diplomacy-status" />
+                <ui:Label text="El envío de recursos se incorporará en una fase posterior." class="diplomacy-future" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

@@ -39,7 +39,8 @@ public static class EntityRuntimeFactory
             MoveSpeed = definition.moveSpeed,
             Solid = EntityPhysicsRules.IsSolid(definition, attributes),
             BoundsSize = definition.GetCollisionSize(new Vector3(0.8f, 1f, 0.8f)),
-            Status = new EntityStatusRuntimeState()
+            Status = new EntityStatusRuntimeState(),
+            Navigation = new EntityNavigationRuntimeState()
         };
 
         ApplySpecializedState(state, definition);
@@ -63,6 +64,7 @@ public static class EntityRuntimeFactory
         state.Destination = state.Position;
         state.InteractionTargetUnitId = -1;
         state.Status = new EntityStatusRuntimeState();
+        state.Navigation = new EntityNavigationRuntimeState();
         ApplySpecializedState(state, definition);
     }
 

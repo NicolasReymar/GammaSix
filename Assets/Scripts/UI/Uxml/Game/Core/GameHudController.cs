@@ -27,7 +27,10 @@ public class GameHudController : MonoBehaviour
         CreateModule<GameGoldHudController>("HUD - Oro");
         CreateModule<SelectedEntityHudController>("HUD - Entidad seleccionada");
         CreateModule<SelectedEntitiesExtendedHudController>("HUD - Selección extendida");
+        CreateModule<UnitOrdersHudController>("HUD - Órdenes de unidad");
+        CreateModule<DiplomacyHudController>("HUD - Diplomacia");
         CreateModule<GameTextInputHudController>("HUD - Chat y comandos");
+        CreateModule<NavigationPathDebugVisualizer>("Debug - Rutas de navegación");
         CreateModule<GamePauseMenuController>("HUD - Menú de partida");
     }
 

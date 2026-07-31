@@ -16,10 +16,21 @@ public enum RuntimeEventType
     ChannelStarted,
     ChannelCompleted,
     ChannelCancelled,
+    WaveControllerStarted,
+    WavePreparationStarted,
+    WaveStarted,
+    WaveGroupStarted,
+    WaveGroupCompleted,
+    WaveCompleted,
+    WaveControllerPaused,
+    WaveControllerResumed,
+    WaveControllerStopped,
+    WaveControllerCompleted,
     ParticipantStateChanged,
     ParticipantControlChanged,
     ParticipantAttributeChanged,
     ParticipantVariableChanged,
+    DiplomacyStanceChanged,
     ResourceChanged,
     MatchResultDeclared
 }
@@ -106,6 +117,13 @@ public sealed class RuntimeEventContext
     public float ChannelDuration;
     public float ChannelProgress;
 
+    public string WaveControllerId;
+    public string WaveId;
+    public int WaveIndex = -1;
+    public int WaveCycle;
+    public string WaveGroupId;
+    public string WaveControllerStatus;
+
     public int ParticipantId = -1;
     public MatchParticipantRuntimeState Participant;
     public ParticipantLifeState PreviousParticipantState;
@@ -117,6 +135,11 @@ public sealed class RuntimeEventContext
     public string VariableName;
     public string PreviousVariableValue;
     public string CurrentVariableValue;
+
+    public int DiplomacySourceTeamId;
+    public int DiplomacyTargetTeamId;
+    public DiplomacyStance PreviousDiplomacyStance;
+    public DiplomacyStance CurrentDiplomacyStance;
 
     public string ResourceScope;
     public int ResourceOwnerId = -1;

@@ -11,13 +11,18 @@ public sealed class EntityAreaRuntimeSystem
 {
     private readonly EntityWorld world;
     private readonly RuntimeEventBus eventBus;
+    private readonly DiplomacyRuntimeService diplomacy;
     private readonly Dictionary<int, HashSet<int>> occupantsByArea = new();
     private readonly Dictionary<long, float> nextStayByPair = new();
 
-    public EntityAreaRuntimeSystem(EntityWorld world, RuntimeEventBus eventBus)
+    public EntityAreaRuntimeSystem(
+        EntityWorld world,
+        RuntimeEventBus eventBus,
+        DiplomacyRuntimeService diplomacy)
     {
         this.world = world ?? throw new ArgumentNullException(nameof(world));
         this.eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
+        this.diplomacy = diplomacy ?? throw new ArgumentNullException(nameof(diplomacy));
     }
 
     public void Update(float elapsedTime)
@@ -113,7 +118,7 @@ public sealed class EntityAreaRuntimeSystem
         });
     }
 
-    private static bool MatchesFilter(
+    private bool MatchesFilter(
         EntityRuntimeState areaEntity,
         EntityAreaRuntimeState area,
         EntityRuntimeState candidate)
@@ -154,9 +159,9 @@ public sealed class EntityAreaRuntimeSystem
         if (relationship == EntityAreaRelationships.Neutral)
             return candidate.TeamId == 0;
         if (relationship == EntityAreaRelationships.Ally)
-            return areaEntity.TeamId > 0 && candidate.TeamId == areaEntity.TeamId;
+            return diplomacy.GetStance(areaEntity.TeamId, candidate.TeamId) == DiplomacyStance.Ally;
         if (relationship == EntityAreaRelationships.Enemy)
-            return areaEntity.TeamId > 0 && candidate.TeamId > 0 && candidate.TeamId != areaEntity.TeamId;
+            return diplomacy.GetStance(areaEntity.TeamId, candidate.TeamId) == DiplomacyStance.Enemy;
         return true;
     }
 

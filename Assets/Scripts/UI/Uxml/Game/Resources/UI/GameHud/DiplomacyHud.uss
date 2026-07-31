@@ -1,0 +1,202 @@
+.diplomacy-overlay {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.48);
+}
+
+.diplomacy-panel {
+    width: 760px;
+    max-width: 92%;
+    height: 680px;
+    max-height: 88%;
+    padding-left: 22px;
+    padding-right: 22px;
+    padding-top: 18px;
+    padding-bottom: 16px;
+    background-color: rgb(20, 25, 33);
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-color: rgb(116, 132, 153);
+    border-right-color: rgb(116, 132, 153);
+    border-top-color: rgb(116, 132, 153);
+    border-bottom-color: rgb(116, 132, 153);
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+.diplomacy-header {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.diplomacy-title {
+    color: rgb(239, 243, 249);
+    font-size: 24px;
+    -unity-font-style: bold;
+}
+
+.diplomacy-local-team {
+    color: rgb(158, 174, 194);
+    margin-top: 3px;
+}
+
+.diplomacy-close {
+    width: 42px;
+    height: 36px;
+    font-size: 24px;
+    color: rgb(230, 234, 241);
+    background-color: rgb(49, 57, 70);
+    border-left-width: 0;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+}
+
+.diplomacy-description {
+    color: rgb(185, 195, 208);
+    white-space: normal;
+    margin-bottom: 12px;
+}
+
+.diplomacy-team-list {
+    flex-grow: 1;
+    margin-top: 4px;
+    margin-bottom: 10px;
+}
+
+.diplomacy-team-row {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 112px;
+    margin-bottom: 10px;
+    padding-left: 14px;
+    padding-right: 14px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    background-color: rgb(29, 36, 47);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgb(66, 78, 95);
+    border-right-color: rgb(66, 78, 95);
+    border-top-color: rgb(66, 78, 95);
+    border-bottom-color: rgb(66, 78, 95);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+.diplomacy-team-identity {
+    flex-grow: 1;
+    margin-right: 18px;
+}
+
+.diplomacy-team-title {
+    color: rgb(240, 244, 250);
+    font-size: 18px;
+    -unity-font-style: bold;
+}
+
+.diplomacy-team-participants {
+    color: rgb(165, 178, 195);
+    white-space: normal;
+    margin-top: 4px;
+    margin-bottom: 7px;
+}
+
+.diplomacy-incoming {
+    font-size: 13px;
+    -unity-font-style: bold;
+}
+
+.diplomacy-stance-ally { color: rgb(91, 211, 125); }
+.diplomacy-stance-neutral { color: rgb(230, 195, 75); }
+.diplomacy-stance-enemy { color: rgb(238, 91, 83); }
+
+.diplomacy-team-controls {
+    width: 310px;
+    align-items: flex-end;
+}
+
+.diplomacy-outgoing-label {
+    color: rgb(205, 213, 224);
+    margin-bottom: 6px;
+}
+
+.diplomacy-stance-buttons {
+    flex-direction: row;
+}
+
+.diplomacy-stance-button {
+    min-width: 92px;
+    height: 38px;
+    margin-left: 5px;
+    color: rgb(221, 227, 235);
+    background-color: rgb(47, 57, 72);
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-color: rgb(78, 91, 109);
+    border-right-color: rgb(78, 91, 109);
+    border-top-color: rgb(78, 91, 109);
+    border-bottom-color: rgb(78, 91, 109);
+}
+
+.diplomacy-stance-button--selected {
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
+    border-left-color: rgb(235, 239, 245);
+    border-right-color: rgb(235, 239, 245);
+    border-top-color: rgb(235, 239, 245);
+    border-bottom-color: rgb(235, 239, 245);
+    -unity-font-style: bold;
+}
+
+.diplomacy-stance-button--ally.diplomacy-stance-button--selected { background-color: rgb(40, 105, 61); }
+.diplomacy-stance-button--neutral.diplomacy-stance-button--selected { background-color: rgb(104, 87, 35); }
+.diplomacy-stance-button--enemy.diplomacy-stance-button--selected { background-color: rgb(112, 45, 43); }
+
+.diplomacy-footer {
+    border-top-width: 1px;
+    border-top-color: rgb(58, 69, 84);
+    padding-top: 10px;
+}
+
+.diplomacy-status {
+    color: rgb(191, 207, 225);
+    white-space: normal;
+}
+
+.diplomacy-status--error {
+    color: rgb(244, 115, 105);
+}
+
+.diplomacy-future {
+    color: rgb(124, 138, 156);
+    font-size: 12px;
+    margin-top: 3px;
+}
+
+.diplomacy-empty {
+    color: rgb(164, 177, 194);
+    padding-top: 20px;
+    padding-bottom: 20px;
+    -unity-text-align: middle-center;
+}

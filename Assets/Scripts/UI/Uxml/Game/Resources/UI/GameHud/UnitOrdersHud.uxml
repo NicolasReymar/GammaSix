@@ -1,0 +1,18 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="UnitOrdersHud.uss" />
+    <ui:VisualElement name="unit-orders-root" class="unit-orders-root" picking-mode="Ignore">
+        <ui:VisualElement name="unit-orders-panel" class="unit-orders-panel" picking-mode="Position">
+            <ui:VisualElement name="unit-orders-drag-handle" class="unit-orders-header" picking-mode="Position">
+                <ui:Label text="ÓRDENES" class="unit-orders-title" />
+                <ui:Label name="unit-orders-selection" text="Sin unidades propias seleccionadas" class="unit-orders-selection" />
+            </ui:VisualElement>
+            <ui:VisualElement class="unit-orders-grid">
+                <ui:Button name="unit-orders-attack" text="Atacar [A]" class="unit-order-button" />
+                <ui:Button name="unit-orders-stop" text="Detener [S]" class="unit-order-button" />
+                <ui:Button name="unit-orders-stance" text="Pasivo [P]" class="unit-order-button" />
+                <ui:Button name="unit-orders-patrol" text="Patrulla [R]" class="unit-order-button" />
+            </ui:VisualElement>
+            <ui:Label name="unit-orders-status" text="A ataca/avanza · R patrulla · S detiene · P postura" class="unit-orders-status" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

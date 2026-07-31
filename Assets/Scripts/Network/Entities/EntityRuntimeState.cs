@@ -29,6 +29,7 @@ public sealed class EntityRuntimeState
     public EntityAttackRuntimeState Attack;
     public EntityLifeRuntimeState Life;
     public EntityStatusRuntimeState Status;
+    public EntityNavigationRuntimeState Navigation;
     public int InteractionTargetUnitId = -1;
     public float InteractionRange = 0.65f;
 }

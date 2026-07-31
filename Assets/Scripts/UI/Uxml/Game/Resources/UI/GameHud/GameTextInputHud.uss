@@ -161,6 +161,16 @@
     border-bottom-right-radius: 5px;
 }
 
+/* El TextField de UI Toolkit dibuja el texto en un elemento interno.
+ * Estilizar solo .game-text-input deja activo el fondo blanco del tema. */
+.game-text-input .unity-base-text-field__input,
+.game-text-input .unity-text-input {
+    color: rgb(240, 248, 244);
+    background-color: rgba(15, 37, 29, 0.96);
+    --unity-cursor-color: rgb(255, 216, 74);
+    --unity-selection-color: rgba(78, 145, 116, 0.72);
+}
+
 .game-text-send-button {
     width: 94px;
     height: 34px;

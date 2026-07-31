@@ -1,8 +1,8 @@
 using UnityEngine;
 
 /// <summary>
-/// Centraliza la representación visual de la relación entre el participante local
-/// y una entidad objetivo. Se usa tanto para selección como para confirmar órdenes.
+/// Representación visual de la relación direccional del equipo local hacia la
+/// entidad objetivo. La copia de diplomacia proviene de snapshots autoritativos.
 /// </summary>
 public static class EntityRelationshipVisuals
 {
@@ -20,16 +20,13 @@ public static class EntityRelationshipVisuals
         int localTeamId = NetworkSessionManager.Instance?.GetLocalPlayer()?.TeamId ??
                           ResolveOfflineTeam(localParticipantId);
 
-        if (target.TeamId == 0)
-            return EntityRelation.Neutral;
-
         if (target.OwnerParticipantId == localParticipantId)
             return EntityRelation.Owned;
+        if (target.TeamId <= 0 || localTeamId <= 0)
+            return EntityRelation.Neutral;
 
-        if (localTeamId > 0 && target.TeamId == localTeamId)
-            return EntityRelation.Allied;
-
-        return EntityRelation.Enemy;
+        return EntityInteractionRules.ToEntityRelation(
+            DiplomacyClientState.GetStance(localTeamId, target.TeamId));
     }
 
     public static Color GetColor(NetworkEntityView target)

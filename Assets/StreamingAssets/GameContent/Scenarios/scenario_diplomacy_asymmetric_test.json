@@ -1,0 +1,218 @@
+{
+  "contentType": "scenario",
+  "id": "scenario_diplomacy_asymmetric_test",
+  "name": "Diplomacia asimétrica - Prueba",
+  "description": "Escenario técnico de la Fase 9.5. Muestra relaciones direccionales distintas entre tres equipos y permite modificarlas desde O o mediante /diplomacy_stance.",
+  "maxTeams": 3,
+  "maxPlayers": 1,
+  "fixedTeams": true,
+  "gameModeId": "base:game-mode.normal",
+  "participantConfiguration": {
+    "maximumHumanPlayers": 1,
+    "maximumParticipants": 3,
+    "availableHeadlessProfiles": [
+      "phase9.simple-assault"
+    ],
+    "requiredParticipants": [
+      {
+        "slotId": "diplomacy.team2",
+        "slotIndex": 1,
+        "displayName": "Facción Roja",
+        "controllerProfileId": "phase9.simple-assault",
+        "teamId": 2,
+        "colorId": 0,
+        "participantLocked": true,
+        "teamLocked": true,
+        "colorLocked": true
+      },
+      {
+        "slotId": "diplomacy.team3",
+        "slotIndex": 2,
+        "displayName": "Facción Verde",
+        "controllerProfileId": "phase9.simple-assault",
+        "teamId": 3,
+        "colorId": 3,
+        "participantLocked": true,
+        "teamLocked": true,
+        "colorLocked": true
+      }
+    ]
+  },
+  "headlessProfiles": [
+    {
+      "id": "phase9.simple-assault",
+      "displayName": "Asalto simple",
+      "description": "Controlador técnico que asigna el objetivo hostil más cercano a sus unidades agresivas.",
+      "sourceId": "base",
+      "sourceLabel": "Prueba Fase 9",
+      "gameModeId": "base:game-mode.normal",
+      "maximumInstances": 2,
+      "runtimeImplemented": true,
+      "runtimeControllerId": "base:headless-controller.simple-assault",
+      "controllerSettings": {
+        "updateInterval": 0.35,
+        "maxOrdersPerUpdate": 4,
+        "targetPolicy": "nearest-hostile",
+        "includeNeutralTargets": false,
+        "controlledRequiredAttributes": [
+          "diplomacy-test.ai-controlled"
+        ],
+        "controlledExcludedAttributes": [
+          "entity.area"
+        ],
+        "targetRequiredAttributes": [],
+        "targetExcludedAttributes": [
+          "entity.area"
+        ]
+      }
+    }
+  ],
+  "worldSize": {
+    "width": 44,
+    "height": 32
+  },
+  "terrain": {
+    "defaultTerrainId": "praderas_primavera",
+    "tiles": []
+  },
+  "entityCatalog": {
+    "includeGameModeDefaults": true,
+    "spawnableEntityIds": []
+  },
+  "spawnPoints": [
+    {
+      "teamId": 1,
+      "position": {
+        "x": -12,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "teamId": 2,
+      "position": {
+        "x": 10,
+        "y": 0,
+        "z": 6
+      }
+    },
+    {
+      "teamId": 3,
+      "position": {
+        "x": 10,
+        "y": 0,
+        "z": -6
+      }
+    }
+  ],
+  "entities": [
+    {
+      "id": "diplomacy_player",
+      "entityId": "unit.humanoid.default",
+      "teamId": 1,
+      "ownerTeamSlot": 1,
+      "position": {
+        "x": -10,
+        "y": 0.5,
+        "z": 0
+      }
+    },
+    {
+      "id": "diplomacy_team2_unit",
+      "entityId": "unit.humanoid.default",
+      "teamId": 2,
+      "ownerTeamSlot": 1,
+      "attributes": [
+        "diplomacy-test.ai-controlled"
+      ],
+      "position": {
+        "x": 8,
+        "y": 0.5,
+        "z": 6
+      }
+    },
+    {
+      "id": "diplomacy_team3_unit",
+      "entityId": "unit.humanoid.default",
+      "teamId": 3,
+      "ownerTeamSlot": 1,
+      "attributes": [
+        "diplomacy-test.ai-controlled"
+      ],
+      "position": {
+        "x": 8,
+        "y": 0.5,
+        "z": -6
+      }
+    }
+  ],
+  "rules": [
+    {
+      "id": "diplomacy-test.message",
+      "enabled": true,
+      "eventType": "match-started",
+      "conditions": [],
+      "actions": [
+        {
+          "type": "show-message",
+          "message": "Pulsa O para abrir Diplomacia. La unidad roja es Equipo 2 y ataca al Equipo 1. Para detenerla usa /diplomacy_stance 2 1 ally. Equipo 3 comienza neutral hacia 1."
+        }
+      ]
+    },
+    {
+      "id": "diplomacy-test.changed-message",
+      "enabled": true,
+      "eventType": "diplomacy-stance-changed",
+      "conditions": [],
+      "actions": [
+        {
+          "type": "show-message",
+          "message": "Cambió una postura diplomática durante la partida."
+        }
+      ]
+    }
+  ],
+  "waveControllers": [],
+  "missions": [],
+  "teamResources": [],
+  "participantResources": [],
+  "settingOverrides": [],
+  "diplomacy": [
+    {
+      "sourceTeamId": 1,
+      "targetTeamId": 2,
+      "stance": "Enemy",
+      "bidirectional": false
+    },
+    {
+      "sourceTeamId": 2,
+      "targetTeamId": 1,
+      "stance": "Enemy",
+      "bidirectional": false
+    },
+    {
+      "sourceTeamId": 1,
+      "targetTeamId": 3,
+      "stance": "Ally",
+      "bidirectional": false
+    },
+    {
+      "sourceTeamId": 3,
+      "targetTeamId": 1,
+      "stance": "Neutral",
+      "bidirectional": false
+    },
+    {
+      "sourceTeamId": 2,
+      "targetTeamId": 3,
+      "stance": "Neutral",
+      "bidirectional": false
+    },
+    {
+      "sourceTeamId": 3,
+      "targetTeamId": 2,
+      "stance": "Enemy",
+      "bidirectional": false
+    }
+  ]
+}

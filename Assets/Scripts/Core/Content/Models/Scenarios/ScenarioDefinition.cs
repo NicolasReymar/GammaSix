@@ -18,6 +18,7 @@ public sealed class ScenarioDefinition
     public ScenarioParticipantConfiguration participantConfiguration;
     public ScenarioHeadlessProfileDefinition[] headlessProfiles;
     public ScenarioWorldSize worldSize;
+    public ScenarioNavigationDefinition navigation;
     public ScenarioTerrainDefinition terrain;
     public ScenarioEntityCatalogDefinition entityCatalog;
     public ScenarioSpawnPoint[] spawnPoints;
@@ -25,7 +26,9 @@ public sealed class ScenarioDefinition
     public ScenarioMissionDefinition[] missions;
     public ScenarioTeamResourceDefinition[] teamResources;
     public ScenarioParticipantResourceDefinition[] participantResources;
+    public ScenarioDiplomacyDefinition[] diplomacy;
     public ScenarioRuleDefinition[] rules;
+    public ScenarioWaveControllerDefinition[] waveControllers;
     public ScenarioSettingOverride[] settingOverrides;
 }
 
@@ -76,6 +79,27 @@ public sealed class ScenarioHeadlessProfileDefinition
     public string gameModeId;
     public int maximumInstances = 1;
     public bool runtimeImplemented;
+
+    /// <summary>
+    /// Identificador de una implementación registrada por GammaSix. Los paquetes
+    /// pueden configurar controladores conocidos, pero no inyectan código C#.
+    /// </summary>
+    public string runtimeControllerId;
+
+    public ScenarioHeadlessControllerSettings controllerSettings;
+}
+
+[Serializable]
+public sealed class ScenarioHeadlessControllerSettings
+{
+    public float updateInterval = 0.5f;
+    public int maxOrdersPerUpdate = 4;
+    public string targetPolicy = "nearest-hostile";
+    public bool includeNeutralTargets;
+    public string[] controlledRequiredAttributes;
+    public string[] controlledExcludedAttributes;
+    public string[] targetRequiredAttributes;
+    public string[] targetExcludedAttributes;
 }
 
 
@@ -112,6 +136,19 @@ public sealed class ScenarioTerrainTilePlacement
     public int x;
     public int z;
     public string terrainId;
+}
+
+
+[Serializable]
+public sealed class ScenarioNavigationDefinition
+{
+    public float cellSize = 0.8f;
+    public bool allowDiagonal = true;
+    public float obstacleRefreshInterval = 0.35f;
+    public float repathInterval = 0.25f;
+    public float arrivalTolerance = 0.18f;
+    public float attackMoveAcquisitionRange = 6.5f;
+    public float individualAiInterval = 0.2f;
 }
 
 [Serializable]
@@ -171,6 +208,16 @@ public sealed class ScenarioTeamResourceDefinition
     public int teamId;
     public int gold;
     public ScenarioResourceAmount[] resources;
+}
+
+
+[Serializable]
+public sealed class ScenarioDiplomacyDefinition
+{
+    public int sourceTeamId;
+    public int targetTeamId;
+    public string stance = "Neutral";
+    public bool bidirectional;
 }
 
 [Serializable]

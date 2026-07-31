@@ -73,6 +73,8 @@ public sealed class GameTextInputHudController : MonoBehaviour
             input.RegisterCallback<FocusInEvent>(OnInputFocusIn);
             input.RegisterCallback<FocusOutEvent>(OnInputFocusOut);
             input.RegisterCallback<KeyDownEvent>(OnInputKeyDown, TrickleDown.TrickleDown);
+            ApplyInputVisualFix();
+            input.schedule.Execute(ApplyInputVisualFix).ExecuteLater(1);
         }
 
         if (sendButton != null)
@@ -215,6 +217,30 @@ public sealed class GameTextInputHudController : MonoBehaviour
         input.Focus();
         if (selectAll && !string.IsNullOrEmpty(input.value))
             input.SelectAll();
+    }
+
+    private void ApplyInputVisualFix()
+    {
+        if (input == null)
+            return;
+
+        Color textColor = new Color32(240, 248, 244, 255);
+        Color fieldColor = new Color32(15, 37, 29, 245);
+        input.style.color = textColor;
+        input.style.backgroundColor = fieldColor;
+
+        VisualElement internalInput =
+            input.Q<VisualElement>(className: "unity-text-input") ??
+            input.Q<VisualElement>(className: "unity-base-text-field__input");
+        if (internalInput != null)
+        {
+            internalInput.style.color = textColor;
+            internalInput.style.backgroundColor = fieldColor;
+        }
+
+        TextElement textElement = input.Q<TextElement>();
+        if (textElement != null)
+            textElement.style.color = textColor;
     }
 
     private void OnInputFocusIn(FocusInEvent _)

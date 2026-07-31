@@ -1,8 +1,9 @@
 using System;
 
 /// <summary>
-/// Relación lógica entre dos entidades. No depende de si son trabajador,
-/// soldado, edificio u otra definición concreta.
+/// Relación lógica entre dos entidades desde la perspectiva de la entidad de
+/// origen. En diplomacia asimétrica A puede considerar enemigo a B aunque B
+/// todavía considere neutral a A.
 /// </summary>
 public enum EntityRelation
 {
@@ -21,10 +22,6 @@ public enum ContextualEntityAction
     Attack
 }
 
-/// <summary>
-/// Centraliza las reglas de interacción contextual para evitar condiciones
-/// duplicadas en input, networking y servicios especializados.
-/// </summary>
 public static class EntityInteractionRules
 {
     public static bool BlocksContextualInteraction(EntityAttributeSet targetAttributes)
@@ -45,17 +42,12 @@ public static class EntityInteractionRules
     {
         if (sourceUnitId == targetUnitId)
             return EntityRelation.Self;
-
-        if (targetTeamId == 0)
-            return EntityRelation.Neutral;
-
         if (targetOwnerParticipantId == localParticipantId)
             return EntityRelation.Owned;
+        if (targetTeamId <= 0 || sourceTeamId <= 0)
+            return EntityRelation.Neutral;
 
-        if (sourceTeamId != 0 && sourceTeamId == targetTeamId)
-            return EntityRelation.Allied;
-
-        return EntityRelation.Enemy;
+        return ToEntityRelation(DiplomacyClientState.GetStance(sourceTeamId, targetTeamId));
     }
 
     public static ContextualEntityAction Resolve(
@@ -108,7 +100,8 @@ public static class EntityInteractionRules
     public static bool CanFollow(
         EntityRuntimeState source,
         EntityRuntimeState target,
-        int issuerParticipantId)
+        int issuerParticipantId,
+        DiplomacyRuntimeService diplomacy)
     {
         if (source == null || target == null || source.UnitId == target.UnitId)
             return false;
@@ -128,21 +121,24 @@ public static class EntityInteractionRules
         bool targetCanBeFollowed = target.Attributes != null &&
             (target.Attributes.Has(EntityAttributeIds.Unit) ||
              target.Attributes.Has(EntityAttributeIds.Building));
-
         if (!targetCanBeFollowed)
             return false;
 
-        EntityRelation relation = GetRelation(
-            issuerParticipantId,
-            source.UnitId,
-            source.OwnerParticipantId,
-            source.TeamId,
-            target.UnitId,
-            target.OwnerParticipantId,
-            target.TeamId);
+        if (target.OwnerParticipantId == issuerParticipantId)
+            return true;
 
-        return relation == EntityRelation.Owned ||
-               relation == EntityRelation.Allied ||
-               relation == EntityRelation.Neutral;
+        DiplomacyStance stance = diplomacy?.GetStance(source.TeamId, target.TeamId) ??
+                                  DiplomacyStance.Neutral;
+        return stance == DiplomacyStance.Ally || stance == DiplomacyStance.Neutral;
+    }
+
+    public static EntityRelation ToEntityRelation(DiplomacyStance stance)
+    {
+        return stance switch
+        {
+            DiplomacyStance.Ally => EntityRelation.Allied,
+            DiplomacyStance.Enemy => EntityRelation.Enemy,
+            _ => EntityRelation.Neutral
+        };
     }
 }

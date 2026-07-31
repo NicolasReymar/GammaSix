@@ -6,6 +6,8 @@ public static class EntityCombatRules
         EntityRuntimeState source,
         EntityRuntimeState target,
         int issuerParticipantId,
+        bool forceTarget,
+        DiplomacyRuntimeService diplomacy,
         out string rejectionReason)
     {
         rejectionReason = null;
@@ -63,9 +65,11 @@ public static class EntityCombatRules
             return false;
         }
 
-        if (source.TeamId > 0 && target.TeamId > 0 && source.TeamId == target.TeamId)
+        if (!forceTarget &&
+            (diplomacy == null ||
+             diplomacy.GetStance(source.TeamId, target.TeamId) != DiplomacyStance.Enemy))
         {
-            rejectionReason = "No se puede atacar a una entidad aliada.";
+            rejectionReason = "La orden contextual solo puede atacar equipos considerados enemigos.";
             return false;
         }
 
@@ -86,7 +90,11 @@ public static class EntityCombatRules
         return true;
     }
 
-    public static bool IsStillValidTarget(EntityRuntimeState source, EntityRuntimeState target)
+    public static bool IsStillValidTarget(
+        EntityRuntimeState source,
+        EntityRuntimeState target,
+        DiplomacyRuntimeService diplomacy,
+        bool forceTarget = false)
     {
         if (source == null || target == null || source.UnitId == target.UnitId)
             return false;
@@ -101,7 +109,9 @@ public static class EntityCombatRules
         if (NormalizeDelivery(source.Attack.Delivery) == EntityAttackDeliveryTypes.Melee &&
             (source.Attributes == null || !source.Attributes.Has(EntityAttributeIds.Melee)))
             return false;
-        return source.TeamId <= 0 || target.TeamId <= 0 || source.TeamId != target.TeamId;
+        return forceTarget ||
+               (diplomacy != null &&
+                diplomacy.GetStance(source.TeamId, target.TeamId) == DiplomacyStance.Enemy);
     }
 
     public static float GetInteractionDistance(EntityRuntimeState source, EntityRuntimeState target)

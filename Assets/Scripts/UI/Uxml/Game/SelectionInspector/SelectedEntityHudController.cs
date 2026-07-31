@@ -158,7 +158,8 @@ public class SelectedEntityHudController : MonoBehaviour
             Label attackInfo = new(
                 $"Ataque {entity.AttackDelivery}/{entity.AttackDamageType} · Daño {entity.AttackBaseDamage} · " +
                 $"Velocidad {effectiveSpeed:0.##}x · Alcance {entity.AttackRange:0.##} · " +
-                $"Preparación {effectiveAttackTime:0.##}s · Recuperación {effectiveRecoveryTime:0.##}s");
+                $"Preparación {effectiveAttackTime:0.##}s · Recuperación {effectiveRecoveryTime:0.##}s · " +
+                $"Postura {GetCombatStanceLabel(entity.CombatStance)}");
             attackInfo.AddToClassList("selected-entity-empty");
             attributesList.Add(attackInfo);
         }
@@ -194,6 +195,12 @@ public class SelectedEntityHudController : MonoBehaviour
             EntityActivityState.Dead => "Muerta",
             _ => "Inactiva"
         };
+    }
+
+
+    private static string GetCombatStanceLabel(EntityCombatStance stance)
+    {
+        return stance == EntityCombatStance.Passive ? "Pasiva" : "Agresiva";
     }
 
     private static string GetAttackPhaseLabel(EntityAttackPhase phase)

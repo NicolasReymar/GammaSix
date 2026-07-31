@@ -3,9 +3,14 @@ using System;
 public enum MatchCommandType
 {
     Move,
+    AttackMove,
+    Patrol,
     ResourceInteraction,
     EntityInteraction,
-    Attack
+    Attack,
+    Stop,
+    SetCombatStance,
+    SetDiplomacyStance
 }
 
 public enum MatchCommandIssuerKind

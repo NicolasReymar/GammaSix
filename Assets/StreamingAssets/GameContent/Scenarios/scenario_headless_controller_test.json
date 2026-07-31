@@ -1,0 +1,155 @@
+{
+  "contentType": "scenario",
+  "id": "scenario_headless_controller_test",
+  "name": "Headless Controller - Prueba",
+  "description": "Escenario técnico de la Fase 9. Un participante Headless del equipo 2 utiliza un controlador de asalto simple para detectar hostiles y emitir órdenes de ataque mediante el Command Bus.",
+  "maxTeams": 2,
+  "maxPlayers": 1,
+  "fixedTeams": true,
+  "gameModeId": "base:game-mode.normal",
+  "participantConfiguration": {
+    "maximumHumanPlayers": 1,
+    "maximumParticipants": 2,
+    "availableHeadlessProfiles": [
+      "phase9.simple-assault"
+    ],
+    "requiredParticipants": [
+      {
+        "slotId": "phase9.enemy",
+        "slotIndex": 1,
+        "displayName": "Comandante de prueba",
+        "controllerProfileId": "phase9.simple-assault",
+        "teamId": 2,
+        "colorId": 0,
+        "participantLocked": true,
+        "teamLocked": true,
+        "colorLocked": true
+      }
+    ]
+  },
+  "headlessProfiles": [
+    {
+      "id": "phase9.simple-assault",
+      "displayName": "Asalto simple",
+      "description": "Controlador técnico que asigna el objetivo hostil más cercano a sus unidades agresivas.",
+      "sourceId": "base",
+      "sourceLabel": "Prueba Fase 9",
+      "gameModeId": "base:game-mode.normal",
+      "maximumInstances": 1,
+      "runtimeImplemented": true,
+      "runtimeControllerId": "base:headless-controller.simple-assault",
+      "controllerSettings": {
+        "updateInterval": 0.35,
+        "maxOrdersPerUpdate": 4,
+        "targetPolicy": "nearest-hostile",
+        "includeNeutralTargets": false,
+        "controlledRequiredAttributes": [
+          "phase9.ai-controlled"
+        ],
+        "controlledExcludedAttributes": [
+          "entity.area"
+        ],
+        "targetRequiredAttributes": [],
+        "targetExcludedAttributes": [
+          "entity.area"
+        ]
+      }
+    }
+  ],
+  "worldSize": {
+    "width": 44,
+    "height": 32
+  },
+  "terrain": {
+    "defaultTerrainId": "praderas_primavera",
+    "tiles": []
+  },
+  "entityCatalog": {
+    "includeGameModeDefaults": true,
+    "spawnableEntityIds": []
+  },
+  "spawnPoints": [
+    {
+      "teamId": 1,
+      "position": {
+        "x": -10,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "teamId": 2,
+      "position": {
+        "x": 10,
+        "y": 0,
+        "z": 0
+      }
+    }
+  ],
+  "entities": [
+    {
+      "id": "player_soldier_01",
+      "entityId": "unit.humanoid.default",
+      "teamId": 1,
+      "ownerTeamSlot": 1,
+      "position": {
+        "x": -8,
+        "y": 0.5,
+        "z": -2
+      }
+    },
+    {
+      "id": "player_soldier_02",
+      "entityId": "unit.humanoid.default",
+      "teamId": 1,
+      "ownerTeamSlot": 1,
+      "position": {
+        "x": -8,
+        "y": 0.5,
+        "z": 2
+      }
+    },
+    {
+      "id": "enemy_soldier_01",
+      "entityId": "unit.humanoid.default",
+      "teamId": 2,
+      "ownerTeamSlot": 1,
+      "attributes": [
+        "phase9.ai-controlled"
+      ],
+      "position": {
+        "x": 8,
+        "y": 0.5,
+        "z": -2
+      }
+    },
+    {
+      "id": "enemy_soldier_02",
+      "entityId": "unit.humanoid.default",
+      "teamId": 2,
+      "ownerTeamSlot": 1,
+      "attributes": [
+        "phase9.ai-controlled"
+      ],
+      "position": {
+        "x": 8,
+        "y": 0.5,
+        "z": 2
+      }
+    }
+  ],
+  "rules": [],
+  "waveControllers": [],
+  "missions": [],
+  "teamResources": [],
+  "participantResources": [],
+  "settingOverrides": [],
+  "diplomacy": [
+    {
+      "sourceTeamId": 1,
+      "targetTeamId": 2,
+      "stance": "Enemy",
+      "bidirectional": true
+    }
+  ]
+}

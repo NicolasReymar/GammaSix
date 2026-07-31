@@ -40,6 +40,15 @@ public sealed class ScenarioRuleConditionDefinition
     public string value;
     public string entitySelector;
     public string variableName;
+
+    public string waveControllerId;
+    public string waveId;
+    public int waveIndex = -1;
+    public int waveCycle;
+
+    public int sourceTeamId;
+    public int targetTeamId;
+    public string diplomacyStance;
 }
 
 [Serializable]
@@ -84,4 +93,11 @@ public sealed class ScenarioRuleActionDefinition
     public string result;
     public string value;
     public string reason;
+
+    public string waveControllerId;
+
+    public int sourceTeamId;
+    public int targetTeamId;
+    public string diplomacyStance;
+    public bool bidirectional;
 }

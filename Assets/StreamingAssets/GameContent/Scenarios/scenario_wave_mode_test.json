@@ -1,0 +1,271 @@
+{
+  "contentType": "scenario",
+  "id": "scenario_wave_mode_test",
+  "name": "Wave Mode - Prueba",
+  "description": "Escenario técnico para probar oleadas hostiles y su integración con un controlador Headless declarativo del equipo 2.",
+  "maxTeams": 2,
+  "maxPlayers": 1,
+  "fixedTeams": true,
+  "gameModeId": "base:game-mode.normal",
+  "participantConfiguration": {
+    "maximumHumanPlayers": 1,
+    "maximumParticipants": 2,
+    "availableHeadlessProfiles": [
+      "wave-test.simple-assault"
+    ],
+    "requiredParticipants": [
+      {
+        "slotId": "wave.enemy",
+        "slotIndex": 1,
+        "displayName": "Equipo de oleadas",
+        "controllerProfileId": "wave-test.simple-assault",
+        "teamId": 2,
+        "colorId": 0,
+        "participantLocked": true,
+        "teamLocked": true,
+        "colorLocked": true
+      }
+    ]
+  },
+  "worldSize": {
+    "width": 48,
+    "height": 48
+  },
+  "terrain": {
+    "defaultTerrainId": "praderas_primavera",
+    "tiles": []
+  },
+  "entityCatalog": {
+    "includeGameModeDefaults": true,
+    "spawnableEntityIds": [
+      "building.aura"
+    ]
+  },
+  "spawnPoints": [
+    {
+      "teamId": 1,
+      "position": {
+        "x": -12,
+        "y": 0,
+        "z": 0
+      }
+    },
+    {
+      "teamId": 2,
+      "position": {
+        "x": 12,
+        "y": 0,
+        "z": 0
+      }
+    }
+  ],
+  "entities": [
+    {
+      "id": "player_soldier",
+      "entityId": "unit.humanoid.default",
+      "teamId": 1,
+      "ownerTeamSlot": 1,
+      "position": {
+        "x": -10,
+        "y": 0.5,
+        "z": 0
+      }
+    },
+    {
+      "id": "wave_spawn_north",
+      "entityId": "building.aura",
+      "teamId": 0,
+      "ownerTeamSlot": 0,
+      "attributes": [
+        "wave-test.spawn.north"
+      ],
+      "position": {
+        "x": 10,
+        "y": 0.04,
+        "z": 6
+      }
+    },
+    {
+      "id": "wave_spawn_south",
+      "entityId": "building.aura",
+      "teamId": 0,
+      "ownerTeamSlot": 0,
+      "attributes": [
+        "wave-test.spawn.south"
+      ],
+      "position": {
+        "x": 10,
+        "y": 0.04,
+        "z": -6
+      }
+    }
+  ],
+  "waveControllers": [
+    {
+      "id": "wave-test.main",
+      "enabled": true,
+      "autoStart": true,
+      "initialDelay": 2.0,
+      "defaultInterWaveDelay": 3.0,
+      "repeatMode": "none",
+      "repeatCount": 1,
+      "waves": [
+        {
+          "id": "wave.one",
+          "preparationTime": 1.0,
+          "delayAfterCompletion": 2.0,
+          "completionCondition": "all-spawned-resolved",
+          "groups": [
+            {
+              "id": "north-group",
+              "entityId": "unit.humanoid.default",
+              "count": 2,
+              "startDelay": 0.0,
+              "spawnInterval": 0.75,
+              "teamId": 2,
+              "spawnAreaAttribute": "wave-test.spawn.north",
+              "randomizePositionInArea": true,
+              "positionJitterRadius": 0.5,
+              "attributes": [
+                "wave-test.spawned"
+              ],
+              "ownerSlotId": "wave.enemy"
+            }
+          ]
+        },
+        {
+          "id": "wave.two",
+          "preparationTime": 1.0,
+          "delayAfterCompletion": 0.0,
+          "completionCondition": "all-spawned-resolved",
+          "groups": [
+            {
+              "id": "north-group",
+              "entityId": "unit.humanoid.default",
+              "count": 2,
+              "startDelay": 0.0,
+              "spawnInterval": 0.5,
+              "teamId": 2,
+              "spawnAreaAttribute": "wave-test.spawn.north",
+              "randomizePositionInArea": true,
+              "positionJitterRadius": 0.5,
+              "attributes": [
+                "wave-test.spawned"
+              ],
+              "ownerSlotId": "wave.enemy"
+            },
+            {
+              "id": "south-group",
+              "entityId": "unit.humanoid.worker",
+              "count": 2,
+              "startDelay": 1.0,
+              "spawnInterval": 0.5,
+              "teamId": 2,
+              "spawnAreaAttribute": "wave-test.spawn.south",
+              "randomizePositionInArea": true,
+              "positionJitterRadius": 0.5,
+              "attributes": [
+                "wave-test.spawned"
+              ],
+              "ownerSlotId": "wave.enemy"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "id": "wave-test.started-message",
+      "enabled": true,
+      "eventType": "wave-started",
+      "conditions": [
+        {
+          "type": "wave-controller-id-is",
+          "waveControllerId": "wave-test.main"
+        }
+      ],
+      "actions": [
+        {
+          "type": "show-message",
+          "message": "Comenzó una oleada del escenario de prueba."
+        }
+      ]
+    },
+    {
+      "id": "wave-test.completed-message",
+      "enabled": true,
+      "eventType": "wave-completed",
+      "conditions": [
+        {
+          "type": "wave-controller-id-is",
+          "waveControllerId": "wave-test.main"
+        }
+      ],
+      "actions": [
+        {
+          "type": "show-message",
+          "message": "La oleada fue resuelta; el controlador continuará según sus datos."
+        }
+      ]
+    },
+    {
+      "id": "wave-test.controller-completed-message",
+      "enabled": true,
+      "eventType": "wave-controller-completed",
+      "conditions": [
+        {
+          "type": "wave-controller-id-is",
+          "waveControllerId": "wave-test.main"
+        }
+      ],
+      "actions": [
+        {
+          "type": "show-message",
+          "message": "El controlador de oleadas completó todas sus oleadas."
+        }
+      ]
+    }
+  ],
+  "missions": [],
+  "teamResources": [],
+  "participantResources": [],
+  "settingOverrides": [],
+  "headlessProfiles": [
+    {
+      "id": "wave-test.simple-assault",
+      "displayName": "Comandante de oleadas simple",
+      "description": "Controlador técnico que ordena a las unidades generadas por las oleadas atacar al hostil más cercano.",
+      "sourceId": "base",
+      "sourceLabel": "Prueba Fase 9",
+      "gameModeId": "base:game-mode.normal",
+      "maximumInstances": 1,
+      "runtimeImplemented": true,
+      "runtimeControllerId": "base:headless-controller.simple-assault",
+      "controllerSettings": {
+        "updateInterval": 0.35,
+        "maxOrdersPerUpdate": 8,
+        "targetPolicy": "nearest-hostile",
+        "includeNeutralTargets": false,
+        "controlledRequiredAttributes": [
+          "wave-test.spawned"
+        ],
+        "controlledExcludedAttributes": [
+          "entity.area"
+        ],
+        "targetRequiredAttributes": [],
+        "targetExcludedAttributes": [
+          "entity.area"
+        ]
+      }
+    }
+  ],
+  "diplomacy": [
+    {
+      "sourceTeamId": 1,
+      "targetTeamId": 2,
+      "stance": "Enemy",
+      "bidirectional": true
+    }
+  ]
+}

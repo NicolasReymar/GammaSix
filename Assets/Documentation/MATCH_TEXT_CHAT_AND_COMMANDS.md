@@ -28,6 +28,9 @@ El panel utiliza `DraggableHudPanel`, comparte el borde amarillo del modo de edi
 /state
 /areas
 /combat [filtro]
+/channels
+/waves [filtro]
+/wave <start|pause|resume|stop|advance> <controller-id>
 /attack <runtime-id-atacante> <runtime-id-objetivo>
 /damage <runtime-id-objetivo> <cantidad> [runtime-id-origen]
 /spawn <id-entidad-cargada> posicion(x,y,z)
@@ -64,7 +67,7 @@ Una entidad puede crearse solamente cuando:
 2. Está habilitada por el catálogo de la partida.
 3. La solicitud proviene de la autoridad y supera las validaciones del runtime.
 
-La restricción se aplica también a oleadas, reglas, construcciones, reemplazos y rescates futuros. No es una validación exclusiva del comando de texto.
+La restricción se aplica también a oleadas, reglas, construcciones, reemplazos y acciones declarativas. No es una validación exclusiva del comando de texto.
 
 ## Autoridad
 
@@ -119,3 +122,38 @@ La interfaz queda preparada para ampliar posteriormente canales de equipo, espec
 `/channels` consulta las canalizaciones activas. No existen comandos base de
 captura o rescate: esas mecánicas se construyen mediante reglas de la partida
 guardada.
+
+
+## Oleadas
+
+```text
+/waves [filtro]
+/wave start <controller-id>
+/wave pause <controller-id>
+/wave resume <controller-id>
+/wave stop <controller-id>
+/wave advance <controller-id>
+```
+
+`/waves` puede consultarse desde cualquier cliente porque la respuesta se genera en la autoridad. Las operaciones de control solo se aceptan desde el host o una partida local.
+
+### Diagnóstico Headless
+
+```text
+/headless [filtro]
+```
+
+Muestra los controladores autoritativos, su perfil, estado, cantidad de órdenes
+y última decisión.
+
+## Diplomacia asimétrica
+
+```text
+/diplomacy
+/diplomacy_stance <equipo-origen> <equipo-objetivo> <ally|neutral|enemy>
+```
+
+`/diplomacy` muestra la matriz direccional actual. El comando de modificación es
+host-only o local y altera únicamente `equipo-origen → equipo-objetivo`; no
+cambia la dirección inversa. La ventana UXML de diplomacia se abre con `O` y
+permite que el jugador cambie solo la postura saliente de su propio equipo.

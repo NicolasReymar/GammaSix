@@ -16,4 +16,6 @@ public sealed class HeadlessProfileDefinition
     public int MaximumInstances = 1;
     public bool BuiltIn;
     public bool RuntimeImplemented;
+    public string RuntimeControllerId;
+    public ScenarioHeadlessControllerSettings ControllerSettings;
 }

@@ -239,6 +239,25 @@ public static class PackageContentResolver
             }
         }
 
+        if (scenario.waveControllers != null)
+        {
+            foreach (ScenarioWaveControllerDefinition controller in scenario.waveControllers)
+            {
+                if (controller?.waves == null)
+                    continue;
+                foreach (ScenarioWaveDefinition wave in controller.waves)
+                {
+                    if (wave?.groups == null)
+                        continue;
+                    foreach (ScenarioWaveGroupDefinition group in wave.groups)
+                    {
+                        if (group != null)
+                            group.entityId = ResolveEntityReference(package.PackageId, group.entityId);
+                    }
+                }
+            }
+        }
+
         if (scenario.rules != null)
         {
             foreach (ScenarioRuleDefinition rule in scenario.rules)

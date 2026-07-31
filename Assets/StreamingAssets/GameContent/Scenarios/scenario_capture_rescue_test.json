@@ -298,5 +298,13 @@
   "missions": [],
   "teamResources": [],
   "participantResources": [],
-  "settingOverrides": []
+  "settingOverrides": [],
+  "diplomacy": [
+    {
+      "sourceTeamId": 1,
+      "targetTeamId": 2,
+      "stance": "Enemy",
+      "bidirectional": true
+    }
+  ]
 }

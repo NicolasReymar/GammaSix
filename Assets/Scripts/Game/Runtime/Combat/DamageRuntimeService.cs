@@ -240,6 +240,7 @@ public sealed class DamageRuntimeService
 
     private static void StopEntity(EntityRuntimeState entity)
     {
+        entity.Navigation?.ClearAll(entity.Position, "stopped-by-runtime");
         entity.Destination = entity.Position;
         entity.InteractionTargetUnitId = -1;
         entity.Attack?.ClearTarget();
